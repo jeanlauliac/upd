@@ -37,11 +37,17 @@ npm install -g @jeanlauliac/upd-cli    # only if not installed already on your m
 npm install @jeanlauliac/upd --save-dev
 ```
 
-Then you can run the utility from anywhere in the project, ex:
+Then you can initialize your project by running the following in the
+project's root directory:
 
 ```sh
-upd --help
+upd --init
 ```
+
+This creates a single file `.updroot` that is used by `upd` to know what is the
+root directory of the project. Only files in that directory or in any of its
+children directories can be managed and updated by `upd` for that particular
+project.
 
 ## Manifest
 
