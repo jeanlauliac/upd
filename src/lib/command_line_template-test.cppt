@@ -1,0 +1,21 @@
+#include "command_line_template.h"
+
+@case "reify_command_line() works" {
+  upd::command_line_template tpl = {
+    .binary_path = "program",
+    .parts = {
+      upd::command_line_template_part({ "foo", "bar" }, { upd::command_line_template_variable::input_files }),
+      upd::command_line_template_part({ "beep" }, { upd::command_line_template_variable::output_files }),
+    },
+  };
+  upd::command_line_parameters parts = {
+    .dependency_file = "",
+    .input_files = { "input1", "input2" },
+    .output_files = { "output" },
+  };
+  auto result = upd::reify_command_line(tpl, parts);
+  @expect(result.binary_path == tpl.binary_path);
+  @expect(result.args == std::vector<std::string>(
+    { "foo", "bar", "input1", "input2", "beep", "output" }
+  ));
+}

@@ -1,0 +1,32 @@
+#include "directory_cache.h"
+#include <vector>
+#include <string>
+
+static std::vector<std::string> created_dirs;
+
+int mock_mkdir(const char* pathname, mode_t mode) {
+  if (std::string("root/foo") == pathname) {
+    errno = EEXIST;
+    return 1;
+  }
+  created_dirs.push_back(pathname);
+  return 0;
+}
+
+using namespace upd;
+
+@case "directory_cache works" {
+  directory_cache<mock_mkdir> cache("/root");
+  cache.create("foo/bar/baz");
+  @expect(created_dirs == std::vector<std::string>({
+    "/root/foo",
+    "/root/foo/bar",
+    "/root/foo/bar/baz",
+  }));
+  created_dirs.clear();
+  cache.create("foo/glo/biz");
+  @expect(created_dirs == std::vector<std::string>({
+    "/root/foo/glo",
+    "/root/foo/glo/biz",
+  }));
+}

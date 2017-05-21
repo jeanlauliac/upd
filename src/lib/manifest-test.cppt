@@ -1,0 +1,79 @@
+#include "manifest.h"
+#include "string_char_reader.h"
+
+using namespace upd;
+
+typedef json::lexer<string_char_reader> string_lexer;
+
+@case "parses empty manifest" {
+  string_char_reader reader("{}");
+  string_lexer lx(reader);
+  auto result = manifest::parse(lx);
+  manifest::manifest expected;
+  @expect(result == expected);
+}
+
+@case "parses complex manifest" {
+  string_char_reader reader(R"JSON({
+    "command_line_templates": [
+      {
+        "binary_path": "clang++",
+        "arguments": [
+          {"literals": ["-c", "-o"], "variables": ["output_file"]},
+          {"literals": ["-std=c++14"], "variables": ["dependency_file"]},
+          {"literals": ["-I", "/usr/local/include"], "variables": ["input_files"]}
+        ]
+      }
+    ],
+    "source_patterns": [
+      "(src/lib/**/*).cppt",
+      "(src/main).cpp"
+    ],
+    "rules": [
+      {
+        "command_line_ix": 13,
+        "output": "dist/($1).o",
+        "inputs": [{"source_ix": 1}, {"rule_ix": 2}]
+      }
+    ]
+  }
+)JSON");
+  string_lexer lx(reader);
+  auto result = manifest::parse(lx);
+  manifest::manifest expected = {
+    .command_line_templates = {
+      {
+        .binary_path = "clang++",
+        .parts = {
+          command_line_template_part(
+            { "-c", "-o" },
+            { command_line_template_variable::output_files }
+          ),
+          command_line_template_part(
+            { "-std=c++14" },
+            { command_line_template_variable::dependency_file }
+          ),
+          command_line_template_part(
+            { "-I", "/usr/local/include" },
+            { command_line_template_variable::input_files }
+          )
+        },
+      },
+    },
+    .source_patterns = {
+      path_glob::parse("(src/lib/**/*).cppt"),
+      path_glob::parse("(src/main).cpp"),
+    },
+    .rules = {
+      {
+        .command_line_ix = 13,
+        .output = substitution::parse("dist/($1).o"),
+        .inputs = {
+          manifest::update_rule_input::from_source(1),
+          manifest::update_rule_input::from_rule(2),
+        }
+      },
+    },
+  };
+  @expect(result == expected);
+}

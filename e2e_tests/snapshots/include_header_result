@@ -1,0 +1,8 @@
+# GENERATED FILE
+# src/bar.in
+This is bar.
+# src/foo.in
+Foo header.
+This is foo, second.
+# src/sub/glo.in
+This is glo.

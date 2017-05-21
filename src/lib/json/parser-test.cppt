@@ -1,0 +1,124 @@
+#include "../string_char_reader.h"
+#include "lexer-test.h"
+#include "parser.h"
+#include <vector>
+
+using namespace upd;
+
+typedef json::lexer<string_char_reader> string_lexer;
+typedef json::object_reader<string_lexer> object_reader;
+typedef json::array_reader<string_lexer> array_reader;
+
+struct empty {};
+
+struct no_op_handler {
+  typedef empty return_type;
+  empty object(object_reader& read_object) const { return empty(); }
+  empty array(array_reader& read_object) const { return empty(); }
+  empty string_literal(const std::string&) const { return empty(); }
+  empty number_literal(float) const { return empty(); }
+};
+
+struct expect_empty_object_handler {
+  typedef bool return_type;
+  bool object(object_reader& read_object) const {
+    bool good = true;
+    read_object([&good](
+      const std::string& field_name,
+      json::field_value_reader<string_lexer>& read_field_value
+    ){
+      no_op_handler noh;
+      good = false;
+      read_field_value.read(noh);
+    });
+    return good;
+  }
+  bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
+  bool string_literal(const std::string&) const { return false; }
+  bool number_literal(float) const { return false; }
+};
+
+struct expect_number_handler {
+  typedef bool return_type;
+  bool object(object_reader& read_object) const { throw std::runtime_error("unexpected object"); }
+  bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
+  bool string_literal(const std::string&) const { return false; }
+  bool number_literal(float) const { return true; }
+};
+
+struct expect_object_single_field_handler {
+  typedef bool return_type;
+  bool object(object_reader& read_object) const {
+    std::vector<std::string> field_names;
+    read_object([&field_names](
+      const std::string& field_name,
+      json::field_value_reader<string_lexer>& read_field_value
+    ) {
+      field_names.push_back(field_name);
+      auto result = read_field_value.read(expect_number_handler());
+      if (!result) throw std::runtime_error("not a number");
+    });
+    return field_names == std::vector<std::string>({ "foo" });
+  }
+  bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
+  bool string_literal(const std::string&) const { return false; }
+  bool number_literal(float) const { return false; }
+};
+
+@case "parses empty object" {
+  string_char_reader reader("{}");
+  string_lexer lx(reader);
+  @expect(json::parse_expression(lx, expect_empty_object_handler()));
+  @expect(lx.next(expect_end_handler()));
+}
+
+@case "parses object with a field" {
+  string_char_reader reader("{\"foo\": 42}");
+  string_lexer lx(reader);
+  @expect(json::parse_expression(lx, expect_object_single_field_handler()));
+  @expect(lx.next(expect_end_handler()));
+}
+
+struct array_of_numbers_handler {
+  typedef void return_type;
+  void object(object_reader& read_object) const { throw std::runtime_error("expected number"); }
+  void array(array_reader& read_array) const { throw std::runtime_error("expected number"); }
+  void string_literal(const std::string&) const { throw std::runtime_error("expected number"); }
+  void number_literal(float number) {
+    numbers.push_back(number);
+  }
+  std::vector<float> numbers;
+};
+
+struct expect_number_array_handler {
+  typedef bool return_type;
+  expect_number_array_handler(const std::vector<float>& target):
+    target_(target) {}
+  bool array(array_reader& read_array) const {
+    array_of_numbers_handler handler;
+    read_array(handler);
+    return handler.numbers == target_;
+  }
+  bool object(object_reader& read_object) const { return false; }
+  bool string_literal(const std::string&) const { return false; }
+  bool number_literal(float) const { return false; }
+
+private:
+  std::vector<float> target_;
+};
+
+@case "parses empty array" {
+  string_char_reader reader("[]");
+  string_lexer lx(reader);
+  @expect(json::parse_expression(lx, expect_number_array_handler({})));
+  @expect(lx.next(expect_end_handler()));
+}
+
+@case "parses array of numbers" {
+  string_char_reader reader("[3, 5, 7, 13]");
+  string_lexer lx(reader);
+  @expect(json::parse_expression(lx, expect_number_array_handler(
+    { 3, 5, 7, 13 }
+  )));
+  @expect(lx.next(expect_end_handler()));
+}

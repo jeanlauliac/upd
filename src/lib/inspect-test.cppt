@@ -1,0 +1,9 @@
+#include "inspect.h"
+
+using namespace upd;
+
+@case "inspects strings" {
+  @expect(upd::inspect("foobar") == "\"foobar\"");
+  @expect(upd::inspect("foo\nbar") == "\"foo\\nbar\"");
+}
+

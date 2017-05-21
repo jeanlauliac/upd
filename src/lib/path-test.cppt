@@ -1,0 +1,46 @@
+#include "path.h"
+
+@case "normalize_path() processes dot-dot" {
+  auto result = upd::normalize_path("foo/../bar");
+  @expect(result == "bar");
+}
+
+@case "normalize_path() processes dot" {
+  auto result = upd::normalize_path("foo/./bar");
+  @expect(result == "foo/bar");
+}
+
+@case "normalize_path() removes double separators" {
+  auto result = upd::normalize_path("foo//bar");
+  @expect(result == "foo/bar");
+}
+
+@case "normalize_path() removes end separator" {
+  auto result = upd::normalize_path("foo/bar/");
+  @expect(result == "foo/bar");
+}
+
+@case "normalize_path() processes absolute path" {
+  auto result = upd::normalize_path("/foo/bar");
+  @expect(result == "/foo/bar");
+}
+
+@case "normalize_path() processes bare absolute path" {
+  auto result = upd::normalize_path("/");
+  @expect(result == "/");
+}
+
+@case "get_absolute_path() works" {
+  auto result = upd::get_absolute_path("../foo/bar", "/beep/boop");
+  @expect(result == "/beep/foo/bar");
+}
+
+@case "get_root_path() works with relative path" {
+  auto result = upd::get_local_path("/beep/foo", "../foo/bar/glo", "/beep/boop");
+  @expect(result == "bar/glo");
+}
+
+@case "get_root_path() works with absolute path" {
+  auto result = upd::get_local_path("/beep/foo", "/beep/foo/bar/glo", "/beep/boop");
+  @expect(result == "bar/glo");
+}

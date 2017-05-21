@@ -1,0 +1,28 @@
+#include "../string_char_reader.h"
+#include "lexer.h"
+#include "lexer-test.h"
+
+using namespace upd;
+
+@case "tokenises single braces" {
+  string_char_reader reader("{}\n");
+  json::lexer<string_char_reader> lx(reader);
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_close)));
+  @expect(lx.next(expect_end_handler()));
+}
+
+@case "tokenises object" {
+  string_char_reader reader("{\"foo\": [\n\"bar\\\"glo\",\n42\n]}\n");
+  json::lexer<string_char_reader> lx(reader);
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
+  @expect(lx.next(expect_string_literal_handler("foo")));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::colon)));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::bracket_open)));
+  @expect(lx.next(expect_string_literal_handler("bar\"glo")));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::comma)));
+  @expect(lx.next(expect_number_literal_handler(42)));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::bracket_close)));
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_close)));
+  @expect(lx.next(expect_end_handler()));
+}
