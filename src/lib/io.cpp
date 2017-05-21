@@ -8,6 +8,7 @@
 namespace upd {
 namespace io {
 
+const char* ROOTFILE_SUFFIX = "/.updroot";
 const char* UPDFILE_SUFFIX = "/updfile.json";
 
 std::string getcwd_string() {
@@ -40,12 +41,12 @@ static bool is_regular_file(const std::string& path) {
 }
 
 std::string find_root_path(std::string path) {
-  bool found = is_regular_file(path + UPDFILE_SUFFIX);
+  bool found = is_regular_file(path + ROOTFILE_SUFFIX);
   while (!found && path != "/") {
     path = dirname_string(path);
-    found = is_regular_file(path + UPDFILE_SUFFIX);
+    found = is_regular_file(path + ROOTFILE_SUFFIX);
   }
-  if (!found) throw cannot_find_updfile_error();
+  if (!found) throw cannot_find_root_error();
   return path;
 }
 

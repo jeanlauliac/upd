@@ -12,6 +12,7 @@ namespace cli {
 enum class action {
   dot_graph,
   help,
+  init,
   root,
   shell_script,
   update,

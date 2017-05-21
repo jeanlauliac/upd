@@ -7,6 +7,7 @@
 namespace upd {
 namespace io {
 
+extern const char* ROOTFILE_SUFFIX;
 extern const char* UPDFILE_SUFFIX;
 
 /**
@@ -20,12 +21,17 @@ std::string getcwd_string();
  */
 std::string dirname_string(const std::string& path);
 
-struct cannot_find_updfile_error {};
+/**
+ * Thrown when no directory could be found containing a `.updroot` file,
+ * searching all the current working directory and its parents.
+ */
+struct cannot_find_root_error {};
 
 /**
- * Figure out the root directory containing the `Updfile`. This path is used as
- * the base for what we call "local paths". All these local paths are
- * canonicalized in terms of the root path.
+ * Figure out the root directory of the project. It is identified by containing
+ * a file named `.updroot`. This path is used as the base for what we call
+ * "local paths". All these local paths are canonicalized in terms of the root
+ * path.
  */
 std::string find_root_path(std::string origin_path);
 

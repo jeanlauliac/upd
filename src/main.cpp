@@ -345,10 +345,22 @@ update_map get_update_map(
 
 struct no_targets_error {};
 
+/**
+ * Thrown if we are trying to read the manifest of a project root but it
+ * cannot be found.
+ */
+struct missing_manifest_error {
+  missing_manifest_error(const std::string& root_path): root_path(root_path) {}
+  std::string root_path;
+};
+
 manifest::manifest read_manifest(const std::string& root_path) {
   std::ifstream file;
   file.exceptions(std::ifstream::badbit);
   file.open(root_path + io::UPDFILE_SUFFIX);
+  if (!file.is_open()) {
+    throw missing_manifest_error(root_path);
+  }
   istream_char_reader<std::ifstream> reader(file);
   json::lexer<istream_char_reader<std::ifstream>> lexer(reader);
   return manifest::parse(lexer);
@@ -416,6 +428,12 @@ void compile_itself(
   update_log::rewrite_file(log_file_path, temp_log_file_path, log_cache.records());
 }
 
+void create_root(const std::string& dir_path) {
+  std::ofstream file;
+  file.exceptions(std::ifstream::badbit);
+  file.open(dir_path + io::ROOTFILE_SUFFIX);
+}
+
 template <typename OStream>
 struct err_functor {
   err_functor(OStream& os, bool color_diagnostics):
@@ -463,6 +481,10 @@ int run_with_options(const cli::options& cli_opts) {
       return 0;
     }
     auto working_path = io::getcwd_string();
+    if (cli_opts.action == cli::action::init) {
+      create_root(working_path);
+      return 0;
+    }
     auto root_path = io::find_root_path(working_path);
     if (cli_opts.action == cli::action::root) {
       std::cout << root_path << std::endl;
@@ -478,9 +500,16 @@ int run_with_options(const cli::options& cli_opts) {
       cli_opts.action == cli::action::shell_script
     );
     return 0;
-  } catch (io::cannot_find_updfile_error) {
-    err() << "cannot find updfile.json in the current directory or "
-          << "in any of the parent directories" << std::endl;
+  } catch (io::cannot_find_root_error) {
+    err() << "cannot find a `.updroot' file in the current directory or "
+          << "in any of the parent directories" << std::endl
+          << "To start a new project in the current directory, "
+          << "run the `upd --init' command." << std::endl;
+  } catch (missing_manifest_error error) {
+    err() << "could not find manifest file `updfile.json' in root path `"
+          << error.root_path << "'" << std::endl
+          << "Did you forget to run the project's configuration script?"
+          << std::endl;
   } catch (io::ifstream_failed_error error) {
     err() << "failed to read file `" << error.file_path << "`" << std::endl;
   } catch (update_log::corruption_error) {

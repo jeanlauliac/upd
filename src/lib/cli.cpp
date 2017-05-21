@@ -47,6 +47,8 @@ options parse_options(const char* const argv[]) {
           setup_action(result, action_arg, arg, action::dot_graph);
         } else if (arg == "--shell-script") {
           setup_action(result, action_arg, arg, action::shell_script);
+        } else if (arg == "--init") {
+          setup_action(result, action_arg, arg, action::init);
         } else if (arg == "--color-diagnostics") {
           ++argv;
           if (*argv == nullptr) {
@@ -79,6 +81,7 @@ Operations
   --help                  Output usage help
   --root                  Output the root directory path
   --version               Output the semantic version numbers
+  --init                  Create a root directory at the current working path
   --dot-graph             Output a DOT-formatted graph of the output files
   --shell-script          Output a `bash' shell script meant to updates all the
                           specified output files
