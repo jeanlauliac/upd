@@ -2,6 +2,8 @@
 
 👟 Update files, fast.
 
+[![npm version](https://badge.fury.io/js/%40jeanlauliac%2Fupd.svg)](https://badge.fury.io/js/%40jeanlauliac%2Fupd)
+
 ## Description
 
 `upd` is a command-line utility that automatically determines what files in a
