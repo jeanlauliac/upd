@@ -1,0 +1,3 @@
+language: cpp
+install: yarn
+script: ./configure.js && yarn test
