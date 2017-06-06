@@ -6,7 +6,7 @@ const BUILD_DIR = ".build_files";
 
 const manifest = new updfile.Manifest();
 
-const compile_cpp_cli = manifest.cli_template('clang++', [
+const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
@@ -15,7 +15,7 @@ const compile_cpp_cli = manifest.cli_template('clang++', [
   {literals: [], variables: ["input_files"]},
 ]);
 
-const compile_c_cli = manifest.cli_template('clang++', [
+const compile_c_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
