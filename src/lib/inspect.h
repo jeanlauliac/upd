@@ -1,10 +1,14 @@
 #pragma once
 
+#include <array>
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace upd {
 
