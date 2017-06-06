@@ -37,12 +37,13 @@ function runUpd(args) {
 function runTestSuite() {
   rimraf.sync(ROOT_PATH);
   fs.mkdirSync(ROOT_PATH);
-  fs.writeFileSync(UPDFILE, JSON.stringify({}));
+  fs.writeFileSync(path.join(ROOT_PATH, '.updroot'), '');
   const reportedRootCout = runUpd(['--root']).toString('utf8');
   const reportedRoot = reportedRootCout.substr(0, reportedRootCout.length - 1);
   if (reportedRoot !== ROOT_PATH) {
     throw new Error('invalid root: `' + reportedRoot + '\'');
   }
+  fs.writeFileSync(UPDFILE, JSON.stringify({}));
   runUpd(['--all']);
   fs.writeFileSync(UPDFILE, JSON.stringify({
     "command_line_templates": [
