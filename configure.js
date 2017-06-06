@@ -9,7 +9,7 @@ const manifest = new updfile.Manifest();
 const compile_cpp_cli = manifest.cli_template('clang++', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-std=c++14", "-glldb", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
+    literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
   {literals: ["-I", "/usr/local/include"], variables: ["input_files"]},
@@ -18,7 +18,7 @@ const compile_cpp_cli = manifest.cli_template('clang++', [
 const compile_c_cli = manifest.cli_template('clang++', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-x", "c", "-glldb", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
+    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
   {literals: ["-I", "/usr/local/include"], variables: ["input_files"]},
@@ -77,7 +77,7 @@ const compiled_test_files = manifest.rule(
 const link_cpp_cli = manifest.cli_template('clang++', [
   {literals: ["-o"], variables: ["output_file"]},
   {
-    literals: ["-Wall", "-glldb", "-fcolor-diagnostics", "-std=c++14", "-L", "/usr/local/lib"],
+    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-std=c++14", "-L", "/usr/local/lib"],
     variables: ["input_files"]
   }
 ]);
