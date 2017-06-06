@@ -12,7 +12,7 @@ const compile_cpp_cli = manifest.cli_template('clang++', [
     literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
-  {literals: ["-I", "/usr/local/include"], variables: ["input_files"]},
+  {literals: [], variables: ["input_files"]},
 ]);
 
 const compile_c_cli = manifest.cli_template('clang++', [
@@ -21,7 +21,7 @@ const compile_c_cli = manifest.cli_template('clang++', [
     literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
-  {literals: ["-I", "/usr/local/include"], variables: ["input_files"]},
+  {literals: [], variables: ["input_files"]},
 ]);
 
 const cppt_sources = manifest.source("(src/lib/**/*).cppt");
@@ -77,7 +77,7 @@ const compiled_test_files = manifest.rule(
 const link_cpp_cli = manifest.cli_template('clang++', [
   {literals: ["-o"], variables: ["output_file"]},
   {
-    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-std=c++14", "-L", "/usr/local/lib"],
+    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-std=c++14"],
     variables: ["input_files"]
   }
 ]);

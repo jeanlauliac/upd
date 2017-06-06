@@ -21,7 +21,7 @@
     "test": "dist/upd dist/unit_tests && dist/unit_tests | faucet && e2e_tests/run.js",
     "preinstall": "mkdir -p dist && touch dist/upd",
     "install": "bash bootstrap/gen_upd.sh",
-    "prepublishOnly": "dist/upd dist/upd --shell-script >! bootstrap/gen_upd.sh"
+    "prepublishOnly": "dist/upd dist/upd --shell-script > bootstrap/gen_upd.sh"
   },
   "files": [
     "src",
