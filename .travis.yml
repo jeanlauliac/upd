@@ -1,6 +1,7 @@
+os: linux
 sudo: false
 dist: trusty
-language: cpp
+language: generic
 node_js:
   - "7"
 addons:
@@ -9,6 +10,7 @@ addons:
       - llvm-toolchain-trusty-4.0
     packages:
       - clang-4.0
+env: COMPILER_NAME=clang CXX=clang++-4.0 CC=clang-4.0
 before_install:
   - alias clang++="clang++-4.0"
 install: npm install
