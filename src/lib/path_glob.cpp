@@ -1,5 +1,6 @@
 #include "path_glob.h"
 #include <stack>
+#include <stdexcept>
 
 namespace upd {
 namespace path_glob {

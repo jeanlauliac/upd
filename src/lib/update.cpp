@@ -1,6 +1,7 @@
 #include "command_line_template.h"
 #include "depfile.h"
 #include "update.h"
+#include <stdexcept>
 
 namespace upd {
 

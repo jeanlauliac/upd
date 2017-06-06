@@ -1,5 +1,6 @@
 #include "io.h"
 #include <libgen.h>
+#include <stdexcept>
 #include <stdlib.h>
 #include <sys/param.h>
 #include <sys/stat.h>
