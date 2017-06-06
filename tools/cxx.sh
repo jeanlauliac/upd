@@ -5,4 +5,5 @@ if [ -z "$CXX" ]; then
   exit 1
 fi
 
+echo + $CXX $@ $CXXFLAGS
 $CXX $@ $CXXFLAGS

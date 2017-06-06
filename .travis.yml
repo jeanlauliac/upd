@@ -12,4 +12,4 @@ addons:
       - clang-4.0
 env: COMPILER_NAME=clang CXX=clang++-4.0 CC=clang-4.0
 install: npm install
-script: ./configure.js && npm test
+script: $(CXX) --version && ./configure.js && npm test
