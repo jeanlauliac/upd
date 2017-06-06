@@ -1,4 +1,5 @@
 #include "io.h"
+#include <cstring>
 #include <libgen.h>
 #include <stdexcept>
 #include <stdlib.h>
@@ -25,7 +26,7 @@ std::string dirname_string(const std::string& path) {
     throw std::runtime_error("string too long");
   }
   char temp[MAXPATHLEN];
-  strcpy(temp, path.c_str());
+  std::strcpy(temp, path.c_str());
   return dirname(temp);
 }
 

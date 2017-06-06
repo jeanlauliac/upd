@@ -25,6 +25,7 @@
 #include <map>
 #include <queue>
 #include <sstream>
+#include <stdexcept>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/param.h>
