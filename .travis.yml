@@ -1,3 +1,5 @@
 language: cpp
-install: yarn
-script: ./configure.js && yarn test
+node_js:
+  - "7"
+install: npm install
+script: ./configure.js && npm test
