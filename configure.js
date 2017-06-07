@@ -74,7 +74,7 @@ const compiled_test_files = manifest.rule(
   `${BUILD_DIR}/($1).o`
 );
 
-const link_cpp_cli = manifest.cli_template('clang++', [
+const link_cpp_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-o"], variables: ["output_file"]},
   {
     literals: ["-Wall", "-g", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"],
