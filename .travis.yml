@@ -1,7 +1,7 @@
 os: linux
 sudo: false
 dist: trusty
-language: generic
+language: node_js
 addons:
   apt:
     sources:
@@ -10,6 +10,7 @@ addons:
       - clang-3.9
       - libc++-dev
 env: COMPILER_NAME=clang CXX=clang++-3.9 CC=clang-3.9
-script:
+install:
   - npm install
+script:
   - ./configure.js && npm test
