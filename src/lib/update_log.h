@@ -73,9 +73,6 @@ struct cache {
   cache(const std::string& file_path, const records_by_file& cached_records):
     recorder_(file_path, record_mode::append),
     cached_records_(cached_records) {}
-  cache(cache&& other):
-    recorder_(std::move(other.recorder_)),
-    cached_records_(std::move(other.cached_records_)) {}
   records_by_file::iterator find(const std::string& local_file_path);
   records_by_file::iterator end();
   void record(const std::string& local_file_path, const file_record& record);
