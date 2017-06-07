@@ -9,7 +9,7 @@ const manifest = new updfile.Manifest();
 const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
+    literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -18,7 +18,7 @@ const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
 const compile_c_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
+    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},

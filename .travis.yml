@@ -10,6 +10,7 @@ addons:
       - llvm-toolchain-trusty-3.9
     packages:
       - clang-3.9
+      - libc++-dev
 env: COMPILER_NAME=clang CXX=clang++-3.9 CC=clang-3.9
 install: npm install
-script: $CXX --version && ./configure.js && npm test
+script: ./configure.js && npm test
