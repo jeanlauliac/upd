@@ -18,7 +18,7 @@ const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
 const compile_c_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-MMD", "-MF"],
+    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -77,7 +77,7 @@ const compiled_test_files = manifest.rule(
 const link_cpp_cli = manifest.cli_template('clang++', [
   {literals: ["-o"], variables: ["output_file"]},
   {
-    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-std=c++14"],
+    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"],
     variables: ["input_files"]
   }
 ]);
