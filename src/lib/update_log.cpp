@@ -2,13 +2,14 @@
 #include "update_log.h"
 #include <iomanip>
 #include <sstream>
+#include <utility>
 
 namespace upd {
 namespace update_log {
 
 recorder::recorder(const std::string& file_path, record_mode mode) {
   log_file_.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-  log_file_.open(file_path, mode == record_mode::append ? std::ios::app : 0);
+  log_file_.open(file_path, mode == record_mode::append ? std::ios::app : std::ios::trunc);
   log_file_ << std::setfill('0') << std::setw(16) << std::hex;
 }
 
