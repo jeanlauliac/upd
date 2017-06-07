@@ -80,7 +80,7 @@ const link_cpp_cli = manifest.cli_template('tools/cxx.sh', [
     literals: ["-Wall", "-g", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"],
     variables: ["input_files"]
   },
-  {literals: ["-lc++abi", "-lpthread"]},
+  {literals: ["-lpthread"]},
 ]);
 
 manifest.rule(
