@@ -2,6 +2,7 @@
 #include "depfile.h"
 #include "update.h"
 #include <stdexcept>
+#include <sys/wait.h>
 
 namespace upd {
 

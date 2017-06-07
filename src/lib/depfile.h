@@ -1,6 +1,8 @@
 #pragma once
 #include <fstream>
+#include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <vector>
 
 namespace upd {
