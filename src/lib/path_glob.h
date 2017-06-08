@@ -355,6 +355,8 @@ private:
       }
       ent_ = dir_reader_.next();
     }
+
+    std::cerr << "  " << (int)ent_->d_type << "  " << ent_->d_name << std::endl;
     return true;
   }
 
@@ -367,6 +369,8 @@ private:
     bookmarks_ = next_dir_iter->second;
     pending_dirs_.erase(next_dir_iter);
     dir_reader_.open(root_path_ + path_prefix_);
+
+    std::cerr << root_path_ + path_prefix_ << std::endl;
     return true;
   }
 

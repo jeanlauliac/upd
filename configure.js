@@ -3,7 +3,7 @@
 const updfile = require('./tools/lib/updfile');
 
 const options = {
-  compiler_binary: 'clang++',
+  compilerBinary: 'clang++',
 };
 
 const argv = process.argv;
