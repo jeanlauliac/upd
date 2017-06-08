@@ -2,11 +2,28 @@
 
 const updfile = require('./tools/lib/updfile');
 
+const options = {
+  compiler_binary: 'clang++',
+};
+
+const argv = process.argv;
+for (let i = 2; i < argv.length; ++i) {
+  const arg = argv[i];
+  switch (arg) {
+    case '--compiler':
+      if (++i === argv.length) throw new Error('`--compiler` needs value');
+      options.compilerBinary = argv[i];
+      break;
+    default:
+      throw new Error('unrecognized argument: `' + arg + '`');
+  }
+}
+
 const BUILD_DIR = ".build_files";
 
 const manifest = new updfile.Manifest();
 
-const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
+const compile_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-MMD", "-MF"],
@@ -15,7 +32,7 @@ const compile_cpp_cli = manifest.cli_template('tools/cxx.sh', [
   {literals: [], variables: ["input_files"]},
 ]);
 
-const compile_c_cli = manifest.cli_template('tools/cxx.sh', [
+const compile_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
@@ -74,7 +91,7 @@ const compiled_test_files = manifest.rule(
   `${BUILD_DIR}/($1).o`
 );
 
-const link_cpp_cli = manifest.cli_template('tools/cxx.sh', [
+const link_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-o"], variables: ["output_file"]},
   {
     literals: ["-Wall", "-g", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"],
