@@ -4,6 +4,7 @@
 #include "io.h"
 #include <iostream>
 #include <memory>
+#include <sys/stat.h>
 #include <unordered_map>
 #include <vector>
 
@@ -194,6 +195,8 @@ private:
   typedef std::unordered_map<std::string, std::vector<bookmark>>
     pending_dirs_type;
 
+  enum class ent_type { unknown, regular, directory, unsupported };
+
 public:
   matcher(const std::string& root_path, const std::vector<pattern>& patterns):
     root_path_(root_path),
@@ -212,15 +215,15 @@ public:
       const auto& segments = patterns_[bookmark.pattern_ix].segments;
       auto segment_ix = bookmark.segment_ix;
       const auto& name_pattern = segments[segment_ix].ent_name;
-      if (segments[segment_ix].has_wildcard && ent_->d_type == DT_DIR) {
+      if (segments[segment_ix].has_wildcard && get_type_() == ent_type::directory) {
         push_wildcard_match_(name, bookmark);
       }
       std::vector<size_t> indices;
       if (!glob::match(name_pattern, name, indices)) continue;
-      if (ent_->d_type == DT_DIR && segment_ix + 1 < segments.size()) {
+      if (get_type_() == ent_type::directory && segment_ix + 1 < segments.size()) {
         push_ent_name_match_(name, bookmark, indices);
       }
-      if (ent_->d_type == DT_REG && segment_ix == segments.size() - 1) {
+      if (get_type_() == ent_type::regular && segment_ix == segments.size() - 1) {
         finalize_match_(next_match, name, bookmark, indices);
         return true;
       }
@@ -244,6 +247,24 @@ private:
       });
     }
     return pending_dirs_type({ { "/", std::move(initial_bookmarks) } });
+  }
+
+  ent_type get_type_() {
+    if (ent_type_ != ent_type::unknown) {
+      return ent_type_;
+    }
+    ent_type_ = ent_type::unsupported;
+    struct stat stbuf;
+    auto ent_path = root_path_ + path_prefix_ + ent_->d_name;
+    if (lstat(ent_path.c_str(), &stbuf) != 0) {
+      throw std::runtime_error("lstat failed");
+    }
+    if (S_ISDIR(stbuf.st_mode)) {
+      ent_type_ = ent_type::directory;
+    } else if (S_ISREG(stbuf.st_mode)) {
+      ent_type_ = ent_type::regular;
+    }
+    return ent_type_;
   }
 
   void push_wildcard_match_(const std::string& name, const bookmark& target) {
@@ -355,8 +376,19 @@ private:
       }
       ent_ = dir_reader_.next();
     }
-
-    std::cerr << "  " << (int)ent_->d_type << "  " << ent_->d_name << std::endl;
+    switch (ent_->d_type) {
+      case DT_UNKNOWN:
+        ent_type_ = ent_type::unknown;
+        break;
+      case DT_REG:
+        ent_type_ = ent_type::regular;
+        break;
+      case DT_DIR:
+        ent_type_ = ent_type::directory;
+        break;
+      default:
+        ent_type_ = ent_type::unsupported;
+    }
     return true;
   }
 
@@ -369,8 +401,6 @@ private:
     bookmarks_ = next_dir_iter->second;
     pending_dirs_.erase(next_dir_iter);
     dir_reader_.open(root_path_ + path_prefix_);
-
-    std::cerr << root_path_ + path_prefix_ << std::endl;
     return true;
   }
 
@@ -382,6 +412,7 @@ private:
   std::vector<bookmark> bookmarks_;
   size_t bookmark_ix_;
   dirent* ent_;
+  ent_type ent_type_;
 };
 
 }
