@@ -3,6 +3,7 @@
 👟 Update files, fast.
 
 [![npm version](https://badge.fury.io/js/%40jeanlauliac%2Fupd.svg)](https://badge.fury.io/js/%40jeanlauliac%2Fupd)
+[![Build Status](https://travis-ci.org/jeanlauliac/upd.svg?branch=master)](https://travis-ci.org/jeanlauliac/upd)
 
 ## Description
 
