@@ -359,6 +359,20 @@ private:
   ElementHandler handler_;
 };
 
+template <typename ElementHandler>
+struct vector_handler:
+  public all_unexpected_elements_handler
+  <std::vector<typename ElementHandler::return_type>> {
+    typedef typename ElementHandler::return_type element_type;
+    typedef std::vector<element_type> return_type;
+    template <typename ArrayReader>
+    return_type array(ArrayReader& read_array) const {
+      vector_elements_handler<ElementHandler> handler;
+      read_array(handler);
+      return handler.result();
+    }
+  };
+
 struct command_line_template_handler:
   public all_unexpected_elements_handler<command_line_template> {
     template <typename ObjectReader>
@@ -382,15 +396,6 @@ struct command_line_template_handler:
     }
   };
 
-struct command_line_templates_handler: public all_unexpected_elements_handler<std::vector<command_line_template>> {
-  template <typename ArrayReader>
-  std::vector<command_line_template> array(ArrayReader& read_array) const {
-    vector_elements_handler<command_line_template_handler> handler;
-    read_array(handler);
-    return handler.result();
-  }
-};
-
 struct manifest_expression_handler: public all_unexpected_elements_handler<manifest> {
   typedef manifest return_type;
 
@@ -411,7 +416,7 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
       }
       if (field_name == "command_line_templates") {
         result.command_line_templates =
-          read_field_value.read(command_line_templates_handler());
+          read_field_value.read(vector_handler<command_line_template_handler>());
         return;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
