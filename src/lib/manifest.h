@@ -246,57 +246,27 @@ struct update_rule_handler:
     }
   };
 
-struct read_string_array_array_handler: public all_unexpected_elements_handler<void> {
-  void string_literal(const std::string& value) {
-    result_.push_back(value);
-  }
-
-  const std::vector<std::string>& result() const { return result_; };
-
-private:
-  std::vector<std::string> result_;
-};
-
-struct read_string_array_handler: public all_unexpected_elements_handler<std::vector<std::string>> {
-  template <typename ArrayReader>
-  std::vector<std::string> array(ArrayReader& read_array) const {
-    read_string_array_array_handler handler;
-    read_array(handler);
-    return handler.result();
+struct string_handler: public all_unexpected_elements_handler<std::string> {
+  std::string string_literal(const std::string& value) const {
+    return value;
   }
 };
 
-struct read_variable_arg_array_array_handler: public all_unexpected_elements_handler<void> {
-  void string_literal(const std::string& value) {
-    if (value == "input_files") {
-      result_.push_back(command_line_template_variable::input_files);
-      return;
+struct command_line_template_variable_handler:
+  public all_unexpected_elements_handler<command_line_template_variable> {
+    command_line_template_variable string_literal(const std::string& value) {
+      if (value == "input_files") {
+        return command_line_template_variable::input_files;
+      }
+      if (value == "output_file") {
+        return command_line_template_variable::output_files;
+      }
+      if (value == "dependency_file") {
+        return command_line_template_variable::dependency_file;
+      }
+      throw std::runtime_error("unknown command line template variable arg");
     }
-    if (value == "output_file") {
-      result_.push_back(command_line_template_variable::output_files);
-      return;
-    }
-    if (value == "dependency_file") {
-      result_.push_back(command_line_template_variable::dependency_file);
-      return;
-    }
-    throw std::runtime_error("unknown command line template variable arg");
-  }
-
-  const std::vector<command_line_template_variable>& result() const { return result_; };
-
-private:
-  std::vector<command_line_template_variable> result_;
-};
-
-struct read_variable_arg_array_handler: public all_unexpected_elements_handler<std::vector<command_line_template_variable>> {
-  template <typename ArrayReader>
-  std::vector<command_line_template_variable> array(ArrayReader& read_array) const {
-    read_variable_arg_array_array_handler handler;
-    read_array(handler);
-    return handler.result();
-  }
-};
+  };
 
 struct command_line_template_part_handler:
   public all_unexpected_elements_handler<command_line_template_part> {
@@ -308,11 +278,13 @@ struct command_line_template_part_handler:
         typename ObjectReader::field_value_reader& read_field_value
       ) {
         if (field_name == "literals") {
-          part.literal_args = read_field_value.read(read_string_array_handler());
+          read_vector_field_value<string_handler>
+            (read_field_value, part.literal_args);
           return;
         }
         if (field_name == "variables") {
-          part.variable_args = read_field_value.read(read_variable_arg_array_handler());
+          read_vector_field_value<command_line_template_variable_handler>
+            (read_field_value, part.variable_args);
           return;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -335,7 +307,8 @@ struct command_line_template_handler:
           return;
         }
         if (field_name == "arguments") {
-          read_vector_field_value<command_line_template_part_handler>(read_field_value, tpl.parts);
+          read_vector_field_value<command_line_template_part_handler>
+            (read_field_value, tpl.parts);
           return;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -355,15 +328,18 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
       typename ObjectReader::field_value_reader& read_field_value
     ) {
       if (field_name == "source_patterns") {
-        read_vector_field_value<source_pattern_handler>(read_field_value, result.source_patterns);
+        read_vector_field_value<source_pattern_handler>
+          (read_field_value, result.source_patterns);
         return;
       }
       if (field_name == "rules") {
-        read_vector_field_value<update_rule_handler>(read_field_value, result.rules);
+        read_vector_field_value<update_rule_handler>
+          (read_field_value, result.rules);
         return;
       }
       if (field_name == "command_line_templates") {
-        read_vector_field_value<command_line_template_handler>(read_field_value, result.command_line_templates);
+        read_vector_field_value<command_line_template_handler>
+          (read_field_value, result.command_line_templates);
         return;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
