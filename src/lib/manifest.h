@@ -298,42 +298,28 @@ struct read_variable_arg_array_handler: public all_unexpected_elements_handler<s
   }
 };
 
-struct command_line_segments_array_handler: public all_unexpected_elements_handler<void> {
-
-  template <typename ObjectReader>
-  void object(ObjectReader& read_object) {
-    command_line_template_part part;
-    read_object([&part](
-      const std::string& field_name,
-      typename ObjectReader::field_value_reader& read_field_value
-    ) {
-      if (field_name == "literals") {
-        part.literal_args = read_field_value.read(read_string_array_handler());
-        return;
-      }
-      if (field_name == "variables") {
-        part.variable_args = read_field_value.read(read_variable_arg_array_handler());
-        return;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
-    });
-    result_.push_back(part);
-  }
-
-  const std::vector<command_line_template_part>& result() const { return result_; };
-
-private:
-  std::vector<command_line_template_part> result_;
-};
-
-struct command_line_segments_handler: public all_unexpected_elements_handler<std::vector<command_line_template_part>> {
-  template <typename ArrayReader>
-  std::vector<command_line_template_part> array(ArrayReader& read_array) const {
-    command_line_segments_array_handler handler;
-    read_array(handler);
-    return handler.result();
-  }
-};
+struct command_line_template_part_handler:
+  public all_unexpected_elements_handler<command_line_template_part> {
+    template <typename ObjectReader>
+    command_line_template_part object(ObjectReader& read_object) const {
+      command_line_template_part part;
+      read_object([&part](
+        const std::string& field_name,
+        typename ObjectReader::field_value_reader& read_field_value
+      ) {
+        if (field_name == "literals") {
+          part.literal_args = read_field_value.read(read_string_array_handler());
+          return;
+        }
+        if (field_name == "variables") {
+          part.variable_args = read_field_value.read(read_variable_arg_array_handler());
+          return;
+        }
+        throw std::runtime_error("doesn't know field `" + field_name + "`");
+      });
+      return part;
+    }
+  };
 
 struct command_line_template_handler:
   public all_unexpected_elements_handler<command_line_template> {
@@ -349,7 +335,7 @@ struct command_line_template_handler:
           return;
         }
         if (field_name == "arguments") {
-          tpl.parts = read_field_value.read(command_line_segments_handler());
+          read_vector_field_value<command_line_template_part_handler>(read_field_value, tpl.parts);
           return;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
