@@ -176,44 +176,30 @@ struct read_rule_output_handler: public all_unexpected_elements_handler<substitu
   }
 };
 
-struct rule_inputs_array_handler: public all_unexpected_elements_handler<void> {
-
-  template <typename ObjectReader>
-  void object(ObjectReader& read_object) {
-    update_rule_input input;
-    read_object([&input](
-      const std::string& field_name,
-      typename ObjectReader::field_value_reader& read_field_value
-    ) {
-      if (field_name == "source_ix") {
-        input.input_ix = read_field_value.read(read_size_t_handler());
-        input.type = update_rule_input_type::source;
-        return;
-      }
-      if (field_name == "rule_ix") {
-        input.input_ix = read_field_value.read(read_size_t_handler());
-        input.type = update_rule_input_type::rule;
-        return;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
-    });
-    result_.push_back(input);
-  }
-
-  const std::vector<update_rule_input>& result() const { return result_; };
-
-private:
-  std::vector<update_rule_input> result_;
-};
-
-struct rule_inputs_handler: public all_unexpected_elements_handler<std::vector<update_rule_input>> {
-  template <typename ArrayReader>
-  std::vector<update_rule_input> array(ArrayReader& read_array) const {
-    rule_inputs_array_handler handler;
-    read_array(handler);
-    return handler.result();
-  }
-};
+struct rule_input_handler:
+  public all_unexpected_elements_handler<update_rule_input> {
+    template <typename ObjectReader>
+    update_rule_input object(ObjectReader& read_object) const {
+      update_rule_input input;
+      read_object([&input](
+        const std::string& field_name,
+        typename ObjectReader::field_value_reader& read_field_value
+      ) {
+        if (field_name == "source_ix") {
+          input.input_ix = read_field_value.read(read_size_t_handler());
+          input.type = update_rule_input_type::source;
+          return;
+        }
+        if (field_name == "rule_ix") {
+          input.input_ix = read_field_value.read(read_size_t_handler());
+          input.type = update_rule_input_type::rule;
+          return;
+        }
+        throw std::runtime_error("doesn't know field `" + field_name + "`");
+      });
+      return input;
+    }
+  };
 
 struct update_rule_handler:
   public all_unexpected_elements_handler<update_rule> {
@@ -233,11 +219,13 @@ struct update_rule_handler:
           return;
         }
         if (field_name == "inputs") {
-          rule.inputs = read_field_value.read(rule_inputs_handler());
+          read_vector_field_value<rule_input_handler>
+            (read_field_value, rule.inputs);
           return;
         }
         if (field_name == "dependencies") {
-          rule.dependencies = read_field_value.read(rule_inputs_handler());
+          read_vector_field_value<rule_input_handler>
+            (read_field_value, rule.dependencies);
           return;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
