@@ -332,38 +332,60 @@ struct command_line_segments_handler: public all_unexpected_elements_handler<std
   }
 };
 
-struct command_line_templates_array_handler: public all_unexpected_elements_handler<void> {
-
+template <typename ElementHandler>
+struct vector_elements_handler {
+  typedef void return_type;
+  typedef typename ElementHandler::return_type element_type;
+  vector_elements_handler() {}
+  vector_elements_handler(ElementHandler handler): handler_(handler) {}
   template <typename ObjectReader>
   void object(ObjectReader& read_object) {
-    command_line_template tpl;
-    read_object([&tpl](
-      const std::string& field_name,
-      typename ObjectReader::field_value_reader& read_field_value
-    ) {
-      if (field_name == "binary_path") {
-        tpl.binary_path = read_field_value.read(read_string_handler());
-        return;
-      }
-      if (field_name == "arguments") {
-        tpl.parts = read_field_value.read(command_line_segments_handler());
-        return;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
-    });
-    result_.push_back(tpl);
+    result_.push_back(handler_.object(read_object));
   }
-
-  const std::vector<command_line_template>& result() const { return result_; };
-
+  template <typename ArrayReader>
+  void array(ArrayReader& read_array) {
+    result_.push_back(handler_.array(read_array));
+  }
+  void string_literal(const std::string& value) {
+    result_.push_back(handler_.string_literal(value));
+  }
+  void number_literal(float number) {
+    result_.push_back(handler_.number_literal(number));
+  }
+  const std::vector<element_type>&
+  result() const { return result_; }
 private:
-  std::vector<command_line_template> result_;
+  std::vector<element_type> result_;
+  ElementHandler handler_;
 };
+
+struct command_line_template_handler:
+  public all_unexpected_elements_handler<command_line_template> {
+    template <typename ObjectReader>
+    command_line_template object(ObjectReader& read_object) {
+      command_line_template tpl;
+      read_object([&tpl](
+        const std::string& field_name,
+        typename ObjectReader::field_value_reader& read_field_value
+      ) {
+        if (field_name == "binary_path") {
+          tpl.binary_path = read_field_value.read(read_string_handler());
+          return;
+        }
+        if (field_name == "arguments") {
+          tpl.parts = read_field_value.read(command_line_segments_handler());
+          return;
+        }
+        throw std::runtime_error("doesn't know field `" + field_name + "`");
+      });
+      return tpl;
+    }
+  };
 
 struct command_line_templates_handler: public all_unexpected_elements_handler<std::vector<command_line_template>> {
   template <typename ArrayReader>
   std::vector<command_line_template> array(ArrayReader& read_array) const {
-    command_line_templates_array_handler handler;
+    vector_elements_handler<command_line_template_handler> handler;
     read_array(handler);
     return handler.result();
   }
