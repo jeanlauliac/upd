@@ -88,6 +88,63 @@ struct all_unexpected_elements_handler {
   }
 };
 
+template <typename ElementHandler>
+struct vector_elements_handler {
+  typedef void return_type;
+  typedef typename ElementHandler::return_type element_type;
+  typedef typename std::vector<element_type> vector_type;
+
+  vector_elements_handler(vector_type& result): result_(result) {}
+
+  template <typename ObjectReader>
+  void object(ObjectReader& read_object) {
+    result_.push_back(handler_.object(read_object));
+  }
+
+  template <typename ArrayReader>
+  void array(ArrayReader& read_array) {
+    result_.push_back(handler_.array(read_array));
+  }
+
+  void string_literal(const std::string& value) {
+    result_.push_back(handler_.string_literal(value));
+  }
+
+  void number_literal(float number) {
+    result_.push_back(handler_.number_literal(number));
+  }
+
+private:
+  std::vector<element_type>& result_;
+  ElementHandler handler_;
+};
+
+template <typename ElementHandler>
+struct vector_handler: public all_unexpected_elements_handler<void> {
+  typedef typename ElementHandler::return_type element_type;
+  typedef vector_elements_handler<ElementHandler> elements_handler_type;
+  typedef typename elements_handler_type::vector_type vector_type;
+
+  vector_handler(vector_type& result): handler_(result) {}
+
+  template <typename ArrayReader>
+  void array(ArrayReader& read_array) {
+    read_array(handler_);
+  }
+
+private:
+  elements_handler_type handler_;
+};
+
+template <typename ElementHandler, typename FieldValueReader>
+void read_vector_field_value(
+  FieldValueReader read_field_value,
+  typename vector_handler<ElementHandler>::vector_type& result
+) {
+  vector_handler<ElementHandler> handler(result);
+  read_field_value.read(handler);
+}
+
 struct source_pattern_array_handler: public all_unexpected_elements_handler<void> {
   source_pattern_array_handler(std::vector<path_glob::pattern>& source_patterns):
     source_patterns_(source_patterns) {}
@@ -332,47 +389,6 @@ struct command_line_segments_handler: public all_unexpected_elements_handler<std
   }
 };
 
-template <typename ElementHandler>
-struct vector_elements_handler {
-  typedef void return_type;
-  typedef typename ElementHandler::return_type element_type;
-  vector_elements_handler() {}
-  vector_elements_handler(ElementHandler handler): handler_(handler) {}
-  template <typename ObjectReader>
-  void object(ObjectReader& read_object) {
-    result_.push_back(handler_.object(read_object));
-  }
-  template <typename ArrayReader>
-  void array(ArrayReader& read_array) {
-    result_.push_back(handler_.array(read_array));
-  }
-  void string_literal(const std::string& value) {
-    result_.push_back(handler_.string_literal(value));
-  }
-  void number_literal(float number) {
-    result_.push_back(handler_.number_literal(number));
-  }
-  const std::vector<element_type>&
-  result() const { return result_; }
-private:
-  std::vector<element_type> result_;
-  ElementHandler handler_;
-};
-
-template <typename ElementHandler>
-struct vector_handler:
-  public all_unexpected_elements_handler
-  <std::vector<typename ElementHandler::return_type>> {
-    typedef typename ElementHandler::return_type element_type;
-    typedef std::vector<element_type> return_type;
-    template <typename ArrayReader>
-    return_type array(ArrayReader& read_array) const {
-      vector_elements_handler<ElementHandler> handler;
-      read_array(handler);
-      return handler.result();
-    }
-  };
-
 struct command_line_template_handler:
   public all_unexpected_elements_handler<command_line_template> {
     template <typename ObjectReader>
@@ -415,8 +431,7 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
         return;
       }
       if (field_name == "command_line_templates") {
-        result.command_line_templates =
-          read_field_value.read(vector_handler<command_line_template_handler>());
+        read_vector_field_value<command_line_template_handler>(read_field_value, result.command_line_templates);
         return;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
