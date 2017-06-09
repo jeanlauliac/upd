@@ -145,40 +145,12 @@ void read_vector_field_value(
   read_field_value.read(handler);
 }
 
-struct source_pattern_array_handler: public all_unexpected_elements_handler<void> {
-  source_pattern_array_handler(std::vector<path_glob::pattern>& source_patterns):
-    source_patterns_(source_patterns) {}
-
-  void string_literal(const std::string& pattern_string) const {
-    source_patterns_.push_back(path_glob::parse(pattern_string));
-  }
-
-private:
-  std::vector<path_glob::pattern>& source_patterns_;
-};
-
-struct source_patterns_handler: public all_unexpected_elements_handler<void> {
-  source_patterns_handler(std::vector<path_glob::pattern>& source_patterns):
-    source_patterns_(source_patterns) {}
-
-  template <typename ArrayReader>
-  void array(ArrayReader& read_array) const {
-    source_pattern_array_handler handler(source_patterns_);
-    read_array(handler);
-  }
-
-private:
-  std::vector<path_glob::pattern>& source_patterns_;
-};
-
-template <typename Lexer>
-void parse_source_patterns(
-  json::field_value_reader<Lexer>& read_field_value,
-  std::vector<path_glob::pattern>& source_patterns
-) {
-  source_patterns_handler handler(source_patterns);
-  read_field_value.read(handler);
-}
+struct source_pattern_handler:
+  public all_unexpected_elements_handler<path_glob::pattern> {
+    path_glob::pattern string_literal(const std::string& pattern_string) const {
+      return path_glob::parse(pattern_string);
+    }
+  };
 
 struct expected_integer_number_error {};
 
@@ -423,7 +395,7 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
       typename ObjectReader::field_value_reader& read_field_value
     ) {
       if (field_name == "source_patterns") {
-        parse_source_patterns(read_field_value, result.source_patterns);
+        read_vector_field_value<source_pattern_handler>(read_field_value, result.source_patterns);
         return;
       }
       if (field_name == "rules") {
