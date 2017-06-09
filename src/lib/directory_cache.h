@@ -11,7 +11,9 @@ struct failed_to_create_directory_error {};
 
 /**
  * Keep track of directories that exist or not, and allows creating missing
- * directories.
+ * directories. It's sorta similar to the command line `mkdir -p`, but keeps
+ * track of existing folder for ever. For a long-lived update process, we'd
+ * want to add cache invalidation.
  */
 template <mkdir_type Mkdir>
 struct directory_cache {
@@ -22,7 +24,7 @@ struct directory_cache {
 
   /**
    * The directory is created if it doesn't already exist, along with its
-   * parents.
+   * parents. `local_path` is considered relative to the root path.
    */
   void create(const std::string& local_path) {
     if (local_path == ".") return;

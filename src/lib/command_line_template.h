@@ -7,7 +7,8 @@ namespace upd {
 
 /**
  * A command line template contains a number of variables that are replaced when
- * updating a particular file.
+ * updating a particular file. For example `input_files` would get replaced
+ * by a vector of all the input files.
  */
 enum class command_line_template_variable {
   input_files,
@@ -70,6 +71,12 @@ struct command_line {
   std::vector<std::string> args;
 };
 
+/**
+ * This is useful to convert distinct command line arguments into a command line
+ * string, that could be used for example inside a shell. For example, spaces
+ * need to be escaped since they are already used as separator between each
+ * arguments.
+ */
 template <typename OStream>
 OStream& shell_escape(OStream& os, const std::string& value) {
   for (size_t ix = 0; ix < value.size(); ++ix) {
@@ -102,6 +109,11 @@ OStream& shell_escape(OStream& os, const std::string& value) {
   return os;
 }
 
+/**
+ * Convert a command line into an equivalent command line string that can be
+ * used later in a shell. This is not necessary to run a command line per se,
+ * that can be executed using `exec()` and the like.
+ */
 template <typename OStream>
 OStream& operator<<(OStream& os, command_line value) {
   shell_escape(os, value.binary_path);
@@ -112,7 +124,8 @@ OStream& operator<<(OStream& os, command_line value) {
 }
 
 /**
- * Describe the data necessary to replace variables in a command line template.
+ * Describe the contextual data necessary to replace variables in a command line
+ * template.
  */
 struct command_line_parameters {
   std::string dependency_file;

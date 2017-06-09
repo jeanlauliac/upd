@@ -22,35 +22,6 @@ struct inspect_options {
   unsigned int depth;
 };
 
-// template <typename FieldMapper>
-// std::string pretty_print_struct(
-//   const std::string& name,
-//   const inspect_options& options,
-//   FieldMapper field_mapper
-// ) {
-//   inspect_options inner_options =
-//     {.depth = options.depth + 1, .global = options.global};
-//   std::map<std::string, std::string> string_map = field_mapper(inner_options);
-//   std::ostringstream stream;
-//   std::string indent_spaces =
-//     std::string((options.depth + 1) * options.global.indent, ' ');
-//   stream << name << '(';
-//   if (string_map.size() == 0) {
-//     stream << ')';
-//     return stream.str();
-//   }
-//   stream << '{';
-//   for (auto iter = string_map.begin(); iter != string_map.end(); ++iter) {
-//     if (iter != string_map.begin()) {
-//       stream << ',';
-//     }
-//     stream << std::endl << indent_spaces
-//       << '.' << iter->first << " = " << iter->second;
-//   }
-//   stream << " })";
-//   return stream.str();
-// }
-
 std::string inspect(size_t value, const inspect_options& options);
 std::string inspect(const std::string& value, const inspect_options& options);
 std::string inspect(const char* value, const inspect_options& options);
@@ -156,7 +127,7 @@ typename std::enable_if<Ix == sizeof...(Values), void>::type
 inspect_tuple(collection_inspector&, const std::tuple<Values...>&) {}
 
 template <size_t Ix, typename... Values>
-typename std::enable_if<Ix < sizeof...(Values), void>::type
+typename std::enable_if<Ix <sizeof...(Values), void>::type
 inspect_tuple(
   collection_inspector& insp,
   const std::tuple<Values...>& tuple

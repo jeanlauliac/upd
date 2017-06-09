@@ -29,7 +29,7 @@ struct matcher {
    * Take for example, the pattern `foo*bar` and the candidate `foobarglobar`.
    * At first we'd match `foobar`, but since it doesn't match the whole
    * candidate, it's not correct. In that case we go back, and we consider the
-   * first "foo" as being matched by the wildcard instead of the literal.
+   * first `bar` as being matched by the wildcard instead of the literal.
    */
   bool operator()() {
     clear();
@@ -51,21 +51,36 @@ struct matcher {
   }
 
   /**
-   * Try to match all of the known segments within the candidate. For each
-   * segment we match the literal. If it doesn't match, we may be able to
-   * go back and include more characters in a wildcard.
+   * Try to match all of the known segments within the candidate. The outer loop
+   * iterate the segments, as long as we could match the current segment. The
+   * inner loop tries to match both the prefix and the literal of the current
+   * segment. A prefix is something like a wildcard, a literal is a plain
+   * string.
+   *
+   * Ex. `*foo` is a segment. If we cannot match, we try again from the last
+   * wildcard (this might change which is the current segment). For example when
+   * trying to match `*foo` with `foxfoo`, we'll match `fo` at first, but
+   * realise the `x` doesn't match. In that case, we restore the state back to
+   * the wildcard plus one character, `o`. It doesn't match, so we continue,
+   * until `fox` is found to be part of the wildcard, and `foo` matches the
+   * literal.
    */
   bool match_all_segments() {
     bool does_match;
     do {
       do {
-        does_match = match_prefix() && match_literal(target[segment_ix].literal);
+        does_match =
+          match_prefix() &&
+          match_literal(target[segment_ix].literal);
       } while (!does_match && restore_wildcard());
       ++segment_ix;
     } while (does_match && start_new_segment());
     return does_match;
   }
 
+  /**
+   * A wildcard is always matched because it can match zero characters.
+   */
   bool match_prefix() {
     switch (target[segment_ix].prefix) {
       case placeholder::none:
@@ -83,12 +98,20 @@ struct matcher {
     return true;
   }
 
+  /**
+   * A wildcard is an opportunity to match any amount of random characters we
+   * want! So we keep track of them when we get one, so that later we can come
+   * back to it. See the main algorithm.
+   */
   void start_wildcard() {
     bookmark_ix = candidate_ix;
     last_wildcard_segment_ix = segment_ix;
     has_bookmark = true;
   }
 
+  /**
+   * A single wildcard cannot match periods, same as in a shell.
+   */
   bool match_single_wildcard() {
     if (candidate_ix == candidate.size() || candidate[candidate_ix] == '.') {
       return false;

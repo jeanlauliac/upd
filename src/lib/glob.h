@@ -58,6 +58,9 @@ bool match(const pattern& target, const std::string& candidate);
  * If it matches, the `indices` vector has the same size as the number of
  * segments, and it indicates the starting index for each segment that was
  * correctly matched.
+ *
+ * For example `foo*.cpp` has 2 segments, `foo` and `*.cpp`. If it matches
+ * `foobar.cpp`, then the indices will be `{ 0, 3 }`.
  */
 bool match(
   const pattern& target,
