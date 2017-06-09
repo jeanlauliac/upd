@@ -38,6 +38,7 @@ struct capture_point {
    * at an existing segment.
    */
   size_t segment_ix;
+
   /**
    * The type of the path part we want to capture, either a wildcard or an
    * entity name. If we're capturing a wildcard, its entire match will be
@@ -45,6 +46,7 @@ struct capture_point {
    * the `ent_name_segment_ix` decribes the further sub-division to be included.
    */
   capture_point_type type;
+
   /**
    * This field is exclusively valid for a capture point of type `ent_name`.
    * It describe where the capture should start or end inside the entity
@@ -104,6 +106,7 @@ struct segment {
    * match all the C++ files of a particular directory.
    */
   glob::pattern ent_name;
+
   /**
    * If `true`, then we're trying to match a folder wildcard. This field is the
    * only difference between, for example, `** / *.cpp`, and `*.cpp`: they have
@@ -376,20 +379,17 @@ private:
       }
       ent_ = dir_reader_.next();
     }
-    switch (ent_->d_type) {
-      case DT_UNKNOWN:
-        ent_type_ = ent_type::unknown;
-        break;
-      case DT_REG:
-        ent_type_ = ent_type::regular;
-        break;
-      case DT_DIR:
-        ent_type_ = ent_type::directory;
-        break;
-      default:
-        ent_type_ = ent_type::unsupported;
-    }
+    ent_type_ = convert_d_type_(ent_->d_type);
     return true;
+  }
+
+  static ent_type convert_d_type_(unsigned char d_type) {
+    switch (d_type) {
+      case DT_UNKNOWN: return ent_type::unknown;
+      case DT_REG: return ent_type::regular;
+      case DT_DIR: return ent_type::directory;
+    }
+    return ent_type::unsupported;
   }
 
   bool next_dir_() {
