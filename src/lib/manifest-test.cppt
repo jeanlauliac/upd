@@ -33,7 +33,8 @@ typedef json::lexer<string_char_reader> string_lexer;
       {
         "command_line_ix": 13,
         "output": "dist/($1).o",
-        "inputs": [{"source_ix": 1}, {"rule_ix": 2}]
+        "inputs": [{"source_ix": 1}, {"rule_ix": 2}],
+        "dependencies": [{"rule_ix": 3}]
       }
     ]
   }
@@ -71,7 +72,10 @@ typedef json::lexer<string_char_reader> string_lexer;
         .inputs = {
           manifest::update_rule_input::from_source(1),
           manifest::update_rule_input::from_rule(2),
-        }
+        },
+        .dependencies = {
+          manifest::update_rule_input::from_rule(3),
+        },
       },
     },
   };
