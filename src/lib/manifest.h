@@ -138,7 +138,7 @@ private:
 
 template <typename ElementHandler, typename FieldValueReader>
 void read_vector_field_value(
-  FieldValueReader read_field_value,
+  FieldValueReader& read_field_value,
   typename vector_handler<ElementHandler>::vector_type& result
 ) {
   vector_handler<ElementHandler> handler(result);
@@ -215,62 +215,36 @@ struct rule_inputs_handler: public all_unexpected_elements_handler<std::vector<u
   }
 };
 
-struct update_rule_array_handler: public all_unexpected_elements_handler<void> {
-  update_rule_array_handler(std::vector<update_rule>& rules): rules_(rules) {}
-
-  template <typename ObjectReader>
-  void object(ObjectReader& read_object) const {
-    update_rule rule;
-    read_object([&rule](
-      const std::string& field_name,
-      typename ObjectReader::field_value_reader& read_field_value
-    ) {
-      if (field_name == "command_line_ix") {
-        rule.command_line_ix = read_field_value.read(read_size_t_handler());
-        return;
-      }
-      if (field_name == "output") {
-        rule.output = read_field_value.read(read_rule_output_handler());
-        return;
-      }
-      if (field_name == "inputs") {
-        rule.inputs = read_field_value.read(rule_inputs_handler());
-        return;
-      }
-      if (field_name == "dependencies") {
-        rule.dependencies = read_field_value.read(rule_inputs_handler());
-        return;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
-    });
-    rules_.push_back(rule);
-  }
-
-private:
-  std::vector<update_rule>& rules_;
-};
-
-struct update_rules_handler: public all_unexpected_elements_handler<void> {
-  update_rules_handler(std::vector<update_rule>& rules): rules_(rules) {}
-
-  template <typename ArrayReader>
-  void array(ArrayReader& read_array) const {
-    update_rule_array_handler handler(rules_);
-    read_array(handler);
-  }
-
-private:
-  std::vector<update_rule>& rules_;
-};
-
-template <typename Lexer>
-void parse_update_rules(
-  json::field_value_reader<Lexer>& read_field_value,
-  std::vector<update_rule>& rules
-) {
-  update_rules_handler handler(rules);
-  read_field_value.read(handler);
-}
+struct update_rule_handler:
+  public all_unexpected_elements_handler<update_rule> {
+    template <typename ObjectReader>
+    update_rule object(ObjectReader& read_object) const {
+      update_rule rule;
+      read_object([&rule](
+        const std::string& field_name,
+        typename ObjectReader::field_value_reader& read_field_value
+      ) {
+        if (field_name == "command_line_ix") {
+          rule.command_line_ix = read_field_value.read(read_size_t_handler());
+          return;
+        }
+        if (field_name == "output") {
+          rule.output = read_field_value.read(read_rule_output_handler());
+          return;
+        }
+        if (field_name == "inputs") {
+          rule.inputs = read_field_value.read(rule_inputs_handler());
+          return;
+        }
+        if (field_name == "dependencies") {
+          rule.dependencies = read_field_value.read(rule_inputs_handler());
+          return;
+        }
+        throw std::runtime_error("doesn't know field `" + field_name + "`");
+      });
+      return rule;
+    }
+  };
 
 struct read_string_array_array_handler: public all_unexpected_elements_handler<void> {
   void string_literal(const std::string& value) {
@@ -399,7 +373,7 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
         return;
       }
       if (field_name == "rules") {
-        parse_update_rules(read_field_value, result.rules);
+        read_vector_field_value<update_rule_handler>(read_field_value, result.rules);
         return;
       }
       if (field_name == "command_line_templates") {
