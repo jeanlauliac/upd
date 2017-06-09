@@ -131,3 +131,20 @@ generated files. Each rule need to specify the following:
   if the source pattern is `src/(*).cpp` and we found a file `src/foo.cpp`,
   the captured group is `foo`. So, the resulting output file name will be
   `output/foo.o`.
+
+## Contribute
+
+To get started on developing `upd`:
+
+    # install dependencies (alternative: npm install)
+    # and bootstrap a compiled version of `upd`
+    yarn
+
+    # setup update manifest
+    ./configure.js
+
+    # compile `upd` using itself!
+    dist/upd dist/upd
+
+    # run unit+e2e tests
+    yarn test
