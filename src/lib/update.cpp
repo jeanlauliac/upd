@@ -1,5 +1,6 @@
 #include "command_line_template.h"
 #include "depfile.h"
+#include "path.h"
 #include "update.h"
 #include <stdexcept>
 #include <sys/wait.h>
@@ -136,6 +137,7 @@ void update_file(
   std::unordered_set<std::string> local_src_path_set(local_src_paths.begin(), local_src_paths.end());
   if (depfile_data) {
     for (auto dep_path: depfile_data->dependency_paths) {
+      dep_path = normalize_path(dep_path);
       if (dep_path.at(0) == '/') {
         if (dep_path.compare(0, root_folder_path.size(), root_folder_path) != 0) {
           // TODO: track out-of-root deps separately

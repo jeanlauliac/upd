@@ -20,6 +20,11 @@
   @expect(result == "foo/bar");
 }
 
+@case "normalize_path() keeps dot-dot if necessary" {
+  auto result = upd::normalize_path("foo/../../bar");
+  @expect(result == "../bar");
+}
+
 @case "normalize_path() processes absolute path" {
   auto result = upd::normalize_path("/foo/bar");
   @expect(result == "/foo/bar");
