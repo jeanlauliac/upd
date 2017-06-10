@@ -136,15 +136,17 @@ generated files. Each rule need to specify the following:
 
 To get started on developing `upd`:
 
-    # install dependencies (alternative: npm install)
-    # and bootstrap a compiled version of `upd`
-    yarn
+```sh
+# install dependencies (alternative: npm install)
+# and bootstrap a compiled version of `upd`
+yarn
 
-    # setup update manifest
-    ./configure.js
+# setup update manifest
+./configure.js
 
-    # compile `upd` using itself!
-    dist/upd dist/upd
+# compile `upd` using itself!
+dist/upd dist/upd
 
-    # run unit+e2e tests
-    yarn test
+# run unit+e2e tests
+yarn test
+```
