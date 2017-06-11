@@ -67,15 +67,20 @@ bool is_file_up_to_date(
   return new_hash == record.hash;
 }
 
+/**
+ * `fork()`/`exec()` to run a command line. We cannot use `posix_spawn()`
+ * (faster on macOS) because we need to be able to `chdir()` in the child in a
+ * thread-safe manner. If really it proves slow, `clone()` may be investigated.
+ */
 void run_command_line(const std::string& root_path, command_line target) {
+  std::vector<char*> argv;
+  argv.push_back(const_cast<char*>(target.binary_path.c_str()));
+  for (auto const& arg: target.args) {
+    argv.push_back(const_cast<char*>(arg.c_str()));
+  }
+  argv.push_back(nullptr);
   pid_t child_pid = fork();
   if (child_pid == 0) {
-    std::vector<char*> argv;
-    argv.push_back(const_cast<char*>(target.binary_path.c_str()));
-    for (auto const& arg: target.args) {
-      argv.push_back(const_cast<char*>(arg.c_str()));
-    }
-    argv.push_back(nullptr);
     if (chdir(root_path.c_str()) != 0) {
       std::cerr << "upd: chdir() failed" << std::endl;
       _exit(1);
