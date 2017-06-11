@@ -20,22 +20,44 @@ for (let i = 2; i < argv.length; ++i) {
 }
 
 const BUILD_DIR = ".build_files";
+const OPTIMIZATION_FLAG = '-Ofast';
 
 const manifest = new updfile.Manifest();
 
-const compile_cpp_cli = manifest.cli_template(options.compilerBinary, [
+const common_compile_flags = ["-Wall", "-fcolor-diagnostics", "-MMD"];
+const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-stdlib=libc++"]);
+
+const compile_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-std=c++14", "-g", "-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-MMD", "-MF"],
+    literals: common_cpp_compile_flags.concat([OPTIMIZATION_FLAG, "-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
 ]);
 
-const compile_c_cli = manifest.cli_template(options.compilerBinary, [
+const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: ["-x", "c", "-g", "-Wall", "-fcolor-diagnostics", "-MMD", "-MF"],
+    literals: common_cpp_compile_flags.concat(['-g', "-MF"]),
+    variables: ["dependency_file"]
+  },
+  {literals: [], variables: ["input_files"]},
+]);
+
+const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
+  {literals: ["-c", "-o"], variables: ["output_file"]},
+  {
+    literals: common_compile_flags.concat(["-x", "c", OPTIMIZATION_FLAG, "-MF"]),
+    variables: ["dependency_file"]
+  },
+  {literals: [], variables: ["input_files"]},
+]);
+
+const compile_debug_c_cli = manifest.cli_template(options.compilerBinary, [
+  {literals: ["-c", "-o"], variables: ["output_file"]},
+  {
+    literals: common_compile_flags.concat(["-x", "c", "-g", "-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -51,16 +73,30 @@ const test_cpp_files = manifest.rule(
   `${BUILD_DIR}/($1).cpp`
 );
 
-const compiled_cpp_files = manifest.rule(
-  compile_cpp_cli,
-  [manifest.source("(src/lib/**/*).cpp")],
-  `${BUILD_DIR}/($1).o`
+const cpp_files = manifest.source("(src/lib/**/*).cpp");
+
+const compiled_optimized_cpp_files = manifest.rule(
+  compile_optimized_cpp_cli,
+  [cpp_files],
+  `${BUILD_DIR}/optimized/$1.o`
 );
 
-const compiled_c_files = manifest.rule(
-  compile_c_cli,
+const compiled_debug_cpp_files = manifest.rule(
+  compile_debug_cpp_cli,
+  [cpp_files],
+  `${BUILD_DIR}/debug/$1.o`
+);
+
+const compiled_optimized_c_files = manifest.rule(
+  compile_optimized_c_cli,
   [manifest.source("(src/lib/**/*).c")],
-  `${BUILD_DIR}/($1).o`
+  `${BUILD_DIR}/optimized/$1.o`
+);
+
+const compiled_debug_c_files = manifest.rule(
+  compile_debug_c_cli,
+  [manifest.source("(src/lib/**/*).c")],
+  `${BUILD_DIR}/debug/$1.o`
 );
 
 const tests_cpp_file = manifest.rule(
@@ -79,36 +115,59 @@ const package_cpp_file = manifest.rule(
   `${BUILD_DIR}/(package).cpp`
 );
 
-const compiled_main_files = manifest.rule(
-  compile_cpp_cli,
+const compiled_optimized_main_files = manifest.rule(
+  compile_optimized_cpp_cli,
   [manifest.source("(src/main).cpp"), package_cpp_file],
-  `${BUILD_DIR}/($1).o`
+  `${BUILD_DIR}/optimized/$1.o`
+);
+
+const compiled_debug_main_files = manifest.rule(
+  compile_debug_cpp_cli,
+  [manifest.source("(src/main).cpp"), package_cpp_file],
+  `${BUILD_DIR}/debug/$1.o`
 );
 
 const compiled_test_files = manifest.rule(
-  compile_cpp_cli,
+  compile_debug_cpp_cli,
   [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, tests_cpp_file],
-  `${BUILD_DIR}/($1).o`
+  `${BUILD_DIR}/debug/$1.o`
 );
 
-const link_cpp_cli = manifest.cli_template(options.compilerBinary, [
+const commonLinkFlags = ["-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"];
+
+const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-o"], variables: ["output_file"]},
   {
-    literals: ["-Wall", "-g", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"],
+    literals: commonLinkFlags.concat([OPTIMIZATION_FLAG]),
+    variables: ["input_files"]
+  },
+  {literals: ["-lpthread"]},
+]);
+
+const link_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
+  {literals: ["-o"], variables: ["output_file"]},
+  {
+    literals: commonLinkFlags.concat(["-g"]),
     variables: ["input_files"]
   },
   {literals: ["-lpthread"]},
 ]);
 
 manifest.rule(
-  link_cpp_cli,
-  [compiled_cpp_files, compiled_c_files, compiled_main_files],
+  link_optimized_cpp_cli,
+  [compiled_optimized_cpp_files, compiled_optimized_c_files, compiled_optimized_main_files],
   "dist/upd"
 );
 
 manifest.rule(
-  link_cpp_cli,
-  [compiled_cpp_files, compiled_c_files, compiled_test_files],
+  link_debug_cpp_cli,
+  [compiled_debug_cpp_files, compiled_debug_c_files, compiled_debug_main_files],
+  "dist/upd_debug"
+);
+
+manifest.rule(
+  link_debug_cpp_cli,
+  [compiled_debug_cpp_files, compiled_debug_c_files, compiled_test_files],
   "dist/unit_tests"
 );
 
