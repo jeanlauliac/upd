@@ -15,8 +15,9 @@ namespace upd {
  */
 struct update_plan {
   /**
-   * Remove a file from the plan. This potientially allows descendants to be
-   * available for update.
+   * Remove a file from the plan, for example because we finished updating it
+   * succesfully. This potentially allows descendants to be available for
+   * update.
    */
   void erase(const std::string& local_target_path) {
     pending_output_file_paths.erase(local_target_path);
@@ -73,6 +74,18 @@ void build_update_plan(
   update_plan& plan,
   const std::unordered_map<std::string, output_file>& output_files_by_path,
   const std::pair<std::string, output_file>& target_descriptor
+);
+
+void execute_update_plan(
+  update_log::cache& log_cache,
+  file_hash_cache& hash_cache,
+  const std::string& root_path,
+  const update_map& updm,
+  update_plan& plan,
+  std::vector<command_line_template> command_line_templates,
+  const std::string& local_depfile_path,
+  bool print_commands,
+  directory_cache<mkdir>& dir_cache
 );
 
 }

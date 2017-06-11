@@ -44,4 +44,38 @@ void build_update_plan(
   }
 }
 
+void execute_update_plan(
+  update_log::cache& log_cache,
+  file_hash_cache& hash_cache,
+  const std::string& root_path,
+  const update_map& updm,
+  update_plan& plan,
+  std::vector<command_line_template> command_line_templates,
+  const std::string& local_depfile_path,
+  bool print_commands,
+  directory_cache<mkdir>& dir_cache
+) {
+  while (!plan.queued_output_file_paths.empty()) {
+    auto local_target_path = plan.queued_output_file_paths.front();
+    plan.queued_output_file_paths.pop();
+    auto target_descriptor = *updm.output_files_by_path.find(local_target_path);
+    auto target_file = target_descriptor.second;
+    auto const& command_line_tpl = command_line_templates[target_file.command_line_ix];
+    update_file(
+      log_cache,
+      hash_cache,
+      root_path,
+      command_line_tpl,
+      target_file.local_input_file_paths,
+      local_target_path,
+      local_depfile_path,
+      print_commands,
+      dir_cache,
+      updm,
+      target_file.local_dependency_file_paths
+    );
+    plan.erase(local_target_path);
+  }
+}
+
 }
