@@ -82,12 +82,12 @@ void run_command_line(const std::string& root_path, command_line target) {
   pid_t child_pid = fork();
   if (child_pid == 0) {
     if (chdir(root_path.c_str()) != 0) {
-      std::cerr << "upd: chdir() failed" << std::endl;
-      _exit(1);
+      std::cerr << "upd: *** chdir() failed in child process" << std::endl;
+      _exit(127);
     }
     execvp(target.binary_path.c_str(), argv.data());
-    std::cerr << "upd: execvp() failed" << std::endl;
-    _exit(1);
+    std::cerr << "upd: *** execvp() failed in child process" << std::endl;
+    _exit(127);
   }
   if (child_pid < 0) {
     throw std::runtime_error("command line failed");
