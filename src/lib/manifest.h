@@ -342,5 +342,16 @@ manifest parse(Lexer& lexer) {
     (lexer, manifest_expression_handler());
 }
 
+/**
+ * Thrown if we are trying to read the manifest of a project root but it
+ * cannot be found.
+ */
+struct missing_manifest_error {
+  missing_manifest_error(const std::string& root_path): root_path(root_path) {}
+  std::string root_path;
+};
+
+manifest read_file(const std::string& root_path);
+
 }
 }
