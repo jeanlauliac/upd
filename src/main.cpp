@@ -12,6 +12,7 @@
 #include "lib/substitution.h"
 #include "lib/update.h"
 #include "lib/update_log.h"
+#include "lib/update_plan.h"
 #include "lib/xxhash64.h"
 #include "package.h"
 #include <array>
@@ -45,103 +46,6 @@ struct unknown_target_error {
     relative_path(relative_path) {}
   std::string relative_path;
 };
-
-/**
- * At any point during the update, the plan describes the work left to do.
- */
-struct update_plan {
-  /**
-   * Remove a file from the plan. This potientially allows descendants to be
-   * available for update.
-   */
-  void erase(const std::string& local_target_path) {
-    pending_output_file_paths.erase(local_target_path);
-    auto descendants_iter = descendants_by_path.find(local_target_path);
-    if (descendants_iter == descendants_by_path.end()) {
-      return;
-    }
-    for (auto const& descendant_path: descendants_iter->second) {
-      auto count_iter = pending_input_counts_by_path.find(descendant_path);
-      if (count_iter == pending_input_counts_by_path.end()) {
-        throw std::runtime_error("update plan is corrupted");
-      }
-      int& input_count = count_iter->second;
-      --input_count;
-      if (input_count == 0) {
-        queued_output_file_paths.push(descendant_path);
-      }
-    }
-  }
-
-  /**
-   * The paths of all the output files that are ready to be updated immediately.
-   * These files' dependencies either have already been updated, or they are
-   * source files written manually.
-   */
-  std::queue<std::string> queued_output_file_paths;
-  /**
-   * All the files that remain to update.
-   */
-  std::unordered_set<std::string> pending_output_file_paths;
-  /**
-   * For each output file path, indicates how many input files still need to be
-   * updated before the output file can be updated.
-   */
-  std::unordered_map<std::string, int> pending_input_counts_by_path;
-  /**
-   * For each input file path, indicates what files could potentially be
-   * updated after the input file is updated.
-   */
-  std::unordered_map<std::string, std::vector<std::string>> descendants_by_path;
-};
-
-void build_update_plan(
-  update_plan& plan,
-  const std::unordered_map<std::string, output_file>& output_files_by_path,
-  const std::pair<std::string, output_file>& target_descriptor
-);
-
-bool build_update_plan_for_path(
-  update_plan& plan,
-  const std::unordered_map<std::string, output_file>& output_files_by_path,
-  const std::string& local_target_path,
-  const std::string& local_input_path
-) {
-  auto input_descriptor = output_files_by_path.find(local_input_path);
-  if (input_descriptor == output_files_by_path.end()) return false;
-  plan.descendants_by_path[local_input_path].push_back(local_target_path);
-  build_update_plan(plan, output_files_by_path, *input_descriptor);
-  return true;
-}
-
-void build_update_plan(
-  update_plan& plan,
-  const std::unordered_map<std::string, output_file>& output_files_by_path,
-  const std::pair<std::string, output_file>& target_descriptor
-) {
-  auto local_target_path = target_descriptor.first;
-  auto pending = plan.pending_output_file_paths.find(local_target_path);
-  if (pending != plan.pending_output_file_paths.end()) {
-    return;
-  }
-  plan.pending_output_file_paths.insert(local_target_path);
-  int input_count = 0;
-  for (auto const& local_input_path: target_descriptor.second.local_input_file_paths) {
-    if (build_update_plan_for_path(plan, output_files_by_path, local_target_path, local_input_path)) {
-      input_count++;
-    }
-  }
-  for (auto const& local_dependency_path: target_descriptor.second.local_dependency_file_paths) {
-    if (build_update_plan_for_path(plan, output_files_by_path, local_target_path, local_dependency_path)) {
-      input_count++;
-    }
-  }
-  if (input_count == 0) {
-    plan.queued_output_file_paths.push(local_target_path);
-  } else {
-    plan.pending_input_counts_by_path[local_target_path] = input_count;
-  }
-}
 
 void execute_update_plan(
   update_log::cache& log_cache,
