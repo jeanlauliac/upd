@@ -63,48 +63,6 @@ struct update_plan {
   std::unordered_map<std::string, std::vector<std::string>> descendants_by_path;
 };
 
-struct update_context {
-  /**
-   * The path of the directory that contains all the files we deal with. Across
-   * the code "local" paths are expressed relatively to that root, that must be
-   * an absolute path.
-   */
-  const std::string root_path;
-
-  /**
-   * In-memory copy of the "update log", that keeps track of what files we
-   * already updated or not. That's loaded from disk on startup and we
-   * persist new entries as soon as they arrive, so as to be crash-resilient.
-   */
-  update_log::cache log_cache;
-
-  /**
-   * Keeps track of the known hashes of files. This is useful if, for example,
-   * two files are generated from a single source file. In that case we'll
-   * want to known the source's hash at two different points in time.
-   */
-  file_hash_cache hash_cache;
-
-  /**
-   * Keeps track of the directories that exist or not. The root path is always
-   * assumed to exist. The directory cache is useful to automatically create
-   * directories for output files.
-   */
-  directory_cache<mkdir> dir_cache;
-
-  /**
-   * The local path (expressed relative to the root path) of the synthetic
-   * "depfile", that must be a FIFO. This is used for rules that do need a
-   * C/C++-style depfile to express transitive dependencies.
-   */
-  const std::string local_depfile_path;
-
-  /**
-   * If `true`, commands are printed on the output before they are executed.
-   */
-  bool print_commands;
-};
-
 bool build_update_plan_for_path(
   update_plan& plan,
   const std::unordered_map<std::string, output_file>& output_files_by_path,

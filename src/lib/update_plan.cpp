@@ -45,7 +45,7 @@ void build_update_plan(
 }
 
 void execute_update_plan(
-  update_context& context,
+  update_context& cx,
   const update_map& updm,
   update_plan& plan,
   std::vector<command_line_template> command_line_templates
@@ -57,15 +57,10 @@ void execute_update_plan(
     auto target_file = target_descriptor.second;
     auto const& command_line_tpl = command_line_templates[target_file.command_line_ix];
     update_file(
-      context.log_cache,
-      context.hash_cache,
-      context.root_path,
+      cx,
       command_line_tpl,
       target_file.local_input_file_paths,
       local_target_path,
-      context.local_depfile_path,
-      context.print_commands,
-      context.dir_cache,
       updm,
       target_file.local_dependency_file_paths
     );

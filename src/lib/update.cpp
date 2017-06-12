@@ -105,35 +105,31 @@ void run_command_line(const std::string& root_path, command_line target) {
 }
 
 void update_file(
-  update_log::cache& log_cache,
-  file_hash_cache& hash_cache,
-  const std::string& root_path,
+  update_context& cx,
   const command_line_template& param_cli,
   const std::vector<std::string>& local_src_paths,
   const std::string& local_target_path,
-  const std::string& local_depfile_path,
-  bool print_commands,
-  directory_cache<mkdir>& dir_cache,
   const update_map& updm,
   const std::unordered_set<std::string>& local_dependency_file_paths
 ) {
+  const auto& root_path = cx.root_path;
   auto root_folder_path = root_path + '/';
   auto command_line = reify_command_line(param_cli, {
-    .dependency_file = local_depfile_path,
+    .dependency_file = cx.local_depfile_path,
     .input_files = local_src_paths,
     .output_files = { local_target_path }
   });
-  if (is_file_up_to_date(log_cache, hash_cache, root_path, local_target_path, local_src_paths, command_line)) {
+  if (is_file_up_to_date(cx.log_cache, cx.hash_cache, root_path, local_target_path, local_src_paths, command_line)) {
     return;
   }
   std::cout << "updating: " << local_target_path << std::endl;
-  if (print_commands) {
+  if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
   }
-  dir_cache.create(io::dirname_string(local_target_path));
-  auto depfile_path = root_path + '/' + local_depfile_path;
+  cx.dir_cache.create(io::dirname_string(local_target_path));
+  auto depfile_path = root_path + '/' + cx.local_depfile_path;
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, depfile_path);
-  hash_cache.invalidate(root_path + '/' + local_target_path);
+  cx.hash_cache.invalidate(root_path + '/' + local_target_path);
   std::ofstream depfile_writer(depfile_path);
   run_command_line(root_path, command_line);
   depfile_writer.close();
@@ -166,14 +162,14 @@ void update_file(
     }
   }
   auto new_imprint = get_target_imprint(
-    hash_cache,
+    cx.hash_cache,
     root_path,
     local_src_paths,
     dep_local_paths,
     command_line
   );
-  auto new_hash = hash_cache.hash(local_target_path);
-  log_cache.record(local_target_path, {
+  auto new_hash = cx.hash_cache.hash(local_target_path);
+  cx.log_cache.record(local_target_path, {
     .dependency_local_paths = dep_local_paths,
     .hash = new_hash,
     .imprint = new_imprint
