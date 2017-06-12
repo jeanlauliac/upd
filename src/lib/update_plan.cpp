@@ -45,15 +45,10 @@ void build_update_plan(
 }
 
 void execute_update_plan(
-  update_log::cache& log_cache,
-  file_hash_cache& hash_cache,
-  const std::string& root_path,
+  update_context& context,
   const update_map& updm,
   update_plan& plan,
-  std::vector<command_line_template> command_line_templates,
-  const std::string& local_depfile_path,
-  bool print_commands,
-  directory_cache<mkdir>& dir_cache
+  std::vector<command_line_template> command_line_templates
 ) {
   while (!plan.queued_output_file_paths.empty()) {
     auto local_target_path = plan.queued_output_file_paths.front();
@@ -62,15 +57,15 @@ void execute_update_plan(
     auto target_file = target_descriptor.second;
     auto const& command_line_tpl = command_line_templates[target_file.command_line_ix];
     update_file(
-      log_cache,
-      hash_cache,
-      root_path,
+      context.log_cache,
+      context.hash_cache,
+      context.root_path,
       command_line_tpl,
       target_file.local_input_file_paths,
       local_target_path,
-      local_depfile_path,
-      print_commands,
-      dir_cache,
+      context.local_depfile_path,
+      context.print_commands,
+      context.dir_cache,
       updm,
       target_file.local_dependency_file_paths
     );

@@ -57,20 +57,28 @@ void execute_manifest(
 
   std::string log_file_path = root_path + "/" + CACHE_FOLDER + "/log";
   std::string temp_log_file_path = root_path + "/" + CACHE_FOLDER + "/log_rewritten";
-  update_log::cache log_cache = update_log::cache::from_log_file(log_file_path);
-  file_hash_cache hash_cache;
+
   auto local_depfile_path = CACHE_FOLDER + "/depfile";
   auto depfile_path = root_path + '/' + local_depfile_path;
   if (mkfifo(depfile_path.c_str(), 0644) != 0 && errno != EEXIST) {
     throw std::runtime_error("cannot make depfile FIFO");
   }
 
-  directory_cache<mkdir> dir_cache(root_path);
-  execute_update_plan(log_cache, hash_cache, root_path, updm, plan,
-    manifest.command_line_templates, local_depfile_path, print_commands, dir_cache);
+  update_context cx = {
+    .root_path = root_path,
+    .log_cache = update_log::cache::from_log_file(log_file_path),
+    .dir_cache = directory_cache<mkdir>(root_path),
+    .local_depfile_path = local_depfile_path,
+    .print_commands = print_commands,
+  };
+  execute_update_plan(cx, updm, plan, manifest.command_line_templates);
 
-  log_cache.close();
-  update_log::rewrite_file(log_file_path, temp_log_file_path, log_cache.records());
+  cx.log_cache.close();
+  update_log::rewrite_file(
+    log_file_path,
+    temp_log_file_path,
+    cx.log_cache.records()
+  );
 }
 
 }
