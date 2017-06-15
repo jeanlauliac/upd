@@ -94,8 +94,6 @@ bool is_file_up_to_date(
   const command_line& command_line
 );
 
-void run_command_line(const std::string& root_path, command_line target);
-
 void update_file(
   update_context& cx,
   const command_line_template& param_cli,

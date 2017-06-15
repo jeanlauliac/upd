@@ -1,4 +1,5 @@
 #include "command_line_template.h"
+#include "command_line_runner.h"
 #include "depfile.h"
 #include "path.h"
 #include "update.h"
@@ -67,43 +68,6 @@ bool is_file_up_to_date(
   return new_hash == record.hash;
 }
 
-/**
- * `fork()`/`exec()` to run a command line. We cannot use `posix_spawn()`
- * (faster on macOS) because we need to be able to `chdir()` in the child in a
- * thread-safe manner. If really it proves slow, `clone()` may be investigated.
- */
-void run_command_line(const std::string& root_path, command_line target) {
-  std::vector<char*> argv;
-  argv.push_back(const_cast<char*>(target.binary_path.c_str()));
-  for (auto const& arg: target.args) {
-    argv.push_back(const_cast<char*>(arg.c_str()));
-  }
-  argv.push_back(nullptr);
-  pid_t child_pid = fork();
-  if (child_pid == 0) {
-    if (chdir(root_path.c_str()) != 0) {
-      std::cerr << "upd: *** chdir() failed in child process" << std::endl;
-      _exit(127);
-    }
-    execvp(target.binary_path.c_str(), argv.data());
-    std::cerr << "upd: *** execvp() failed in child process" << std::endl;
-    _exit(127);
-  }
-  if (child_pid < 0) {
-    throw std::runtime_error("command line failed");
-  }
-  int status;
-  if (waitpid(child_pid, &status, 0) != child_pid) {
-    throw std::runtime_error("waitpid failed");
-  }
-  if (!WIFEXITED(status)) {
-    throw std::runtime_error("process did not terminate normally");
-  }
-  if (WEXITSTATUS(status) != 0) {
-    throw std::runtime_error("process terminated with errors");
-  }
-}
-
 void update_file(
   update_context& cx,
   const command_line_template& param_cli,
@@ -131,7 +95,7 @@ void update_file(
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, depfile_path);
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
   std::ofstream depfile_writer(depfile_path);
-  run_command_line(root_path, command_line);
+  command_line_runner::run(root_path, command_line);
   depfile_writer.close();
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
   std::vector<std::string> dep_local_paths;
