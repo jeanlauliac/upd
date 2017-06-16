@@ -8,10 +8,21 @@
 
 namespace upd {
 
-XXH64_hash_t hash_command_line(const command_line& command_line) {
+XXH64_hash_t hash(const command_line_template_variable& target) {
+  return static_cast<XXH64_hash_t>(target);
+}
+
+XXH64_hash_t hash(const command_line_template_part& part) {
   xxhash64_stream cli_hash(0);
-  cli_hash << upd::hash(command_line.binary_path);
-  cli_hash << upd::hash(command_line.args);
+  cli_hash << hash(part.literal_args);
+  cli_hash << hash(part.variable_args);
+  return cli_hash.digest();
+}
+
+XXH64_hash_t hash(const command_line_template& cli_template) {
+  xxhash64_stream cli_hash(0);
+  cli_hash << hash(cli_template.binary_path);
+  cli_hash << hash(cli_template.parts);
   return cli_hash.digest();
 }
 
@@ -22,6 +33,7 @@ XXH64_hash_t hash_files(
 ) {
   xxhash64_stream imprint_s(0);
   for (auto const& local_path: local_paths) {
+    imprint_s << hash(local_path);
     imprint_s << hash_cache.hash(root_path + '/' + local_path);
   }
   return imprint_s.digest();
@@ -32,10 +44,10 @@ XXH64_hash_t get_target_imprint(
   const std::string& root_path,
   const std::vector<std::string>& local_src_paths,
   std::vector<std::string> dependency_local_paths,
-  const command_line& command_line
+  const command_line_template& cli_template
 ) {
   xxhash64_stream imprint_s(0);
-  imprint_s << hash_command_line(command_line);
+  imprint_s << hash(cli_template);
   imprint_s << hash_files(hash_cache, root_path, local_src_paths);
   imprint_s << hash_files(hash_cache, root_path, dependency_local_paths);
   return imprint_s.digest();
@@ -47,7 +59,7 @@ bool is_file_up_to_date(
   const std::string& root_path,
   const std::string& local_target_path,
   const std::vector<std::string>& local_src_paths,
-  const command_line& command_line
+  const command_line_template& cli_template
 ) {
   auto entry = log_cache.find(local_target_path);
   if (entry == log_cache.end()) {
@@ -59,7 +71,7 @@ bool is_file_up_to_date(
     root_path,
     local_src_paths,
     record.dependency_local_paths,
-    command_line
+    cli_template
   );
   if (new_imprint != record.imprint) {
     return false;
@@ -70,22 +82,22 @@ bool is_file_up_to_date(
 
 void update_file(
   update_context& cx,
-  const command_line_template& param_cli,
+  const command_line_template& cli_template,
   const std::vector<std::string>& local_src_paths,
   const std::string& local_target_path,
   const update_map& updm,
   const std::unordered_set<std::string>& local_dependency_file_paths
 ) {
   const auto& root_path = cx.root_path;
+  if (is_file_up_to_date(cx.log_cache, cx.hash_cache, root_path, local_target_path, local_src_paths, cli_template)) {
+    return;
+  }
   auto root_folder_path = root_path + '/';
-  auto command_line = reify_command_line(param_cli, {
+  auto command_line = reify_command_line(cli_template, {
     .dependency_file = cx.local_depfile_path,
     .input_files = local_src_paths,
     .output_files = { local_target_path }
   });
-  if (is_file_up_to_date(cx.log_cache, cx.hash_cache, root_path, local_target_path, local_src_paths, command_line)) {
-    return;
-  }
   std::cout << "updating: " << local_target_path << std::endl;
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
@@ -130,7 +142,7 @@ void update_file(
     root_path,
     local_src_paths,
     dep_local_paths,
-    command_line
+    cli_template
   );
   auto new_hash = cx.hash_cache.hash(local_target_path);
   cx.log_cache.record(local_target_path, {

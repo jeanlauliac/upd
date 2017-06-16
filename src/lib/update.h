@@ -77,14 +77,6 @@ XXH64_hash_t hash_files(
   const std::vector<std::string>& local_paths
 );
 
-XXH64_hash_t get_target_imprint(
-  file_hash_cache& hash_cache,
-  const std::string& root_path,
-  const std::vector<std::string>& local_src_paths,
-  std::vector<std::string> dependency_local_paths,
-  const command_line& command_line
-);
-
 bool is_file_up_to_date(
   update_log::cache& log_cache,
   file_hash_cache& hash_cache,
