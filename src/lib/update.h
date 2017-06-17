@@ -40,13 +40,6 @@ struct update_context {
   directory_cache<mkdir> dir_cache;
 
   /**
-   * The local path (expressed relative to the root path) of the synthetic
-   * "depfile", that must be a FIFO. This is used for rules that do need a
-   * C/C++-style depfile to express transitive dependencies.
-   */
-  const std::string local_depfile_path;
-
-  /**
    * If `true`, commands are printed on the output before they are executed.
    */
   bool print_commands;
