@@ -80,6 +80,12 @@ bool is_file_up_to_date(
   return new_hash == record.hash;
 }
 
+std::string get_fd_path(int fd) {
+  std::ostringstream oss;
+  oss << "/dev/fd/" << fd;
+  return oss.str();
+}
+
 void update_file(
   update_context& cx,
   const command_line_template& cli_template,
@@ -93,8 +99,14 @@ void update_file(
     return;
   }
   auto root_folder_path = root_path + '/';
+
+  int depfile_fds[2];
+  if (pipe(depfile_fds) != 0) {
+    throw new std::runtime_error("pipe() failed");
+  }
+
   auto command_line = reify_command_line(cli_template, {
-    .dependency_file = cx.local_depfile_path,
+    .dependency_file = get_fd_path(depfile_fds[1]),
     .input_files = local_src_paths,
     .output_files = { local_target_path }
   });
@@ -103,13 +115,12 @@ void update_file(
     std::cout << "$ " << command_line << std::endl;
   }
   cx.dir_cache.create(io::dirname_string(local_target_path));
-  auto depfile_path = root_path + '/' + cx.local_depfile_path;
-  auto read_depfile_future = std::async(std::launch::async, &depfile::read, depfile_path);
+  auto read_depfile_future = std::async(std::launch::async, &depfile::read, get_fd_path(depfile_fds[0]));
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
-  std::ofstream depfile_writer(depfile_path);
-  command_line_runner::run(root_path, command_line);
-  depfile_writer.close();
+  command_line_runner::run(root_path, command_line, depfile_fds);
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
+  close(depfile_fds[0]);
+
   std::vector<std::string> dep_local_paths;
   std::unordered_set<std::string> local_src_path_set(local_src_paths.begin(), local_src_paths.end());
   if (depfile_data) {

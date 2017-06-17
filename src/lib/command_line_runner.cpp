@@ -15,7 +15,8 @@ namespace upd {
  */
 void command_line_runner::run(
   const std::string& root_path,
-  command_line target
+  command_line target,
+  int depfile_fds[2]
 ) {
   std::vector<char*> argv;
   argv.push_back(const_cast<char*>(target.binary_path.c_str()));
@@ -25,6 +26,7 @@ void command_line_runner::run(
   argv.push_back(nullptr);
   pid_t child_pid = fork();
   if (child_pid == 0) {
+    close(depfile_fds[0]);
     if (chdir(root_path.c_str()) != 0) {
       std::cerr << "upd: *** chdir() failed in child process" << std::endl;
       _exit(127);
@@ -36,6 +38,7 @@ void command_line_runner::run(
   if (child_pid < 0) {
     throw std::runtime_error("command line failed");
   }
+  close(depfile_fds[1]);
   int status;
   if (waitpid(child_pid, &status, 0) != child_pid) {
     throw std::runtime_error("waitpid failed");
