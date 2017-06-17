@@ -115,7 +115,7 @@ void update_file(
     std::cout << "$ " << command_line << std::endl;
   }
   cx.dir_cache.create(io::dirname_string(local_target_path));
-  auto read_depfile_future = std::async(std::launch::async, &depfile::read, get_fd_path(depfile_fds[0]));
+  auto read_depfile_future = std::async(std::launch::async, &depfile::read, depfile_fds[0]);
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
   command_line_runner::run(root_path, command_line, depfile_fds);
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();

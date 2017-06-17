@@ -130,9 +130,9 @@ std::unique_ptr<depfile_data> parse(CharReader& char_reader) {
 }
 
 /**
- * A helper to read depfiles from a specific path.
+ * A helper to read depfiles from an already open file descriptor.
  */
-std::unique_ptr<depfile_data> read(const std::string& depfile_path);
+std::unique_ptr<depfile_data> read(int fd);
 
 }
 }

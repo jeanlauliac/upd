@@ -1,5 +1,5 @@
 #include "depfile.h"
-#include "istream_char_reader.h"
+#include "fd_char_reader.h"
 
 namespace upd {
 namespace depfile {
@@ -49,11 +49,8 @@ bool parse_token_handler::new_line() {
   return true;
 }
 
-std::unique_ptr<depfile_data> read(const std::string& depfile_path) {
-  std::ifstream depfile;
-  depfile.exceptions(std::ifstream::badbit);
-  depfile.open(depfile_path);
-  istream_char_reader<std::ifstream> char_reader(depfile);
+std::unique_ptr<depfile_data> read(int fd) {
+  fd_char_reader char_reader(fd);
   return parse(char_reader);
 }
 
