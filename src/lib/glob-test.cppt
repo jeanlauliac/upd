@@ -13,6 +13,14 @@ using namespace upd::glob;
   @expect(parse("foo?bar") == pattern({ segment("foo"), segment(placeholder::single_wildcard, "bar") }));
 }
 
+@case "upd::glob::match() matches empty pattern" {
+  @expect(match(parse(""), ""));
+}
+
+@case "upd::glob::match() mismatches empty pattern" {
+  @expect(!match(parse(""), "foo"));
+}
+
 @case "upd::glob::match() matches simple literal" {
   @expect(match(parse("foo"), "foo"));
 }

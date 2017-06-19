@@ -33,7 +33,7 @@ struct matcher {
    */
   bool operator()() {
     clear();
-    if (!start_new_segment()) return false;
+    if (!start_new_segment()) return candidate.size() == 0;
     bool does_match, fully_matched;
     do {
       does_match = match_all_segments();
@@ -146,14 +146,52 @@ struct matcher {
     return true;
   }
 
+  /**
+   * The whole description of what we're trying to match.
+   */
   const pattern& target;
+
+  /**
+   * The string that we're trying to fit into the target pattern.
+   */
   const std::string& candidate;
+
+  /**
+   * For each segment of the pattern we matched, we store the index of the
+   * first candidate's character that matches that segment. If it's `nullptr`
+   * we don't bother with it.
+   */
   std::vector<size_t>* indices;
+
+  /**
+   * The current segment we're trying to match.
+   */
   size_t segment_ix;
+
+  /**
+   * The current character of the candidate we're trying to match against the
+   * current segment.
+   */
   size_t candidate_ix;
-  size_t bookmark_ix;
-  size_t last_wildcard_segment_ix;
+
+  /**
+   * This is `true` only if we already encountered a wildcard somewhere in the
+   * previous or the current segment.
+   */
   bool has_bookmark;
+
+  /**
+   * The index of the candidate's character that's located right after the last
+   * wildcard we matched. For example, a candidate `foobar` that we try to
+   * match against `*bar`, the bookmark will start at zero, then will
+   * progressively move to 3, then we'll be able to match the remaining `bar`.
+   */
+  size_t bookmark_ix;
+
+  /**
+   * The segment that started the last wildcard.
+   */
+  size_t last_wildcard_segment_ix;
 };
 
 bool match(const pattern& target, const std::string& candidate) {
