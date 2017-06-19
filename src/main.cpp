@@ -51,7 +51,7 @@ int run_with_options(const cli::options& cli_opts) {
       return 2;
     }
     if (cli_opts.action == cli::action::version) {
-      std::cout << package::NAME << " version "
+      std::cout << "upd version "
                 << package::VERSION << std::endl;
       return 0;
     }
