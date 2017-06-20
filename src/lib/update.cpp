@@ -86,6 +86,21 @@ std::string get_fd_path(int fd) {
   return oss.str();
 }
 
+struct file_descriptor {
+  file_descriptor(int fd): fd_(fd) {}
+  ~file_descriptor() { if (fd_ >= 0) ::close(fd_); }
+  file_descriptor(file_descriptor& other) = delete;
+  file_descriptor(file_descriptor&& other) = delete;
+  int fd() const { return fd_; }
+  void close() {
+    ::close(fd_);
+    fd_ = -1;
+  };
+
+private:
+  int fd_;
+};
+
 void update_file(
   update_context& cx,
   const command_line_template& cli_template,
@@ -104,6 +119,7 @@ void update_file(
   if (pipe(depfile_fds) != 0) {
     throw new std::runtime_error("pipe() failed");
   }
+  file_descriptor input_fd(depfile_fds[0]);
 
   auto command_line = reify_command_line(cli_template, {
     .dependency_file = get_fd_path(depfile_fds[1]),
@@ -115,11 +131,11 @@ void update_file(
     std::cout << "$ " << command_line << std::endl;
   }
   cx.dir_cache.create(io::dirname_string(local_target_path));
-  auto read_depfile_future = std::async(std::launch::async, &depfile::read, depfile_fds[0]);
+  auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
   command_line_runner::run(root_path, command_line, depfile_fds);
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
-  close(depfile_fds[0]);
+  input_fd.close();
 
   std::vector<std::string> dep_local_paths;
   std::unordered_set<std::string> local_src_path_set(local_src_paths.begin(), local_src_paths.end());
