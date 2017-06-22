@@ -88,12 +88,12 @@ std::string get_fd_path(int fd) {
 
 struct file_descriptor {
   file_descriptor(int fd): fd_(fd) {}
-  ~file_descriptor() { if (fd_ >= 0) ::close(fd_); }
+  ~file_descriptor() { close(); }
   file_descriptor(file_descriptor& other) = delete;
   file_descriptor(file_descriptor&& other) = delete;
   int fd() const { return fd_; }
   void close() {
-    ::close(fd_);
+    if (fd_ >= 0) ::close(fd_);
     fd_ = -1;
   };
 
