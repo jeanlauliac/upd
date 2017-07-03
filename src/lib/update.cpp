@@ -101,6 +101,16 @@ private:
   int fd_;
 };
 
+struct update_job {
+  const std::string root_path;
+  command_line target;
+  int depfile_fds[2];
+};
+
+void run_update_command(update_job job) {
+  command_line_runner::run(job.root_path, job.target, job.depfile_fds);
+}
+
 void update_file(
   update_context& cx,
   const command_line_template& cli_template,
@@ -133,7 +143,14 @@ void update_file(
   cx.dir_cache.create(io::dirname_string(local_target_path));
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
-  command_line_runner::run(root_path, command_line, depfile_fds);
+
+  std::thread update_thread(run_update_command, update_job {
+    .depfile_fds = { depfile_fds[0], depfile_fds[1] },
+    .root_path = root_path,
+    .target = command_line,
+  });
+  update_thread.join();
+
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
   input_fd.close();
 
