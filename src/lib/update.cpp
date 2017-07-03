@@ -112,10 +112,6 @@ std::condition_variable receive_job_cv;
 bool shutdown_requested = false;
 std::unique_ptr<update_job> job;
 
-bool finished = false;
-std::mutex finish_job_mutex;
-std::condition_variable finish_job_cv;
-
 void start_update_thread() {
   std::unique_lock<std::mutex> lk(receive_job_mutex);
   while (!shutdown_requested) {
@@ -125,10 +121,7 @@ void start_update_thread() {
     }
     command_line_runner::run(job->root_path, job->target, job->depfile_fds);
     job.reset();
-    std::unique_lock<std::mutex> fj(finish_job_mutex);
-    finished = true;
-    fj.unlock();
-    finish_job_cv.notify_one();
+    receive_job_cv.notify_one();
   }
 }
 
@@ -179,9 +172,8 @@ void update_file(
   }
   receive_job_cv.notify_one();
   {
-    std::unique_lock<std::mutex> lk(finish_job_mutex);
-    if (!finished) finish_job_cv.wait(lk, []{ return finished; });
-    finished = false;
+    std::unique_lock<std::mutex> lk(receive_job_mutex);
+    while (job) receive_job_cv.wait(lk);
   }
   {
     std::lock_guard<std::mutex> lg(receive_job_mutex);
