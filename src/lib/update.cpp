@@ -105,10 +105,20 @@ struct update_job {
   const std::string root_path;
   command_line target;
   int depfile_fds[2];
+  bool finished;
 };
 
-void run_update_command(update_job job) {
-  command_line_runner::run(job.root_path, job.target, job.depfile_fds);
+std::mutex job_mutex;
+std::condition_variable job_cv;
+std::unique_ptr<update_job> job;
+
+void start_update_thread() {
+  std::unique_lock<std::mutex> lk(job_mutex);
+  job_cv.wait(lk, []{ return job.operator bool(); });
+  command_line_runner::run(job->root_path, job->target, job->depfile_fds);
+  job->finished = true;
+  lk.unlock();
+  job_cv.notify_one();
 }
 
 void update_file(
@@ -144,11 +154,22 @@ void update_file(
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
 
-  std::thread update_thread(run_update_command, update_job {
-    .depfile_fds = { depfile_fds[0], depfile_fds[1] },
-    .root_path = root_path,
-    .target = command_line,
-  });
+  std::thread update_thread(start_update_thread);
+  {
+    std::lock_guard<std::mutex> lg(job_mutex);
+    job = std::make_unique<update_job>(update_job {
+      .depfile_fds = { depfile_fds[0], depfile_fds[1] },
+      .root_path = root_path,
+      .target = command_line,
+      .finished = false,
+    });
+  }
+  job_cv.notify_one();
+  {
+    std::unique_lock<std::mutex> lk(job_mutex);
+    job_cv.wait(lk, []{ return job.operator bool(); });
+  }
+
   update_thread.join();
 
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
