@@ -135,9 +135,7 @@ void update_file(
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
 
-
-  update_worker worker;
-  worker.process({
+  cx.worker.process({
     .depfile_fds = { depfile_fds[0], depfile_fds[1] },
     .root_path = root_path,
     .target = command_line,

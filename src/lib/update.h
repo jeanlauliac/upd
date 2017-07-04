@@ -2,6 +2,7 @@
 
 #include "directory_cache.h"
 #include "update_log.h"
+#include "update_worker.h"
 #include "xxhash64.h"
 #include <future>
 #include <sys/stat.h>
@@ -43,6 +44,11 @@ struct update_context {
    * If `true`, commands are printed on the output before they are executed.
    */
   bool print_commands;
+
+  /**
+   * Allows us to run update processes in a separate, parallel thread.
+   */
+  update_worker worker;
 };
 
 struct output_file {
