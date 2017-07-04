@@ -1,5 +1,6 @@
 #pragma once
 
+#include "depfile.h"
 #include "directory_cache.h"
 #include "update_log.h"
 #include "update_worker.h"
@@ -82,12 +83,42 @@ bool is_file_up_to_date(
   const std::string& root_path,
   const std::string& local_target_path,
   const std::vector<std::string>& local_src_paths,
-  const command_line& command_line
+  const command_line_template& cli_template
 );
 
-void update_file(
+struct file_descriptor {
+  file_descriptor(int fd): fd_(fd) {}
+  ~file_descriptor() { close(); }
+  file_descriptor(file_descriptor& other) = delete;
+  file_descriptor(file_descriptor&& other): fd_(other.fd_) {
+    other.fd_ = -1;
+  }
+  int fd() const { return fd_; }
+  void close() {
+    if (fd_ >= 0) ::close(fd_);
+    fd_ = -1;
+  };
+
+private:
+  int fd_;
+};
+
+struct scheduled_file_update {
+  std::future<std::unique_ptr<depfile::depfile_data>> read_depfile_future;
+  file_descriptor input_fd;
+};
+
+scheduled_file_update schedule_file_update(
   update_context& cx,
-  const command_line_template& param_cli,
+  const command_line_template& cli_template,
+  const std::vector<std::string>& local_src_paths,
+  const std::string& local_target_path
+);
+
+void finalize_scheduled_update(
+  update_context& cx,
+  scheduled_file_update& sfu,
+  const command_line_template& cli_template,
   const std::vector<std::string>& local_src_paths,
   const std::string& local_target_path,
   const update_map& updm,

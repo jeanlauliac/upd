@@ -28,16 +28,17 @@ void update_worker::start_update_thread_() {
   }
 }
 
-void update_worker::process(update_job job) {
+void update_worker::schedule(update_job job) {
   {
     std::lock_guard<std::mutex> lg(mutex_);
     job_ = std::make_unique<update_job>(job);
   }
   cv_.notify_one();
-  {
-    std::unique_lock<std::mutex> lk(mutex_);
-    while (job_) cv_.wait(lk);
-  }
+}
+
+void update_worker::wait() {
+  std::unique_lock<std::mutex> lk(mutex_);
+  while (job_) cv_.wait(lk);
 }
 
 }

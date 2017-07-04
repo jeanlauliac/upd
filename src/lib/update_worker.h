@@ -16,7 +16,8 @@ struct update_worker {
   update_worker();
   ~update_worker();
   update_worker(update_worker&) = delete;
-  void process(update_job job);
+  void schedule(update_job job);
+  void wait();
 
 private:
   void start_update_thread_();

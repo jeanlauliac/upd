@@ -1,6 +1,5 @@
 #include "command_line_template.h"
 #include "command_line_runner.h"
-#include "depfile.h"
 #include "path.h"
 #include "update.h"
 #include "update_worker.h"
@@ -87,34 +86,12 @@ std::string get_fd_path(int fd) {
   return oss.str();
 }
 
-struct file_descriptor {
-  file_descriptor(int fd): fd_(fd) {}
-  ~file_descriptor() { close(); }
-  file_descriptor(file_descriptor& other) = delete;
-  file_descriptor(file_descriptor&& other) = delete;
-  int fd() const { return fd_; }
-  void close() {
-    if (fd_ >= 0) ::close(fd_);
-    fd_ = -1;
-  };
-
-private:
-  int fd_;
-};
-
-void update_file(
+scheduled_file_update schedule_file_update(
   update_context& cx,
   const command_line_template& cli_template,
   const std::vector<std::string>& local_src_paths,
-  const std::string& local_target_path,
-  const update_map& updm,
-  const std::unordered_set<std::string>& local_dependency_file_paths
+  const std::string& local_target_path
 ) {
-  const auto& root_path = cx.root_path;
-  if (is_file_up_to_date(cx.log_cache, cx.hash_cache, root_path, local_target_path, local_src_paths, cli_template)) {
-    return;
-  }
-  auto root_folder_path = root_path + '/';
 
   int depfile_fds[2];
   if (pipe(depfile_fds) != 0) {
@@ -133,17 +110,33 @@ void update_file(
   }
   cx.dir_cache.create(io::dirname_string(local_target_path));
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
-  cx.hash_cache.invalidate(root_path + '/' + local_target_path);
+  cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
-  cx.worker.process({
+  cx.worker.schedule({
     .depfile_fds = { depfile_fds[0], depfile_fds[1] },
-    .root_path = root_path,
+    .root_path = cx.root_path,
     .target = command_line,
   });
+  return {
+    .read_depfile_future = std::move(read_depfile_future),
+    .input_fd = std::move(input_fd),
+  };
+}
 
+void finalize_scheduled_update(
+  update_context& cx,
+  scheduled_file_update& sfu,
+  const command_line_template& cli_template,
+  const std::vector<std::string>& local_src_paths,
+  const std::string& local_target_path,
+  const update_map& updm,
+  const std::unordered_set<std::string>& local_dependency_file_paths
+) {
 
-  std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
-  input_fd.close();
+  std::unique_ptr<depfile::depfile_data> depfile_data = sfu.read_depfile_future.get();
+  sfu.input_fd.close();
+
+  auto root_folder_path = cx.root_path + '/';
 
   std::vector<std::string> dep_local_paths;
   std::unordered_set<std::string> local_src_path_set(local_src_paths.begin(), local_src_paths.end());
@@ -174,7 +167,7 @@ void update_file(
   }
   auto new_imprint = get_target_imprint(
     cx.hash_cache,
-    root_path,
+    cx.root_path,
     local_src_paths,
     dep_local_paths,
     cli_template

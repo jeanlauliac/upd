@@ -56,14 +56,25 @@ void execute_update_plan(
     auto target_descriptor = *updm.output_files_by_path.find(local_target_path);
     auto target_file = target_descriptor.second;
     auto const& command_line_tpl = command_line_templates[target_file.command_line_ix];
-    update_file(
-      cx,
-      command_line_tpl,
-      target_file.local_input_file_paths,
-      local_target_path,
-      updm,
-      target_file.local_dependency_file_paths
-    );
+    auto const& local_src_paths = target_file.local_input_file_paths;
+    if (!is_file_up_to_date(cx.log_cache, cx.hash_cache, cx.root_path, local_target_path, local_src_paths, command_line_tpl)) {
+      auto sfu = schedule_file_update(
+        cx,
+        command_line_tpl,
+        local_src_paths,
+        local_target_path
+      );
+      cx.worker.wait();
+      finalize_scheduled_update(
+        cx,
+        sfu,
+        command_line_tpl,
+        local_src_paths,
+        local_target_path,
+        updm,
+        target_file.local_dependency_file_paths
+      );
+    }
     plan.erase(local_target_path);
   }
 }
