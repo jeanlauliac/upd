@@ -20,7 +20,7 @@ for (let i = 2; i < argv.length; ++i) {
 }
 
 const BUILD_DIR = ".build_files";
-const OPTIMIZATION_FLAG = '-Ofast';
+const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
 
 const manifest = new updfile.Manifest();
 
@@ -30,7 +30,7 @@ const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-st
 const compile_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: common_cpp_compile_flags.concat([OPTIMIZATION_FLAG, "-MF"]),
+    literals: common_cpp_compile_flags.concat(OPTIMIZATION_FLAGS, ["-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -48,7 +48,7 @@ const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
 const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: common_compile_flags.concat(["-x", "c", OPTIMIZATION_FLAG, "-MF"]),
+    literals: common_compile_flags.concat(["-x", "c"], OPTIMIZATION_FLAGS, ["-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -138,7 +138,7 @@ const commonLinkFlags = ["-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-std
 const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-o"], variables: ["output_file"]},
   {
-    literals: commonLinkFlags.concat([OPTIMIZATION_FLAG]),
+    literals: commonLinkFlags.concat(OPTIMIZATION_FLAGS),
     variables: ["input_files"]
   },
   {literals: ["-lpthread"]},
