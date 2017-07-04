@@ -154,9 +154,17 @@ const link_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
 ]);
 
 manifest.rule(
-  link_optimized_cpp_cli,
-  [compiled_optimized_cpp_files, compiled_optimized_c_files, compiled_optimized_main_files],
-  "dist/upd"
+  manifest.cli_template('strip', [
+    {literals: ['-o'], variables: ['output_file', 'input_files']},
+  ]),
+  [
+    manifest.rule(
+      link_optimized_cpp_cli,
+      [compiled_optimized_cpp_files, compiled_optimized_c_files, compiled_optimized_main_files],
+      `${BUILD_DIR}/pre_strip_upd`
+    ),
+  ],
+  `dist/upd`
 );
 
 manifest.rule(
