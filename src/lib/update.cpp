@@ -107,21 +107,56 @@ struct update_job {
   int depfile_fds[2];
 };
 
-std::mutex receive_job_mutex;
-std::condition_variable receive_job_cv;
-bool shutdown_requested = false;
-std::unique_ptr<update_job> job;
+struct update_worker {
+  update_worker();
+  ~update_worker();
+  update_worker(update_worker&) = delete;
+  void process(update_job job);
 
-void start_update_thread() {
-  std::unique_lock<std::mutex> lk(receive_job_mutex);
-  while (!shutdown_requested) {
-    if (!job) {
-      receive_job_cv.wait(lk);
+private:
+  void start_update_thread_();
+
+  std::mutex mutex_;
+  std::condition_variable cv_;
+  bool running_;
+  std::unique_ptr<update_job> job_;
+  std::thread thread_;
+};
+
+update_worker::update_worker():
+  running_(true), thread_(&update_worker::start_update_thread_, this) {}
+
+update_worker::~update_worker() {
+  {
+    std::lock_guard<std::mutex> lg(mutex_);
+    running_ = false;
+  }
+  cv_.notify_one();
+  thread_.join();
+}
+
+void update_worker::start_update_thread_() {
+  std::unique_lock<std::mutex> lk(mutex_);
+  while (running_) {
+    if (!job_) {
+      cv_.wait(lk);
       continue;
     }
-    command_line_runner::run(job->root_path, job->target, job->depfile_fds);
-    job.reset();
-    receive_job_cv.notify_one();
+    command_line_runner::run(job_->root_path, job_->target, job_->depfile_fds);
+    job_.reset();
+    cv_.notify_one();
+  }
+}
+
+void update_worker::process(update_job job) {
+  {
+    std::lock_guard<std::mutex> lg(mutex_);
+    job_ = std::make_unique<update_job>(job);
+  }
+  cv_.notify_one();
+  {
+    std::unique_lock<std::mutex> lk(mutex_);
+    while (job_) cv_.wait(lk);
   }
 }
 
@@ -159,29 +194,12 @@ void update_file(
   cx.hash_cache.invalidate(root_path + '/' + local_target_path);
 
 
-
-  std::thread update_thread(start_update_thread);
-  {
-    std::lock_guard<std::mutex> lg(receive_job_mutex);
-    shutdown_requested = false;
-    job = std::make_unique<update_job>(update_job {
-      .depfile_fds = { depfile_fds[0], depfile_fds[1] },
-      .root_path = root_path,
-      .target = command_line,
-    });
-  }
-  receive_job_cv.notify_one();
-  {
-    std::unique_lock<std::mutex> lk(receive_job_mutex);
-    while (job) receive_job_cv.wait(lk);
-  }
-  {
-    std::lock_guard<std::mutex> lg(receive_job_mutex);
-    shutdown_requested = true;
-  }
-  receive_job_cv.notify_one();
-  update_thread.join();
-
+  update_worker worker;
+  worker.process({
+    .depfile_fds = { depfile_fds[0], depfile_fds[1] },
+    .root_path = root_path,
+    .target = command_line,
+  });
 
 
   std::unique_ptr<depfile::depfile_data> depfile_data = read_depfile_future.get();
