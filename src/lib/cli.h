@@ -24,6 +24,11 @@ struct invalid_color_mode_error {
   const std::string value;
 };
 
+struct invalid_concurrency_error {
+  invalid_concurrency_error(const std::string& value): value(value) {}
+  const std::string value;
+};
+
 enum class color_mode {
   always,
   auto_,
@@ -35,12 +40,18 @@ struct options {
     color_diagnostics(color_mode::auto_),
     action(action::update),
     update_all_files(false),
-    print_commands(false) {};
+    print_commands(false),
+    concurrency(0) {};
   color_mode color_diagnostics;
   action action;
   std::vector<std::string> relative_target_paths;
   bool update_all_files;
   bool print_commands;
+  /**
+   * How many update processes should be spawn at the same time. If zero,
+   * concurrency should be determined automatically.
+   */
+  size_t concurrency;
 };
 
 struct incompatible_options_error {

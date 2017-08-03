@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <sys/wait.h>
 
+#include "inspect.h"
+
 namespace upd {
 
 XXH64_hash_t hash(const command_line_template_variable& target) {
@@ -86,6 +88,29 @@ std::string get_fd_path(int fd) {
   return oss.str();
 }
 
+scheduled_file_update::scheduled_file_update() {}
+
+scheduled_file_update::scheduled_file_update(
+  update_job&& job,
+  std::future<std::unique_ptr<depfile::depfile_data>>&& read_depfile_future,
+  file_descriptor&& input_fd
+):
+  job(std::move(job)),
+  read_depfile_future(std::move(read_depfile_future)),
+  input_fd(std::move(input_fd)) {}
+
+scheduled_file_update::scheduled_file_update(scheduled_file_update&& other):
+  job(std::move(other.job)),
+  read_depfile_future(std::move(other.read_depfile_future)),
+  input_fd(std::move(other.input_fd)) {}
+
+scheduled_file_update& scheduled_file_update::operator=(scheduled_file_update&& other) {
+  job = std::move(other.job);
+  read_depfile_future = std::move(other.read_depfile_future);
+  input_fd = std::move(other.input_fd);
+  return *this;
+}
+
 scheduled_file_update schedule_file_update(
   update_context& cx,
   const command_line_template& cli_template,
@@ -112,15 +137,15 @@ scheduled_file_update schedule_file_update(
   auto read_depfile_future = std::async(std::launch::async, &depfile::read, input_fd.fd());
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
-  cx.worker.schedule({
-    .depfile_fds = { depfile_fds[0], depfile_fds[1] },
-    .root_path = cx.root_path,
-    .target = command_line,
-  });
-  return {
-    .read_depfile_future = std::move(read_depfile_future),
-    .input_fd = std::move(input_fd),
-  };
+  return scheduled_file_update(
+    {
+      .depfile_fds = { depfile_fds[0], depfile_fds[1] },
+      .root_path = cx.root_path,
+      .target = command_line,
+    },
+    std::move(read_depfile_future),
+    std::move(input_fd)
+  );
 }
 
 void finalize_scheduled_update(

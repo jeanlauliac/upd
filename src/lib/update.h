@@ -47,9 +47,10 @@ struct update_context {
   bool print_commands;
 
   /**
-   * Allows us to run update processes in a separate, parallel thread.
+   * How many update processes can be run in parallel. On multi-core processors,
+   * using all cores will yield the fastest update.
    */
-  update_worker worker;
+  size_t concurrency;
 };
 
 struct output_file {
@@ -87,11 +88,18 @@ bool is_file_up_to_date(
 );
 
 struct file_descriptor {
+  file_descriptor(): fd_(-1) {}
   file_descriptor(int fd): fd_(fd) {}
   ~file_descriptor() { close(); }
   file_descriptor(file_descriptor& other) = delete;
   file_descriptor(file_descriptor&& other): fd_(other.fd_) {
     other.fd_ = -1;
+  }
+  file_descriptor& operator=(file_descriptor&) = delete;
+  file_descriptor& operator=(file_descriptor&& other) {
+    fd_ = other.fd_;
+    other.fd_ = -1;
+    return *this;
   }
   int fd() const { return fd_; }
   void close() {
@@ -104,6 +112,17 @@ private:
 };
 
 struct scheduled_file_update {
+  scheduled_file_update();
+  scheduled_file_update(
+    update_job&& job,
+    std::future<std::unique_ptr<depfile::depfile_data>>&& read_depfile_future,
+    file_descriptor&& input_fd
+  );
+  scheduled_file_update(scheduled_file_update&) = delete;
+  scheduled_file_update(scheduled_file_update&&);
+  scheduled_file_update& operator=(scheduled_file_update&&);
+
+  update_job job;
   std::future<std::unique_ptr<depfile::depfile_data>> read_depfile_future;
   file_descriptor input_fd;
 };

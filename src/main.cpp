@@ -26,6 +26,13 @@ private:
   bool cd_;
 };
 
+size_t get_concurrency(size_t opt_concurrency) {
+  if (opt_concurrency > 0) return opt_concurrency;
+  auto cr = std::thread::hardware_concurrency();
+  if (cr == 0) return 1;
+  return cr;
+}
+
 int run_with_options(const cli::options& cli_opts) {
   bool color_diags =
     cli_opts.color_diagnostics == cli::color_mode::always ||
@@ -76,7 +83,8 @@ int run_with_options(const cli::options& cli_opts) {
       cli_opts.update_all_files,
       cli_opts.relative_target_paths,
       cli_opts.print_commands,
-      cli_opts.action == cli::action::shell_script
+      cli_opts.action == cli::action::shell_script,
+      get_concurrency(cli_opts.concurrency)
     );
     return 0;
   } catch (io::cannot_find_root_error) {
@@ -136,6 +144,11 @@ int run(int argc, char *argv[]) {
   } catch (cli::option_requires_argument_error error) {
     std::cerr << "upd: fatal: option `" << error.option
       << "` requires an argument" << std::endl;
+    return 1;
+  } catch (cli::invalid_concurrency_error error) {
+    std::cerr << "upd: fatal: `" << error.value
+      << "` is not a valid concurrency; specify `auto`, "
+      << "or a number greater than zero" << std::endl;
     return 1;
   }
 }

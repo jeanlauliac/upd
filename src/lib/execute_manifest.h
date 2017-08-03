@@ -20,7 +20,8 @@ void execute_manifest(
   bool update_all_files,
   const std::vector<std::string>& relative_target_paths,
   bool print_commands,
-  bool print_shell_script
+  bool print_shell_script,
+  size_t concurrency
 );
 
 }

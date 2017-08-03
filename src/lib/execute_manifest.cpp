@@ -18,7 +18,8 @@ void execute_manifest(
   bool update_all_files,
   const std::vector<std::string>& relative_target_paths,
   bool print_commands,
-  bool print_shell_script
+  bool print_shell_script,
+  size_t concurrency
 ) {
   auto manifest = manifest::read_file(root_path);
   const update_map updm = gen_update_map(root_path, manifest);
@@ -63,6 +64,7 @@ void execute_manifest(
     .log_cache = update_log::cache::from_log_file(log_file_path),
     .dir_cache = directory_cache<mkdir>(root_path),
     .print_commands = print_commands,
+    .concurrency = concurrency,
   };
   execute_update_plan(cx, updm, plan, manifest.command_line_templates);
 

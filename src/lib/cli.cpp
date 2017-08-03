@@ -1,4 +1,5 @@
 #include "cli.h"
+#include <sstream>
 
 namespace upd {
 namespace cli {
@@ -27,6 +28,19 @@ color_mode parse_color_mode(const std::string& str) {
     return color_mode::always;
   }
   throw invalid_color_mode_error(str);
+}
+
+size_t parse_concurrency(const std::string& str) {
+  if (str == "auto") {
+    return 0;
+  }
+  std::istringstream iss(str);
+  size_t result;
+  iss >> result;
+  if (iss.fail() || !iss.eof() || result == 0) {
+    throw invalid_concurrency_error(str);
+  }
+  return result;
 }
 
 options parse_options(const char* const argv[]) {
@@ -59,6 +73,11 @@ options parse_options(const char* const argv[]) {
           result.update_all_files = true;
         } else if (arg == "--print-commands") {
           result.print_commands = true;
+        } else if (arg == "--concurrency") {
+          ++argv;
+          if (*argv == nullptr)
+            throw option_requires_argument_error("--concurrency");
+          result.concurrency = parse_concurrency(*argv);
         } else if (arg == "--") {
           reading_options = false;
         } else {
