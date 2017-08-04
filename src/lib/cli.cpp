@@ -94,35 +94,27 @@ options parse_options(const char* const argv[]) {
 }
 
 void print_help() {
-  std::cout << R"HELP(
-  usage: upd [options] [targets]
+  std::cout << R"HELP(Usage: upd [options] [targets]
+Update files according with a manifest.
 
-  Operations
-    --help                : Output usage help.
-    --root                : Output the root directory path.
-    --version             : Output the semantic version numbers.
-    --init                : Create a root directory at the current working path.
-    --dot-graph           : Output a DOT-formatted graph of the output files.
-    --shell-script        : Output a `bash' shell script meant to updates all
-                            the specified output files.
+Operations:
+  --help          output usage help
+  --root          output the root directory path
+  --version       output the semantic version numbers
+  --init          create a root directory at the current working path
+  --dot-graph     output a DOT-formatted graph of the output files
+  --shell-script  output a `bash' shell script meant to updates all
+                  the specified output files
 
-  Updates
-    --all                 : Include all the known files in the update, or graph.
+Updates:
+  --all     include all the known files in the update, or graph
+  --concurrency {auto|<number>}
+      specify how many threads can be run in parallel, at maximum
 
-  General options
-    --color-diagnostics {auto|always|never}
-
-        Use ANSI color escape codes to stderr; `auto` means it'll output colors
-        if stderr is a TTY, and is the default.
-
-    --concurrency {auto|<number>}
-
-        Specify how many threads can be run in parallel, at maximum. If `auto`,
-        defaults to the processor's number of cores, that should yield that
-        fastest update.
-
-    --                    : Make the remaining of arguments targets (no options)
-
+General:
+  --color-diagnostics {auto|always|never}
+      use ANSI color escape codes to stderr; `auto` means it'll output colors
+      if stderr is a TTY, and is the default
 )HELP";
 }
 
