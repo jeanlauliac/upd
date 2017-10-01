@@ -1,0 +1,31 @@
+{
+  "namespace": "upd::cli",
+  "operations": {
+    "default": {
+      "name": "update",
+      "options": [
+        {
+          "name": "concurrency",
+          "value_type": "number",
+          "default": 0
+        },
+        {
+          "name": "update_all_files",
+          "opt": "all"
+        }
+      ]
+    },
+    "variants": {
+
+    }
+  },
+  "options": [
+    {
+      "name": "color-diagnostics",
+      "value_type": {"enum_of": ["always", "auto", "never"]},
+      "default": "auto"
+    }
+
+
+  ]
+}
