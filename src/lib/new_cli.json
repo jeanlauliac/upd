@@ -1,5 +1,5 @@
 {
-  "namespace": "upd::cli",
+  "namespace": ["upd", "new_cli"],
   "operations": {
     "default": {
       "name": "update",

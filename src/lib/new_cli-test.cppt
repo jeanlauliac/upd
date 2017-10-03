@@ -1,0 +1,23 @@
+#include "../../.build_files/src/lib/new_cli.h"
+
+@case "parse_options() parses color-diagnostics" {
+  {
+    const char* argv[] = { "upd", nullptr };
+    auto opts = upd::new_cli::parse_options(argv);
+    @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::auto_);
+  }
+  {
+    const char* argv[] = { "upd", "--color-diagnostics", "always", nullptr };
+    auto opts = upd::new_cli::parse_options(argv);
+    @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::always);
+  }
+  {
+    const char* argv[] = { "upd", "--color-diagnostics", "foobar", nullptr };
+    try {
+      auto opts = upd::new_cli::parse_options(argv);
+      @expect(false);
+    } catch (upd::new_cli::invalid_color_diagnostics_error error) {
+      @expect(error.value == "foobar");
+    }
+  }
+}

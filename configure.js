@@ -73,18 +73,32 @@ const test_cpp_files = manifest.rule(
   `${BUILD_DIR}/($1).cpp`
 );
 
-const cpp_files = manifest.source("(src/lib/**/*).cpp");
+const cli_parser_cpp_file = manifest.rule(
+  manifest.cli_template('tools/gen_cli_parser.js', [
+    {variables: ["output_file"]},
+    {
+      literals: [`${BUILD_DIR}/src/lib/new_cli.h`],
+      variables: ["dependency_file", "input_files"],
+    },
+  ]),
+  [manifest.source("(src/lib/new_cli).json")],
+  `${BUILD_DIR}/($1).cpp`
+);
+
+const cpp_files = [manifest.source("(src/lib/**/*).cpp"), cli_parser_cpp_file];
 
 const compiled_optimized_cpp_files = manifest.rule(
   compile_optimized_cpp_cli,
-  [cpp_files],
-  `${BUILD_DIR}/optimized/$1.o`
+  cpp_files,
+  `${BUILD_DIR}/optimized/$1.o`,
+  [cli_parser_cpp_file]
 );
 
 const compiled_debug_cpp_files = manifest.rule(
   compile_debug_cpp_cli,
-  [cpp_files],
-  `${BUILD_DIR}/debug/$1.o`
+  cpp_files,
+  `${BUILD_DIR}/debug/$1.o`,
+  [cli_parser_cpp_file]
 );
 
 const compiled_optimized_c_files = manifest.rule(
