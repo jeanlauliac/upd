@@ -1,12 +1,13 @@
 {
+  "description": "Update files according to a set of rules.",
   "namespace": ["upd", "new_cli"],
-  "operations": {
-    "default": {
-      "name": "update",
+  "commands": {
+    "update": {
+      "description": "Ensure the specified target files are up-to-date.",
       "options": [
         {
           "name": "concurrency",
-          "value_type": "number",
+          "value_type": "size_t",
           "default": 0
         },
         {
@@ -15,8 +16,23 @@
         }
       ]
     },
-    "variants": {
-
+    "init": {
+      "description": "Create a `upd` root in the current working directory."
+    },
+    "graph": {
+      "description": "Output a DOT-formatted graph of the output files."
+    },
+    "script": {
+      "description": "Output a `bash' shell script that updates the specified target files."
+    },
+    "root": {
+      "description": "Output the root directory path."
+    },
+    "version": {
+      "description": "Output the semantic version numbers."
+    },
+    "help": {
+      "description": "Output help for specific commands."
     }
   },
   "options": [

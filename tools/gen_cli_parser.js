@@ -37,6 +37,17 @@ cli(function () {
 
 function genSpec(manifest) {
   const types = [];
+  const commands = Object.entries(manifest.commands).map(([name, command]) => {
+    return {
+      name,
+      cppName: cppNameOf(name),
+      description: command.description,
+    };
+  });
+  types.push({name: 'command', spec: {enum_of: commands.map(x => ({
+    cliName: x.name,
+    cppName: x.cppName,
+  })).sort((a, b) => a.cppName > b.cppName ? 1 : -1)}});
   const options = manifest.options.map(option => {
     const type = option.value_type || 'bool';
     const cppName = option.name.replace(/-/, '_');
@@ -66,6 +77,8 @@ function genSpec(manifest) {
     };
   }).sort((a, b) => a.cppName > b.cppName ? 1 : -1);
   return {
+    commands,
+    description: manifest.description,
     options,
     namespace: manifest.namespace,
     types: types.sort((a, b) => a.name > b.name ? 1 : -1),
@@ -81,18 +94,25 @@ function cppNameOf(cliName) {
 }
 
 function genCliCppParser(spec, stream, hppPath) {
-  stream.write(`#include "${hppPath}"\n\n`);
+  stream.write(`#include "${hppPath}"\n`);
+  stream.write(`#include <iostream>\n\n`);
+  stream.write(`#include <unordered_map>\n\n`);
   genNamespaceOpen(spec.namespace, stream);
   for (const type of spec.types) {
     if (type.spec.enum_of) {
-      stream.write(`${type.name} parse_${type.name}(std::string str) {\n`);
+      const mapName = `${type.name}_map`;
+      stream.write(`static const std::unordered_map<std::string, ${type.name}> ${mapName} {\n`);
       for (const variant of type.spec.enum_of) {
-        stream.write(`  if (str == "${variant.cliName}") {\n`);
-        stream.write(`    return ${type.name}::${variant.cppName};\n`);
-        stream.write(`  }\n`);
+        stream.write(`  { "${variant.cliName}", ${type.name}::${variant.cppName} },\n`);
       }
-      stream.write(`  throw invalid_${type.name}_error(str);\n`);
       stream.write(`};\n\n`);
+      stream.write(`static ${type.name} parse_${type.name}(std::string str) {\n`);
+      stream.write(`  auto iter = ${mapName}.find(str);
+  if (iter != ${mapName}.cend()) return iter->second;
+  throw invalid_${type.name}_error(str);
+};
+
+`);
       continue;
     }
     throw new Error('unknown type');
@@ -100,6 +120,10 @@ function genCliCppParser(spec, stream, hppPath) {
   stream.write(`options parse_options(const char* const argv[]) {
   options result;
   bool reading_options = true;
+  if (*(++argv) == nullptr) {
+    throw missing_command_error();
+  }
+  result.command = parse_command(*argv);
   for (++argv; *argv != nullptr; ++argv) {
     const auto arg = std::string(*argv);
     if (!reading_options || arg.size() == 0 || arg[0] != '-') {
@@ -128,9 +152,25 @@ function genCliCppParser(spec, stream, hppPath) {
   stream.write(`    throw unexpected_argument_error(arg);
   }
   return result;
+}
+
+void output_help(const std::string& program, std::ostream& os) {
+  os << "Usage: " << program << " <command> [options]";
+  os << R"HELP(${spec.description}
+
+Commands:
 `);
-  stream.write('}\n\n');
+  for (const command of spec.commands) {
+    stream.write(`  ${rightPad(command.name, 12)}  ${command.description}\n`);
+  }
+  stream.write(`)HELP";
+}
+`);
   genNamespaceClose(spec.namespace, stream);
+}
+
+function rightPad(str, size) {
+  return str + " ".repeat(Math.max(0, size - str.length));
 }
 
 function genCliHppParser(spec, stream) {
@@ -166,6 +206,7 @@ function genCliHppParser(spec, stream) {
     stream.write(`    ${option.cppName}(${option.valueType}::${option.default})`);
   }
   stream.write(' {}\n\n');
+  stream.write(`  command command;\n`);
   stream.write(`  std::vector<std::string> rest_args;\n`);
   for (const option of spec.options) {
     stream.write(`  ${option.valueType} ${option.cppName};\n`);
@@ -181,8 +222,12 @@ struct option_requires_argument_error {
   const std::string option;
 };
 
+struct missing_command_error {};
+
+options parse_options(const char* const argv[]);
+void output_help(const std::string& program, std::ostream& os);
+
 `);
-  stream.write('options parse_options(const char* const argv[]);\n\n');
   genNamespaceClose(spec.namespace, stream);
 }
 

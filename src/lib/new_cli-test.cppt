@@ -1,18 +1,39 @@
 #include "../../.build_files/src/lib/new_cli.h"
 
+upd::new_cli::options parse(std::vector<const char*> argv) {
+  return upd::new_cli::parse_options(argv.data());
+}
+
+@case "parse_options() parses the command `update`" {
+  auto opts = parse({ "upd", "update", nullptr });
+  @expect(opts.command == upd::new_cli::command::update);
+}
+
+@case "parse_options() parses the command `help`" {
+  auto opts = parse({ "upd", "help", nullptr });
+  @expect(opts.command == upd::new_cli::command::help);
+}
+
+@case "parse_options() throws on invalid command" {
+  try {
+    auto opts = parse({ "upd", "foo", nullptr });
+    @expect(false);
+  } catch (upd::new_cli::invalid_command_error error) {}
+}
+
 @case "parse_options() parses color-diagnostics" {
   {
-    const char* argv[] = { "upd", nullptr };
+    const char* argv[] = { "upd", "update", nullptr };
     auto opts = upd::new_cli::parse_options(argv);
     @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::auto_);
   }
   {
-    const char* argv[] = { "upd", "--color-diagnostics", "always", nullptr };
+    const char* argv[] = { "upd", "update", "--color-diagnostics", "always", nullptr };
     auto opts = upd::new_cli::parse_options(argv);
     @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::always);
   }
   {
-    const char* argv[] = { "upd", "--color-diagnostics", "foobar", nullptr };
+    const char* argv[] = { "upd", "update", "--color-diagnostics", "foobar", nullptr };
     try {
       auto opts = upd::new_cli::parse_options(argv);
       @expect(false);
