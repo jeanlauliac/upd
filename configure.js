@@ -132,19 +132,22 @@ const package_cpp_file = manifest.rule(
 const compiled_optimized_main_files = manifest.rule(
   compile_optimized_cpp_cli,
   [manifest.source("(src/main).cpp"), package_cpp_file],
-  `${BUILD_DIR}/optimized/$1.o`
+  `${BUILD_DIR}/optimized/$1.o`,
+  [cli_parser_cpp_file]
 );
 
 const compiled_debug_main_files = manifest.rule(
   compile_debug_cpp_cli,
   [manifest.source("(src/main).cpp"), package_cpp_file],
-  `${BUILD_DIR}/debug/$1.o`
+  `${BUILD_DIR}/debug/$1.o`,
+  [cli_parser_cpp_file]
 );
 
 const compiled_test_files = manifest.rule(
   compile_debug_cpp_cli,
   [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, tests_cpp_file],
-  `${BUILD_DIR}/debug/$1.o`
+  `${BUILD_DIR}/debug/$1.o`,
+  [cli_parser_cpp_file]
 );
 
 const commonLinkFlags = ["-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"];

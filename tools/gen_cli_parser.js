@@ -51,11 +51,12 @@ function genSpec(manifest) {
   const options = manifest.options.map(option => {
     const type = option.value_type || 'bool';
     const cppName = option.name.replace(/-/, '_');
-    let valueType;
+    let valueType, defaultValue;
     if (typeof type === 'object') {
       if (type.enum_of != null) {
         const name = cppName;
         valueType = name;
+        defaultValue = `${valueType}::${cppNameOf(option.default)}`;
         types.push({name, spec: {enum_of: type.enum_of.map(x => ({
           cliName: x,
           cppName: cppNameOf(x),
@@ -63,7 +64,8 @@ function genSpec(manifest) {
       }
     } else {
       if (type === 'bool') {
-        valueType = 'boolean';
+        valueType = 'bool';
+        defaultValue = option.default ? option.default.toString() : 'false';
       }
     }
     if (valueType == null) {
@@ -72,8 +74,9 @@ function genSpec(manifest) {
     return {
       cppName,
       name: option.name,
-      default: cppNameOf(option.default),
+      defaultValue,
       valueType,
+      onlyFor: option.only_for && option.only_for.map(c => cppNameOf(c)),
     };
   }).sort((a, b) => a.cppName > b.cppName ? 1 : -1);
   return {
@@ -136,7 +139,17 @@ function genCliCppParser(spec, stream, hppPath) {
 `);
   for (const option of spec.options) {
     stream.write(`    if (arg.compare(2, arg.size(), "${option.name}") == 0) {\n`);
-    if (option.valueType === 'boolean') {
+    if (option.onlyFor != null) {
+      stream.write(`      if (
+        ${option.onlyFor.map(c => {
+        return `result.command != command::${c}`;
+      }).join(' &&\n        ')}
+      ) {
+        throw unavailable_option_for_command_error();
+      }
+`);
+    }
+    if (option.valueType === 'bool') {
       stream.write(`      result.${option.cppName} = true;\n`);
     } else {
       stream.write(`      ++argv;
@@ -203,7 +216,8 @@ function genCliHppParser(spec, stream) {
   let first = true;
   for (const option of spec.options) {
     if (!first) stream.write(',\n');
-    stream.write(`    ${option.cppName}(${option.valueType}::${option.default})`);
+    stream.write(`    ${option.cppName}(${option.defaultValue})`);
+    first = false;
   }
   stream.write(' {}\n\n');
   stream.write(`  command command;\n`);
@@ -223,6 +237,7 @@ struct option_requires_argument_error {
 };
 
 struct missing_command_error {};
+struct unavailable_option_for_command_error {};
 
 options parse_options(const char* const argv[]);
 void output_help(const std::string& program, std::ostream& os);

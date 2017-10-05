@@ -9,10 +9,6 @@
           "name": "concurrency",
           "value_type": "size_t",
           "default": 0
-        },
-        {
-          "name": "update_all_files",
-          "opt": "all"
         }
       ]
     },
@@ -40,8 +36,10 @@
       "name": "color-diagnostics",
       "value_type": {"enum_of": ["always", "auto", "never"]},
       "default": "auto"
+    },
+    {
+      "name": "all",
+      "only_for": ["update", "graph", "script"]
     }
-
-
   ]
 }
