@@ -38,13 +38,13 @@ function runTestSuite() {
   rimraf.sync(ROOT_PATH);
   fs.mkdirSync(ROOT_PATH);
   fs.writeFileSync(path.join(ROOT_PATH, '.updroot'), '');
-  const reportedRootCout = runUpd(['--root']).toString('utf8');
+  const reportedRootCout = runUpd(['root']).toString('utf8');
   const reportedRoot = reportedRootCout.substr(0, reportedRootCout.length - 1);
   if (reportedRoot !== ROOT_PATH) {
     throw new Error('invalid root: `' + reportedRoot + '\'');
   }
   fs.writeFileSync(UPDFILE, JSON.stringify({}));
-  runUpd(['--all']);
+  runUpd(['update', '--all']);
   fs.writeFileSync(UPDFILE, JSON.stringify({
     "command_line_templates": [
       {
@@ -71,14 +71,14 @@ function runTestSuite() {
   fs.writeFileSync(path.join(srcDir, 'bar.in'), 'This is bar.\n');
   fs.mkdirSync(path.join(srcDir, 'sub'));
   fs.writeFileSync(path.join(srcDir, 'sub', 'glo.in'), 'This is glo.\n');
-  runUpd(['dist/result.out']);
+  runUpd(['update', 'dist/result.out']);
   expectToMatchSnapshot('first_result', path.join(ROOT_PATH, 'dist/result.out'));
   fs.writeFileSync(path.join(srcDir, 'foo.h'), 'Foo header.\n');
   fs.writeFileSync(path.join(srcDir, 'foo.in'), '#include foo.h\nThis is foo, second.\n');
-  runUpd(['dist/result.out']);
+  runUpd(['update', 'dist/result.out']);
   expectToMatchSnapshot('include_header_result', path.join(ROOT_PATH, 'dist/result.out'));
   fs.writeFileSync(path.join(srcDir, 'foo.h'), 'Foo header, modified.\n');
-  runUpd(['dist/result.out']);
+  runUpd(['update', 'dist/result.out']);
   expectToMatchSnapshot('header_modified_result', path.join(ROOT_PATH, 'dist/result.out'));
 }
 
