@@ -80,6 +80,7 @@ function genSpec(manifest) {
     }
     return {
       cppName,
+      description: option.description,
       name: option.name,
       defaultValue,
       valueType,
@@ -188,6 +189,13 @@ void output_help(const std::string& program, bool use_color, std::ostream& os) {
   for (const command of spec.commands) {
     stream.write(`  ansi_sgr(os << "  ", { 1 }, use_color) << "${rightPad(command.name, 12)}";\n`);
     stream.write(`  ansi_sgr(os, {}, use_color) << "  ${command.description}" << std::endl;\n`);
+  }
+  stream.write(`  ansi_sgr(os << std::endl, { 4, 34 }, use_color) << "General options:";
+  ansi_sgr(os, { 0 }, use_color) << std::endl;`);
+  for (const option of spec.options) {
+    if (option.onlyFor != null) continue;
+    stream.write(`  ansi_sgr(os << "  ", { 1 }, use_color) << "--${rightPad(option.name, 12)}";\n`);
+    stream.write(`  ansi_sgr(os, {}, use_color) << "  ${option.description}" << std::endl;\n`);
   }
   stream.write(`}
 `);

@@ -28,6 +28,7 @@
   "options": [
     {
       "name": "color-diagnostics",
+      "description": "Controls whether diagnostics (stderr) uses color.",
       "value_type": {"enum_of": ["always", "auto", "never"]},
       "default": "auto"
     },
