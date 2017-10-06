@@ -2,7 +2,7 @@
 #include <sstream>
 
 namespace upd {
-namespace new_cli {
+namespace cli {
 
 size_t parse_concurrency(const std::string& str) {
   if (str == "auto") {

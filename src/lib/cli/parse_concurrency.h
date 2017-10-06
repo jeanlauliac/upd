@@ -3,7 +3,7 @@
 #include <string>
 
 namespace upd {
-namespace new_cli {
+namespace cli {
 
 struct invalid_concurrency_error {
   invalid_concurrency_error(const std::string& value): value(value) {}

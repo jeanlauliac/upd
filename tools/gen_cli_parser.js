@@ -132,6 +132,7 @@ function genCliCppParser(spec, stream, hppPath) {
   stream.write(`options parse_options(const char* const argv[]) {
   options result;
   bool reading_options = true;
+  result.program_name = *argv;
   if (*(++argv) == nullptr) {
     throw missing_command_error();
   }
@@ -178,7 +179,7 @@ function genCliCppParser(spec, stream, hppPath) {
 }
 
 void output_help(const std::string& program, std::ostream& os) {
-  os << "Usage: " << program << " <command> [options]";
+  os << "Usage: " << program << " <command> [options]" << std::endl;
   os << R"HELP(${spec.description}
 
 Commands:
@@ -233,6 +234,7 @@ ${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).jo
   stream.write(' {}\n\n');
   stream.write(`  command command;\n`);
   stream.write(`  std::vector<std::string> rest_args;\n`);
+  stream.write(`  std::string program_name;\n`);
   for (const option of spec.options) {
     stream.write(`  ${option.valueType} ${option.cppName};\n`);
   }

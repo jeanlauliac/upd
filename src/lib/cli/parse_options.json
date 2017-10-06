@@ -1,6 +1,6 @@
 {
   "description": "Update files according to a set of rules.",
-  "namespace": ["upd", "new_cli"],
+  "namespace": ["upd", "cli"],
   "includes": ["parse_concurrency.h"],
   "commands": {
     "update": {
@@ -39,7 +39,12 @@
       "name": "concurrency",
       "value_type": "size_t",
       "default": 0,
-      "parse_function": "parse_concurrency"
+      "parse_function": "parse_concurrency",
+      "only_for": ["update"]
+    },
+    {
+      "name": "print-commands",
+      "only_for": ["update"]
     }
   ]
 }

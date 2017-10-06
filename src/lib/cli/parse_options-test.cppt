@@ -1,8 +1,8 @@
 #include "../../../.build_files/src/lib/cli/parse_options.h"
 
-upd::new_cli::options parse(std::vector<const char*> argv) {
+upd::cli::options parse(std::vector<const char*> argv) {
   argv.push_back(nullptr);
-  return upd::new_cli::parse_options(argv.data());
+  return upd::cli::parse_options(argv.data());
 }
 
 @case "parse_options() parses the command `update`" {

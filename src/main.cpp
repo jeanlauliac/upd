@@ -1,4 +1,5 @@
-#include "lib/cli.h"
+#include "../.build_files/src/lib/cli/parse_options.h"
+#include "lib/cli/utils.h"
 #include "lib/execute_manifest.h"
 #include "lib/gen_update_map.h"
 #include "lib/inspect.h"
@@ -35,55 +36,51 @@ size_t get_concurrency(size_t opt_concurrency) {
 
 int run_with_options(const cli::options& cli_opts) {
   bool color_diags =
-    cli_opts.color_diagnostics == cli::color_mode::always ||
-    (cli_opts.color_diagnostics == cli::color_mode::auto_ && isatty(2));
+    cli_opts.color_diagnostics == cli::color_diagnostics::always ||
+    (cli_opts.color_diagnostics == cli::color_diagnostics::auto_ && isatty(2));
   err_functor<std::ostream> err(std::cerr, color_diags);
   try {
     if (!(
-      cli_opts.action == cli::action::update ||
-      cli_opts.action == cli::action::dot_graph ||
-      cli_opts.action == cli::action::shell_script
+      cli_opts.command == cli::command::update ||
+      cli_opts.command == cli::command::graph ||
+      cli_opts.command == cli::command::script
     )) {
-      if (!cli_opts.relative_target_paths.empty()) {
-        err() << "this operation doesn't accept target arguments" << std::endl;
-        return 2;
-      }
-      if (cli_opts.update_all_files) {
-        err() << "this operation doesn't accept `--all`" << std::endl;
+      if (!cli_opts.rest_args.empty()) {
+        err() << "this command doesn't accept target arguments" << std::endl;
         return 2;
       }
     }
-    if (cli_opts.update_all_files && !cli_opts.relative_target_paths.empty()) {
+    if (cli_opts.all && !cli_opts.rest_args.empty()) {
       err() << "cannot have both explicit targets and `--all`" << std::endl;
       return 2;
     }
-    if (cli_opts.action == cli::action::version) {
+    if (cli_opts.command == cli::command::version) {
       std::cout << "upd version "
                 << package::VERSION << std::endl;
       return 0;
     }
-    if (cli_opts.action == cli::action::help) {
-      cli::print_help();
+    if (cli_opts.command == cli::command::help) {
+      cli::output_help(cli_opts.program_name, std::cout);
       return 0;
     }
     auto working_path = io::getcwd_string();
-    if (cli_opts.action == cli::action::init) {
+    if (cli_opts.command == cli::command::init) {
       create_root(working_path);
       return 0;
     }
     auto root_path = io::find_root_path(working_path);
-    if (cli_opts.action == cli::action::root) {
+    if (cli_opts.command == cli::command::root) {
       std::cout << root_path << std::endl;
       return 0;
     }
     execute_manifest(
       root_path,
       working_path,
-      cli_opts.action == cli::action::dot_graph,
-      cli_opts.update_all_files,
-      cli_opts.relative_target_paths,
+      cli_opts.command == cli::command::graph,
+      cli_opts.all,
+      cli_opts.rest_args,
       cli_opts.print_commands,
-      cli_opts.action == cli::action::shell_script,
+      cli_opts.command == cli::command::script,
       get_concurrency(cli_opts.concurrency)
     );
     return 0;
@@ -130,14 +127,13 @@ int run(int argc, char *argv[]) {
   try {
     auto cli_opts = cli::parse_options(argv);
     return run_with_options(cli_opts);
+  } catch (cli::missing_command_error error) {
+    std::cerr << "upd: fatal: missing command" << std::endl;
+    return 1;
   } catch (cli::unexpected_argument_error error) {
     std::cerr << "upd: fatal: invalid argument: `" << error.arg << "`" << std::endl;
     return 1;
-  } catch (cli::incompatible_options_error error) {
-    std::cerr << "upd: fatal: options `" << error.first_option
-      << "` and `" << error.last_option << "` are in conflict" << std::endl;
-    return 1;
-  } catch (cli::invalid_color_mode_error error) {
+  } catch (cli::invalid_color_diagnostics_error error) {
     std::cerr << "upd: fatal: `" << error.value
       << "` is not a valid color mode" << std::endl;
     return 1;
