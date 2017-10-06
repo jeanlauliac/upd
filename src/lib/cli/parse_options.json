@@ -1,7 +1,7 @@
 {
   "description": "Update files according to a set of rules.",
   "namespace": ["upd", "cli"],
-  "includes": ["parse_concurrency.h"],
+  "includes": ["parse_concurrency.h", "utils.h"],
   "commands": {
     "update": {
       "description": "Ensure the specified target files are up-to-date."

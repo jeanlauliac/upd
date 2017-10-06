@@ -179,16 +179,17 @@ function genCliCppParser(spec, stream, hppPath) {
 }
 
 void output_help(const std::string& program, bool use_color, std::ostream& os) {
-  os << "Usage: " << program << " <command> [options]" << std::endl;
-  os << R"HELP(${spec.description}
-
-Commands:
+  ansi_sgr(os, { 4, 34 }, use_color) << "Usage:";
+  ansi_sgr(os, { 0 }, use_color) << " " << program << " <command> [options]" << std::endl;
+  os << "${spec.description}" << std::endl << std::endl;
+  ansi_sgr(os, { 4, 34 }, use_color) << "Commands:";
+  ansi_sgr(os, { 0 }, use_color) << std::endl;
 `);
   for (const command of spec.commands) {
-    stream.write(`  ${rightPad(command.name, 12)}  ${command.description}\n`);
+    stream.write(`  ansi_sgr(os << "  ", { 1 }, use_color) << "${rightPad(command.name, 12)}";\n`);
+    stream.write(`  ansi_sgr(os, {}, use_color) << "  ${command.description}" << std::endl;\n`);
   }
-  stream.write(`)HELP";
-}
+  stream.write(`}
 `);
   genNamespaceClose(spec.namespace, stream);
 }
