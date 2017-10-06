@@ -134,7 +134,7 @@ function genCliCppParser(spec, stream, hppPath) {
   bool reading_options = true;
   result.program_name = *argv;
   if (*(++argv) == nullptr) {
-    throw missing_command_error();
+    throw missing_command_error(result.program_name);
   }
   result.command = parse_command(*argv);
   for (++argv; *argv != nullptr; ++argv) {
@@ -178,7 +178,7 @@ function genCliCppParser(spec, stream, hppPath) {
   return result;
 }
 
-void output_help(const std::string& program, std::ostream& os) {
+void output_help(const std::string& program, bool use_color, std::ostream& os) {
   os << "Usage: " << program << " <command> [options]" << std::endl;
   os << R"HELP(${spec.description}
 
@@ -249,11 +249,16 @@ struct option_requires_argument_error {
   const std::string option;
 };
 
-struct missing_command_error {};
+struct missing_command_error {
+  missing_command_error(const std::string& program_name):
+    program_name(program_name) {}
+  std::string program_name;
+};
+
 struct unavailable_option_for_command_error {};
 
 options parse_options(const char* const argv[]);
-void output_help(const std::string& program, std::ostream& os);
+void output_help(const std::string& program, bool use_color, std::ostream& os);
 
 `);
   genNamespaceClose(spec.namespace, stream);

@@ -34,10 +34,10 @@ size_t get_concurrency(size_t opt_concurrency) {
   return cr;
 }
 
-int run_with_options(const cli::options& cli_opts) {
+int run_with_options(const cli::options& cli_opts, bool auto_color_diags) {
   bool color_diags =
     cli_opts.color_diagnostics == cli::color_diagnostics::always ||
-    (cli_opts.color_diagnostics == cli::color_diagnostics::auto_ && isatty(2));
+    (cli_opts.color_diagnostics == cli::color_diagnostics::auto_ && auto_color_diags);
   err_functor<std::ostream> err(std::cerr, color_diags);
   try {
     if (!(
@@ -60,7 +60,7 @@ int run_with_options(const cli::options& cli_opts) {
       return 0;
     }
     if (cli_opts.command == cli::command::help) {
-      cli::output_help(cli_opts.program_name, std::cout);
+      cli::output_help(cli_opts.program_name, false, std::cout);
       return 0;
     }
     auto working_path = io::getcwd_string();
@@ -124,25 +124,30 @@ int run_with_options(const cli::options& cli_opts) {
 }
 
 int run(int argc, char *argv[]) {
+  auto color_diags = isatty(2);
+  err_functor<std::ostream> err(std::cerr, color_diags);
   try {
     auto cli_opts = cli::parse_options(argv);
-    return run_with_options(cli_opts);
+    return run_with_options(cli_opts, color_diags);
   } catch (cli::missing_command_error error) {
-    std::cerr << "upd: fatal: missing command" << std::endl;
+    cli::output_help(error.program_name, color_diags, std::cerr);
+    return 1;
+  } catch (cli::invalid_command_error error) {
+    err() << "`" << error.value << "` is not a valid command" << std::endl;
     return 1;
   } catch (cli::unexpected_argument_error error) {
-    std::cerr << "upd: fatal: invalid argument: `" << error.arg << "`" << std::endl;
+    err() << "invalid argument: `" << error.arg << "`" << std::endl;
     return 1;
   } catch (cli::invalid_color_diagnostics_error error) {
-    std::cerr << "upd: fatal: `" << error.value
+    err() << "`" << error.value
       << "` is not a valid color mode" << std::endl;
     return 1;
   } catch (cli::option_requires_argument_error error) {
-    std::cerr << "upd: fatal: option `" << error.option
+    err() << "option `" << error.option
       << "` requires an argument" << std::endl;
     return 1;
   } catch (cli::invalid_concurrency_error error) {
-    std::cerr << "upd: fatal: `" << error.value
+    err() << "`" << error.value
       << "` is not a valid concurrency; specify `auto`, "
       << "or a number greater than zero" << std::endl;
     return 1;
