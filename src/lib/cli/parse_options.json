@@ -1,16 +1,10 @@
 {
   "description": "Update files according to a set of rules.",
   "namespace": ["upd", "new_cli"],
+  "includes": ["parse_concurrency.h"],
   "commands": {
     "update": {
-      "description": "Ensure the specified target files are up-to-date.",
-      "options": [
-        {
-          "name": "concurrency",
-          "value_type": "size_t",
-          "default": 0
-        }
-      ]
+      "description": "Ensure the specified target files are up-to-date."
     },
     "init": {
       "description": "Create a `upd` root in the current working directory."
@@ -40,6 +34,12 @@
     {
       "name": "all",
       "only_for": ["update", "graph", "script"]
+    },
+    {
+      "name": "concurrency",
+      "value_type": "size_t",
+      "default": 0,
+      "parse_function": "parse_concurrency"
     }
   ]
 }

@@ -77,11 +77,11 @@ const cli_parser_cpp_file = manifest.rule(
   manifest.cli_template('tools/gen_cli_parser.js', [
     {variables: ["output_file"]},
     {
-      literals: [`${BUILD_DIR}/src/lib/new_cli.h`],
+      literals: [`${BUILD_DIR}/src/lib/cli/parse_options.h`],
       variables: ["dependency_file", "input_files"],
     },
   ]),
-  [manifest.source("(src/lib/new_cli).json")],
+  [manifest.source("(src/lib/cli/parse_options).json")],
   `${BUILD_DIR}/($1).cpp`
 );
 

@@ -24,7 +24,11 @@ cli(function () {
   genCliCppParser(spec, targetCppStream, relativeHppPath);
   targetCppStream.end();
   const targetHppStream = fs.createWriteStream(targetHppPath);
-  genCliHppParser(spec, targetHppStream);
+  const relativeSourceDirPath = path.relative(
+    path.dirname(targetHppPath),
+    path.dirname(sourcePath)
+  );
+  genCliHppParser(spec, relativeSourceDirPath, targetHppStream);
   targetHppStream.end();
   const depfile = fs.createWriteStream(depfilePath);
   const modulePaths = Object.values(require.cache)
@@ -66,10 +70,13 @@ function genSpec(manifest) {
       if (type === 'bool') {
         valueType = 'bool';
         defaultValue = option.default ? option.default.toString() : 'false';
+      } else if (type === 'size_t') {
+        valueType = 'size_t';
+        defaultValue = option.default ? option.default.toString() : '0';
       }
     }
     if (valueType == null) {
-      throw Error(`invalid type for option ${options.name}`);
+      throw Error(`invalid type for option \`${option.name}\``);
     }
     return {
       cppName,
@@ -77,9 +84,11 @@ function genSpec(manifest) {
       defaultValue,
       valueType,
       onlyFor: option.only_for && option.only_for.map(c => cppNameOf(c)),
+      parseFunction: option.parse_function,
     };
   }).sort((a, b) => a.cppName > b.cppName ? 1 : -1);
   return {
+    includes: manifest.includes,
     commands,
     description: manifest.description,
     options,
@@ -157,7 +166,8 @@ function genCliCppParser(spec, stream, hppPath) {
         throw option_requires_argument_error("--${option.name}");
       }
 `);
-      stream.write(`      result.${option.cppName} = parse_${option.valueType}(*argv);\n`);
+      const parseFunction = option.parseFunction || `parse_${option.valueType}`;
+      stream.write(`      result.${option.cppName} = ${parseFunction}(*argv);\n`);
     }
     stream.write(`      continue;\n`);
     stream.write(`    }\n`);
@@ -186,9 +196,10 @@ function rightPad(str, size) {
   return str + " ".repeat(Math.max(0, size - str.length));
 }
 
-function genCliHppParser(spec, stream) {
+function genCliHppParser(spec, relativeSourceDirPath, stream) {
   stream.write(`#pragma once
 
+${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).join('\n')}
 #include <string>
 #include <vector>
 

@@ -1,6 +1,7 @@
-#include "../../.build_files/src/lib/new_cli.h"
+#include "../../../.build_files/src/lib/cli/parse_options.h"
 
 upd::new_cli::options parse(std::vector<const char*> argv) {
+  argv.push_back(nullptr);
   return upd::new_cli::parse_options(argv.data());
 }
 
@@ -39,23 +40,33 @@ upd::new_cli::options parse(std::vector<const char*> argv) {
 }
 
 @case "parse_options() parses --color-diagnostics" {
-  {
-    const char* argv[] = { "upd", "update", nullptr };
+  const char* argv[] = { "upd", "update", nullptr };
+  auto opts = upd::new_cli::parse_options(argv);
+  @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::auto_);
+}
+
+@case "parse_options() parses --color-diagnostics always" {
+  const char* argv[] = { "upd", "update", "--color-diagnostics", "always", nullptr };
+  auto opts = upd::new_cli::parse_options(argv);
+  @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::always);
+}
+
+@case "parse_options() thrown on invalid --color-diagnostics" {
+  const char* argv[] = { "upd", "update", "--color-diagnostics", "foobar", nullptr };
+  try {
     auto opts = upd::new_cli::parse_options(argv);
-    @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::auto_);
+    @expect(false);
+  } catch (upd::new_cli::invalid_color_diagnostics_error error) {
+    @expect(error.value == "foobar");
   }
-  {
-    const char* argv[] = { "upd", "update", "--color-diagnostics", "always", nullptr };
-    auto opts = upd::new_cli::parse_options(argv);
-    @expect(opts.color_diagnostics == upd::new_cli::color_diagnostics::always);
-  }
-  {
-    const char* argv[] = { "upd", "update", "--color-diagnostics", "foobar", nullptr };
-    try {
-      auto opts = upd::new_cli::parse_options(argv);
-      @expect(false);
-    } catch (upd::new_cli::invalid_color_diagnostics_error error) {
-      @expect(error.value == "foobar");
-    }
-  }
+}
+
+@case "parse_options() parses --concurrency auto" {
+  auto opts = parse({ "upd", "update", "--concurrency", "auto" });
+  @expect(opts.concurrency == 0);
+}
+
+@case "parse_options() parses --concurrency <number>" {
+  auto opts = parse({ "upd", "update", "--concurrency", "42" });
+  @expect(opts.concurrency == 42);
 }
