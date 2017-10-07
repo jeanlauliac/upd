@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* @flow */
 
 'use strict';
 
@@ -7,6 +8,25 @@ const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
 const writeDepFile = require('./lib/writeDepFile');
+
+type Manifest = {
+  description: string,
+  namespace: Array<string>,
+  includes: Array<string>,
+  commands: {
+    [string]: {
+      description: string,
+    },
+  },
+  options: Array<{
+    default: string,
+    description: string,
+    name: string,
+    only_for?: Array<string>,
+    value_type: string,
+    parse_function?: string,
+  }>,
+};
 
 cli(function () {
   if (process.argv.length < 6) {
@@ -34,14 +54,14 @@ cli(function () {
   writeDepFile(fs.createWriteStream(depfilePath), [{
     targets: [targetCppPath],
     dependencies: Object.values(require.cache)
-      .filter(module => !/\/node_modules\//.test(module.filename))
-      .map(module => module.filename),
+      .filter(module => !/\/node_modules\//.test((module: $FlowFixMe).filename))
+      .map((module: $FlowFixMe) => module.filename),
   }])
 });
 
-function genSpec(manifest) {
+function genSpec(manifest: Manifest) {
   const types = [];
-  const commands = Object.entries(manifest.commands).map(([name, command]) => {
+  const commands = Object.entries(manifest.commands).map(([name, command]: [string, $FlowFixMe]) => {
     return {
       name,
       cppName: cppNameOf(name),
@@ -237,8 +257,10 @@ ${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).jo
   let first = true;
   for (const option of spec.options) {
     if (!first) stream.write(',\n');
-    stream.write(`    ${option.cppName}(${option.defaultValue})`);
-    first = false;
+    if (option.defaultValue != null) {
+      stream.write(`    ${option.cppName}(${option.defaultValue})`);
+      first = false;
+    }
   }
   stream.write(' {}\n\n');
   stream.write(`  command command;\n`);
