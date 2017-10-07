@@ -6,6 +6,7 @@ const cli = require('./lib/cli');
 const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
+const writeDepFile = require('./lib/writeDepFile');
 
 cli(function () {
   if (process.argv.length < 6) {
@@ -30,13 +31,12 @@ cli(function () {
   );
   genCliHppParser(spec, relativeSourceDirPath, targetHppStream);
   targetHppStream.end();
-  const depfile = fs.createWriteStream(depfilePath);
-  const modulePaths = Object.values(require.cache)
-    .filter(module => !/\/node_modules\//.test(module.filename))
-    .map(module => module.filename)
-    .join(' \\\n  ');
-  depfile.write(`${targetCppPath}: ${modulePaths}\n`);
-  depfile.end();
+  writeDepFile(fs.createWriteStream(depfilePath), [{
+    targets: [targetCppPath],
+    dependencies: Object.values(require.cache)
+      .filter(module => !/\/node_modules\//.test(module.filename))
+      .map(module => module.filename),
+  }])
 });
 
 function genSpec(manifest) {
