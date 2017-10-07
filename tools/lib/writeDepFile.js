@@ -1,6 +1,15 @@
+/* @flow */
+
 'use strict';
 
-function writeDepFile(stream, rules) {
+import type {Writable} from 'stream';
+
+type DepFileRules = Array<{
+  targets: Array<string>,
+  dependencies: Array<string>,
+}>;
+
+function writeDepFile(stream: Writable, rules: DepFileRules) {
   for (const rule of rules) {
     let first = true;
     for (const target of rule.targets) {

@@ -27,6 +27,13 @@ const manifest = new updfile.Manifest();
 const common_compile_flags = ["-Wall", "-fcolor-diagnostics", "-MMD"];
 const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-stdlib=libc++"]);
 
+const compile_js_cli = manifest.cli_template('node_modules/.bin/babel', [
+  {
+    literals: ["--plugins", "transform-flow-strip-types", "-o"],
+    variables: ["output_file", "input_files"],
+  },
+]);
+
 const compile_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
@@ -63,6 +70,12 @@ const compile_debug_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: [], variables: ["input_files"]},
 ]);
 
+const compiled_tools = manifest.rule(
+  compile_js_cli,
+  [manifest.source('(tools/**/*.js)')],
+  `${BUILD_DIR}/($1)`
+);
+
 const cppt_sources = manifest.source("(src/lib/**/*).cppt");
 
 const test_cpp_files = manifest.rule(
@@ -74,15 +87,19 @@ const test_cpp_files = manifest.rule(
 );
 
 const cli_parser_cpp_file = manifest.rule(
-  manifest.cli_template('tools/gen_cli_parser.js', [
-    {variables: ["output_file"]},
+  manifest.cli_template(`node`, [
+    {
+      literals: [`${BUILD_DIR}/tools/gen_cli_parser.js`],
+      variables: ["output_file"]
+    },
     {
       literals: [`${BUILD_DIR}/src/lib/cli/parse_options.h`],
       variables: ["dependency_file", "input_files"],
     },
   ]),
   [manifest.source("(src/lib/cli/parse_options).json")],
-  `${BUILD_DIR}/($1).cpp`
+  `${BUILD_DIR}/($1).cpp`,
+  [compiled_tools]
 );
 
 const cpp_files = [manifest.source("(src/lib/**/*).cpp"), cli_parser_cpp_file];
