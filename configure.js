@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-const updfile = require('./tools/lib/updfile');
+const updfile = require('./.build_files/tools/lib/updfile');
+const path = require('path');
 
 const options = {
   compilerBinary: 'clang++',
@@ -22,7 +23,7 @@ for (let i = 2; i < argv.length; ++i) {
 const BUILD_DIR = ".build_files";
 const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
 
-const manifest = new updfile.Manifest();
+const manifest = new updfile.ManifestBuilder();
 
 const common_compile_flags = ["-Wall", "-fcolor-diagnostics", "-MMD"];
 const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-stdlib=libc++"]);
@@ -77,13 +78,21 @@ const compiled_tools = manifest.rule(
 );
 
 const cppt_sources = manifest.source("(src/lib/**/*).cppt");
+const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
 
 const test_cpp_files = manifest.rule(
-  manifest.cli_template('tools/compile_test.js', [
-    {variables: ["input_files", "output_file", "dependency_file"]},
+  manifest.cli_template('node', [
+    {
+      literals: [`${BUILD_DIR}/tools/compile_test.js`],
+      variables: ["input_files", "output_file", "dependency_file"],
+    },
+    {
+      literals: [testingHeaderPath],
+    }
   ]),
   [cppt_sources],
-  `${BUILD_DIR}/($1).cpp`
+  `${BUILD_DIR}/($1).cpp`,
+  [compiled_tools]
 );
 
 const cli_parser_cpp_file = manifest.rule(
@@ -131,19 +140,31 @@ const compiled_debug_c_files = manifest.rule(
 );
 
 const tests_cpp_file = manifest.rule(
-  manifest.cli_template('tools/index_tests.js', [
-    {variables: ["output_file", "dependency_file", "input_files"]}
+  manifest.cli_template('node', [
+    {
+      literals: [`${BUILD_DIR}/tools/index_tests.js`],
+      variables: ["output_file", "dependency_file"],
+    },
+    {
+      literals: [testingHeaderPath],
+      variables: ["input_files"],
+    },
   ]),
   [cppt_sources],
-  `${BUILD_DIR}/(tests).cpp`
+  `${BUILD_DIR}/(tests).cpp`,
+  [compiled_tools]
 );
 
 const package_cpp_file = manifest.rule(
-  manifest.cli_template('tools/gen_package_info.js', [
-    {variables: ["output_file", "dependency_file", "input_files"]}
+  manifest.cli_template('node', [
+    {
+      literals: [`${BUILD_DIR}/tools/gen_package_info.js`],
+      variables: ["output_file", "dependency_file", "input_files"],
+    }
   ]),
   [manifest.source("package.json")],
-  `${BUILD_DIR}/(package).cpp`
+  `${BUILD_DIR}/(package).cpp`,
+  [compiled_tools]
 );
 
 const compiled_optimized_main_files = manifest.rule(

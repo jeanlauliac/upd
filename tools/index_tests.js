@@ -7,8 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
 
-function writeContent(stream, sourcePaths, targetDirPath) {
-  const headerPath = path.relative(targetDirPath, path.resolve(__dirname, 'lib/testing.h'));
+function writeContent(stream, sourcePaths, targetDirPath, testingHeaderPath) {
+  const headerPath = path.relative(targetDirPath, testingHeaderPath);
   const entryPointNames = sourcePaths.map(sourcePath => {
     return 'test_' + sourcePath.replace(/\//g, 'zS').replace(/\./g, 'zD').replace(/\-/g, 'zN');
   });
@@ -29,13 +29,14 @@ function writeContent(stream, sourcePaths, targetDirPath) {
 }
 
 cli(function () {
-  if (process.argv.length < 4) {
+  if (process.argv.length < 5) {
     reporting.fatalError(1, 'not enough arguments');
     return;
   }
   const targetPath = process.argv[2];
   const depfilePath = process.argv[3];
-  const sourcePaths = process.argv.slice(4);
+  const headerPath = process.argv[4];
+  const sourcePaths = process.argv.slice(5);
   let targetStream, targetDirPath;
   if (targetPath === '-') {
     targetStream = process.stdout;
@@ -44,7 +45,7 @@ cli(function () {
     targetStream = fs.createWriteStream(targetPath);
     targetDirPath = path.dirname(targetPath);
   }
-  writeContent(targetStream, sourcePaths, targetDirPath);
+  writeContent(targetStream, sourcePaths, targetDirPath, headerPath);
   if (targetPath !== '-') {
     targetStream.end();
   }

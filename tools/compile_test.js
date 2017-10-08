@@ -111,8 +111,8 @@ function writeTestFunction(stream, caseCount, caseName, blockContent, reporterNa
   return functionName;
 }
 
-function writeHeader(stream, reporterName, targetDirPath) {
-  const headerPath = path.relative(targetDirPath, path.resolve(__dirname, 'lib/testing.h'));
+function writeHeader(stream, reporterName, targetDirPath, testingHeaderPath) {
+  const headerPath = path.relative(targetDirPath, testingHeaderPath);
   stream.write('#include <iostream>\n');
   stream.write(`#include "${headerPath}"\n`);
   stream.write(`\n`);
@@ -129,13 +129,13 @@ function writeMain(stream, testFunctions, filePath) {
   stream.write('}\n');
 }
 
-function transform(content, stream, filePath, targetDirPath) {
+function transform(content, stream, filePath, targetDirPath, headerPath) {
   let i = 0;
   let caseCount = 0;
   const testFunctions = [];
   const reporterName =
     '__reporter_' + Math.floor(Math.random() * Math.pow(2,16)).toString(16);
-  writeHeader(stream, reporterName, targetDirPath);
+  writeHeader(stream, reporterName, targetDirPath, headerPath);
   while (i < content.length) {
     let j = content.indexOf('@case ', i);
     const unchangedContent = content.substring(i, j >= 0 ? j : content.length);
@@ -188,13 +188,14 @@ function updateIncludes(sourceCode, sourceDirPath, targetDirPath) {
 }
 
 cli(function () {
-  if (process.argv.length < 5) {
+  if (process.argv.length < 6) {
     reporting.fatalError(1, 'not enough arguments');
     return;
   }
   const sourcePath = process.argv[2];
   const targetPath = process.argv[3];
   const depfilePath = process.argv[4];
+  const headerPath = process.argv[5];
   let targetStream, targetDirPath;
   if (targetPath === '-') {
     targetStream = process.stdout;
@@ -208,7 +209,7 @@ cli(function () {
     path.dirname(sourcePath),
     targetDirPath
   );
-  transform(content, targetStream, sourcePath, targetDirPath);
+  transform(content, targetStream, sourcePath, targetDirPath, headerPath);
   if (targetPath !== '-') {
     targetStream.end();
   }
