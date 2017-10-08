@@ -79,4 +79,21 @@ class ManifestBuilder {
   }
 };
 
-module.exports = {ManifestBuilder};
+function makeCli(flatPlats: Array<string>): Array<CliTemplateArgPath> {
+  let curPart = {literals: [], variables: []};
+  const bigParts = [curPart];
+  for (const part of flatPlats) {
+    if (part[0] === '$') {
+      curPart.variables.push(part.slice(1));
+      continue;
+    }
+    if (curPart.variables.length > 0) {
+      curPart = {literals: [], variables: []};
+      bigParts.push(curPart);
+    }
+    curPart.literals.push(part);
+  }
+  return bigParts;
+}
+
+module.exports = {ManifestBuilder, makeCli};

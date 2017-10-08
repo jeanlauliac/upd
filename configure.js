@@ -30,12 +30,12 @@ const manifest = new updfile.ManifestBuilder();
 const common_compile_flags = ["-Wall", "-fcolor-diagnostics", "-MMD"];
 const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-stdlib=libc++"]);
 
-const compile_js_cli = manifest.cli_template('node_modules/.bin/babel', [
-  {
-    literals: ["--source-maps", "inline", "--plugins", "transform-flow-strip-types", "-o"],
-    variables: ["output_file", "input_files"],
-  },
-]);
+const compile_js_cli = manifest.cli_template('node_modules/.bin/babel',
+  updfile.makeCli([
+    "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
+    "-o", "$output_file", "$input_files"
+  ]),
+);
 
 const compile_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
