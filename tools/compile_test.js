@@ -6,6 +6,7 @@ const cli = require('./lib/cli');
 const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
+const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
 function fatalError(filePath, content, i, str) {
   const lineNumber = (content.substr(0, i).match(/\n/g) || []).length;
@@ -213,11 +214,5 @@ cli(function () {
   if (targetPath !== '-') {
     targetStream.end();
   }
-  const depfile = fs.createWriteStream(depfilePath);
-  const modulePaths = Object.values(require.cache)
-    .filter(module => !/\/node_modules\//.test(module.filename))
-    .map(module => module.filename)
-    .join(' \\\n  ');
-  depfile.write(`${targetPath}: ${modulePaths}\n`);
-  depfile.end();
+  writeNodeDepFile(depfilePath, targetPath);
 });

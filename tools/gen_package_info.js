@@ -6,6 +6,7 @@ const cli = require('./lib/cli');
 const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
+const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
 cli(function () {
   if (process.argv.length < 5) {
@@ -24,11 +25,5 @@ cli(function () {
   targetStream.write(`const char* DESCRIPTION = ${JSON.stringify(json.description)};\n`);
   targetStream.write("}\n}\n");
   targetStream.end();
-  const depfile = fs.createWriteStream(depfilePath);
-  const modulePaths = Object.values(require.cache)
-    .filter(module => !/\/node_modules\//.test(module.filename))
-    .map(module => module.filename)
-    .join(' \\\n  ');
-  depfile.write(`${targetPath}: ${modulePaths}\n`);
-  depfile.end();
+  writeNodeDepFile(depfilePath, targetPath);
 });

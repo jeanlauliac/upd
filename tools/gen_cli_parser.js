@@ -7,7 +7,7 @@ const cli = require('./lib/cli');
 const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
-const writeDepFile = require('./lib/writeDepFile');
+const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
 type Manifest = {
   description: string,
@@ -51,12 +51,7 @@ cli(function () {
   );
   genCliHppParser(spec, relativeSourceDirPath, targetHppStream);
   targetHppStream.end();
-  writeDepFile(fs.createWriteStream(depfilePath), [{
-    targets: [targetCppPath],
-    dependencies: Object.values(require.cache)
-      .filter(module => !/\/node_modules\//.test((module: $FlowFixMe).filename))
-      .map((module: $FlowFixMe) => module.filename),
-  }])
+  writeNodeDepFile(depfilePath, targetCppPath);
 });
 
 function genSpec(manifest: Manifest) {
