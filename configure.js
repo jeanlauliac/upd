@@ -27,29 +27,25 @@ const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
 
 const manifest = new updfile.ManifestBuilder();
 
-const common_compile_flags = ["-Wall", "-fcolor-diagnostics", "-MMD"];
-const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-stdlib=libc++"]);
+const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-fcolor-diagnostics", "-MMD"];
+const COMMON_CPLUSPLUS_COMPILE_FLAGS =
+  COMMON_NATIVE_COMPILE_FLAGS.concat(["-std=c++14", "-stdlib=libc++"]);
 
-const compile_js_cli = manifest.cli_template('node_modules/.bin/babel',
-  updfile.makeCli([
-    "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
-    "-o", "$output_file", "$input_files"
-  ]),
+const compile_optimized_cpp_cli = manifest.cli_template(
+  options.compilerBinary,
+  updfile.makeCli(
+    ["-c", "-o", "$output_file"].concat(
+      COMMON_CPLUSPLUS_COMPILE_FLAGS,
+      OPTIMIZATION_FLAGS,
+      ["-MF", "$dependency_file", "$input_files"],
+    )
+  )
 );
-
-const compile_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
-  {literals: ["-c", "-o"], variables: ["output_file"]},
-  {
-    literals: common_cpp_compile_flags.concat(OPTIMIZATION_FLAGS, ["-MF"]),
-    variables: ["dependency_file"]
-  },
-  {literals: [], variables: ["input_files"]},
-]);
 
 const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: common_cpp_compile_flags.concat(['-g', "-MF"]),
+    literals: COMMON_CPLUSPLUS_COMPILE_FLAGS.concat(['-g', "-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -58,7 +54,7 @@ const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
 const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: common_compile_flags.concat(["-x", "c"], OPTIMIZATION_FLAGS, ["-MF"]),
+    literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c"], OPTIMIZATION_FLAGS, ["-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
@@ -67,14 +63,20 @@ const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
 const compile_debug_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
-    literals: common_compile_flags.concat(["-x", "c", "-g", "-MF"]),
+    literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c", "-g", "-MF"]),
     variables: ["dependency_file"]
   },
   {literals: [], variables: ["input_files"]},
 ]);
 
 const compiled_tools = manifest.rule(
-  compile_js_cli,
+  manifest.cli_template(
+    'node_modules/.bin/babel',
+    updfile.makeCli([
+      "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
+      "-o", "$output_file", "$input_files"
+    ]),
+  ),
   [manifest.source('(tools/**/*.js)')],
   `${BUILD_DIR}/($1)`
 );
