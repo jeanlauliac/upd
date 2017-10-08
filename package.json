@@ -36,6 +36,6 @@
     "tools/lib/updfile.js"
   ],
   "jest": {
-    "roots": [".build_files/tools"]
+    "roots": ["gen/tools"]
   }
 }

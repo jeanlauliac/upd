@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-const updfile = require('./.build_files/tools/lib/updfile');
+const BUILD_DIR = "gen";
+
 const path = require('path');
+const updfile = require(`./${BUILD_DIR}/tools/lib/updfile`);
 
 const options = {
   compilerBinary: 'clang++',
@@ -20,7 +22,6 @@ for (let i = 2; i < argv.length; ++i) {
   }
 }
 
-const BUILD_DIR = ".build_files";
 const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
 
 const manifest = new updfile.ManifestBuilder();
@@ -30,7 +31,7 @@ const common_cpp_compile_flags = common_compile_flags.concat(["-std=c++14", "-st
 
 const compile_js_cli = manifest.cli_template('node_modules/.bin/babel', [
   {
-    literals: ["--plugins", "transform-flow-strip-types", "-o"],
+    literals: ["--source-maps", "inline", "--plugins", "transform-flow-strip-types", "-o"],
     variables: ["output_file", "input_files"],
   },
 ]);
