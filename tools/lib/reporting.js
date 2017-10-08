@@ -1,3 +1,5 @@
+/* @flow */
+
 'use strict';
 
 const chalk = require('chalk');
@@ -7,15 +9,14 @@ const path = require('path');
 const ERROR_PREFIX = chalk.red('error:');
 const MAIN_NAME = path.basename(process.mainModule.filename);
 
-function error() {
-  const str = util.format.apply(util, arguments);
+function error(format: string, ...placeholders: Array<mixed>) {
+  const str = util.format(format, ...placeholders);
   console.error('%s: %s %s', MAIN_NAME, ERROR_PREFIX, str);
 }
 
-function fatalError() {
-  const args = Array.from(arguments);
-  process.exitCode = args.shift();
-  error.apply(this, args);
+function fatalError(exitCode: number, format: string, ...placeholders: Array<mixed>) {
+  process.exitCode = exitCode;
+  error(format, ...placeholders);
 }
 
 module.exports = {error, fatalError};
