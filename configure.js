@@ -1,9 +1,10 @@
-#!/usr/bin/env node
+#!/usr/bin/env node_modules/.bin/babel-node --plugins transform-flow-strip-types
+/* @flow */
 
 const BUILD_DIR = "gen";
 
 const path = require('path');
-const updfile = require(`./${BUILD_DIR}/tools/lib/updfile`);
+const updfile = require('./tools/lib/updfile');
 
 const options = {
   compilerBinary: 'clang++',

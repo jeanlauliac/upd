@@ -6,8 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 type CliTemplateArgPath = {
-  literals: Array<string>,
-  variables: Array<string>,
+  literals?: Array<string>,
+  variables?: Array<string>,
 };
 
 type CliTemplate = {
@@ -59,7 +59,7 @@ class ManifestBuilder {
     cli_template: CliTemplateRef,
     inputs: Array<InputRef>,
     output_pattern: string,
-    dependencies: Array<InputRef>
+    dependencies?: Array<InputRef>
   ): RuleRef {
     this._result.rules.push({
       dependencies: dependencies || [],
