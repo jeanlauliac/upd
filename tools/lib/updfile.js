@@ -1,9 +1,39 @@
+/* @flow */
+
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 
-class Manifest {
+type CliTemplateArgPath = {
+  literals: Array<string>,
+  variables: Array<string>,
+};
+
+type CliTemplate = {
+  binary_path: string,
+  arguments: Array<CliTemplateArgPath>,
+};
+
+type CliTemplateRef = {cli_ix: number};
+type SourceRef = {source_ix: number};
+type RuleRef = {rule_ix: number};
+type InputRef = SourceRef | RuleRef;
+
+type Manifest = {
+  command_line_templates: Array<CliTemplate>,
+  rules: Array<{
+    command_line_ix: number,
+    dependencies: Array<InputRef>,
+    inputs: Array<InputRef>,
+    output: string,
+  }>,
+  source_patterns: Array<string>,
+};
+
+class ManifestBuilder {
+  _result: Manifest;
+
   constructor() {
     this._result = {
       command_line_templates: [],
@@ -12,7 +42,7 @@ class Manifest {
     };
   }
 
-  cli_template(binary_path, args) {
+  cli_template(binary_path: string, args: Array<CliTemplateArgPath>): CliTemplateRef {
     this._result.command_line_templates.push({
       binary_path,
       arguments: args,
@@ -20,12 +50,17 @@ class Manifest {
     return {cli_ix: this._result.command_line_templates.length - 1};
   }
 
-  source(pattern) {
+  source(pattern: string): SourceRef {
     this._result.source_patterns.push(pattern);
     return {source_ix: this._result.source_patterns.length - 1};
   }
 
-  rule(cli_template, inputs, output_pattern, dependencies) {
+  rule(
+    cli_template: CliTemplateRef,
+    inputs: Array<InputRef>,
+    output_pattern: string,
+    dependencies: Array<InputRef>
+  ): RuleRef {
     this._result.rules.push({
       dependencies: dependencies || [],
       command_line_ix: cli_template.cli_ix,
@@ -35,7 +70,7 @@ class Manifest {
     return {rule_ix: this._result.rules.length - 1};
   }
 
-  export(dirname) {
+  export(dirname: string) {
     fs.writeFileSync(
       path.resolve(dirname, 'updfile.json'),
       JSON.stringify(this._result, null, 2),
@@ -44,4 +79,4 @@ class Manifest {
   }
 };
 
-module.exports = {Manifest};
+module.exports = {ManifestBuilder};

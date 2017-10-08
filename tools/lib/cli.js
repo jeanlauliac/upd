@@ -1,8 +1,14 @@
+/* @flow */
+
 'use strict';
 
 const reporting = require('./reporting');
 
-function cli(callback) {
+/**
+ * Basic wrapper for command-line JavaScript tools.
+ */
+function cli(callback: () => mixed) {
+  // $FlowFixMe: process should exist
   if (process.getuid() === 0) {
     reporting.fatalError(1, 'cannot run as root');
     return;

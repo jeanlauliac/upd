@@ -1,9 +1,16 @@
+/* @flow */
+
 'use strict';
+
+declare var it: any;
+declare var expect: any;
 
 const writeDepFile = require('../writeDepFile');
 const {Writable} = require('stream');
 
 class StringWritable extends Writable {
+  str: string;
+
   constructor() {
     super({
       write(chunk, enc, cb) {

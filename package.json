@@ -22,7 +22,7 @@
     "tap-mocha-reporter": "^3.0.0"
   },
   "scripts": {
-    "test": "dist/upd update dist/unit_tests && jest && dist/unit_tests | faucet && e2e_tests/run.js",
+    "test": "./test.sh",
     "preinstall": "mkdir -p dist && touch dist/upd",
     "install": "bash bootstrap/gen_upd.sh",
     "prepublishOnly": "./prepublish.sh"
