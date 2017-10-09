@@ -79,6 +79,9 @@ bool is_file_up_to_date(
     return false;
   }
   auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
+  if (new_hash != record.hash) {
+    std::cerr << root_path + "/" + local_target_path << "     " << new_hash << "       " << record.hash << std::endl;
+  }
   return new_hash == record.hash;
 }
 
@@ -167,16 +170,7 @@ void finalize_scheduled_update(
   std::unordered_set<std::string> local_src_path_set(local_src_paths.begin(), local_src_paths.end());
   if (depfile_data) {
     for (auto dep_path: depfile_data->dependency_paths) {
-      dep_path = normalize_path(dep_path);
-      if (dep_path.at(0) == '/') {
-        if (dep_path.compare(0, root_folder_path.size(), root_folder_path) != 0) {
-          // TODO: track out-of-root deps separately
-          // throw std::runtime_error("depfile has a file `" + dep_path +
-          //   "` out of root `" + root_folder_path + "`");
-          continue;
-        }
-        dep_path = dep_path.substr(root_folder_path.size());
-      }
+      dep_path = get_relative_path(cx.root_path, dep_path, io::getcwd_string());
       if (local_src_path_set.find(dep_path) != local_src_path_set.end()) {
         continue;
       }
@@ -197,7 +191,8 @@ void finalize_scheduled_update(
     dep_local_paths,
     cli_template
   );
-  auto new_hash = cx.hash_cache.hash(local_target_path);
+  auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);
+  std::cerr << new_hash << std::endl;
   cx.log_cache.record(local_target_path, {
     .dependency_local_paths = dep_local_paths,
     .hash = new_hash,

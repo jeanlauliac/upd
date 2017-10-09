@@ -1,4 +1,5 @@
 #include "io.h"
+#include "path.h"
 #include "xxhash64.h"
 #include <array>
 #include <fstream>
@@ -24,6 +25,9 @@ XXH64_hash_t hash_file(unsigned long long seed, const std::string& file_path) {
 }
 
 unsigned long long file_hash_cache::hash(const std::string& file_path) {
+  if (!is_path_absolute(file_path)) {
+    throw std::runtime_error("expected absolute path");
+  }
   auto search = cache_.find(file_path);
   if (search != cache_.end()) {
     return search->second;

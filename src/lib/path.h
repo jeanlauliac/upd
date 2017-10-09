@@ -7,6 +7,8 @@ namespace upd {
 
 std::string normalize_path(const std::string& path);
 
+bool is_path_absolute(const std::string& path);
+
 std::string get_absolute_path(
   const std::string& relative_path,
   const std::string& working_path

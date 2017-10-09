@@ -40,11 +40,15 @@ std::string normalize_path(const std::string& path) {
   return join_path(split_path(path));
 }
 
+bool is_path_absolute(const std::string& path) {
+  return path.at(0) == '/';
+}
+
 std::string get_absolute_path(
   const std::string& relative_path,
   const std::string& working_path
 ) {
-  if (relative_path.at(0) == '/') {
+  if (is_path_absolute(relative_path)) {
     return normalize_path(relative_path);
   }
   return normalize_path(working_path + '/' + relative_path);
