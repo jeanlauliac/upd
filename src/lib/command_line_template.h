@@ -134,21 +134,13 @@ struct command_line_parameters {
 };
 
 /**
- * Given a variable and parameters, pushes the corresponding values on the
- * argument list.
- */
-void reify_command_line_arg(
-  std::vector<std::string>& args,
-  const command_line_template_variable variable_arg,
-  const command_line_parameters& parameters
-);
-
-/**
  * Specialize a command line template for a particular set of files.
  */
 command_line reify_command_line(
   const command_line_template& base,
-  const command_line_parameters& parameters
+  const command_line_parameters& parameters,
+  const std::string& root_path,
+  const std::string& working_path
 );
 
 }

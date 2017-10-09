@@ -24,4 +24,10 @@ std::string get_local_path(
   const std::string& working_path
 );
 
+std::string get_relative_path(
+  const std::string& target_path,
+  const std::string& relative_path,
+  const std::string& working_path
+);
+
 }

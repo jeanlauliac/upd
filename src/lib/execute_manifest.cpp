@@ -48,7 +48,7 @@ void execute_manifest(
     return;
   }
   if (print_shell_script) {
-    output_shell_script(std::cout, updm, plan, manifest.command_line_templates);
+    output_shell_script(std::cout, updm, plan, manifest.command_line_templates, root_path);
     return;
   }
 

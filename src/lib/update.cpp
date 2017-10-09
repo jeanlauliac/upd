@@ -128,7 +128,7 @@ scheduled_file_update schedule_file_update(
     .dependency_file = get_fd_path(depfile_fds[1]),
     .input_files = local_src_paths,
     .output_files = { local_target_path }
-  });
+  }, cx.root_path, io::getcwd_string());
   std::cout << "updating: " << local_target_path << std::endl;
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;

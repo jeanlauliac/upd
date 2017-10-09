@@ -11,7 +11,8 @@ void output_shell_script(
   OStream& os,
   const update_map& updm,
   update_plan& plan,
-  std::vector<command_line_template> command_line_templates
+  std::vector<command_line_template> command_line_templates,
+  std::string root_path
 ) {
   std::unordered_set<std::string> mked_dir_paths;
   os << "#!/bin/bash" << std::endl
@@ -32,7 +33,7 @@ void output_shell_script(
       .dependency_file = "/dev/null",
       .input_files = target_file.local_input_file_paths,
       .output_files = { local_target_path }
-    });
+    }, root_path, io::getcwd_string());
     os << command_line << std::endl;
     plan.erase(local_target_path);
   }

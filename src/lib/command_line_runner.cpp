@@ -9,9 +9,8 @@
 namespace upd {
 
 /**
- * `fork()`/`exec()` to run a command line. We cannot use `posix_spawn()`
- * (faster on macOS) because we need to be able to `chdir()` in the child in a
- * thread-safe manner. If really it proves slow, `clone()` may be investigated.
+ * `fork()`/`exec()` to run a command line. We should switch to `posix_spawn()`
+ * (faster on macOS).
  */
 void command_line_runner::run(
   const std::string& root_path,
@@ -27,10 +26,6 @@ void command_line_runner::run(
   pid_t child_pid = fork();
   if (child_pid == 0) {
     close(depfile_fds[0]);
-    if (chdir(root_path.c_str()) != 0) {
-      std::cerr << "upd: *** chdir() failed in child process" << std::endl;
-      _exit(127);
-    }
     execvp(target.binary_path.c_str(), argv.data());
     std::cerr << "upd: *** execvp() failed in child process" << std::endl;
     _exit(127);
