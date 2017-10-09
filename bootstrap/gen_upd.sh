@@ -9,6 +9,7 @@ node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-type
 node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-types -o gen/tools/index_tests.js tools/index_tests.js
 mkdir -p gen/tools/lib
 node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-types -o gen/tools/lib/cli.js tools/lib/cli.js
+node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-types -o gen/tools/lib/writeNodeDepFile.js tools/lib/writeNodeDepFile.js
 mkdir -p gen/tools/lib/__tests__
 node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-types -o gen/tools/lib/__tests__/writeDepFile-test.js tools/lib/__tests__/writeDepFile-test.js
 node_modules/.bin/babel --source-maps inline --plugins transform-flow-strip-types -o gen/tools/lib/reporting.js tools/lib/reporting.js
