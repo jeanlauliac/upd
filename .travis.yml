@@ -13,4 +13,4 @@ env: COMPILER_NAME=clang CXX=clang++-3.9 CC=clang-3.9
 install:
   - yarn install
 script:
-  - ./configure.js && npm test
+  - node_modules/.bin/babel-node --plugins transform-flow-strip-types configure.js && yarn test
