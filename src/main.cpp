@@ -60,7 +60,9 @@ int run_with_options(const cli::options& cli_opts, bool auto_color_diags) {
       return 0;
     }
     if (cli_opts.command == cli::command::help) {
-      cli::output_help(cli_opts.program_name, false, std::cout);
+      bool use_color = cli_opts.color == cli::color::always ||
+        (cli_opts.color == cli::color::auto_ && isatty(1));
+      cli::output_help(cli_opts.program_name, use_color, std::cout);
       return 0;
     }
     auto working_path = io::getcwd_string();
@@ -131,27 +133,25 @@ int run(int argc, char *argv[]) {
     return run_with_options(cli_opts, color_diags);
   } catch (cli::missing_command_error error) {
     cli::output_help(error.program_name, color_diags, std::cerr);
-    return 1;
   } catch (cli::invalid_command_error error) {
     err() << "`" << error.value << "` is not a valid command" << std::endl;
-    return 1;
   } catch (cli::unexpected_argument_error error) {
     err() << "invalid argument: `" << error.arg << "`" << std::endl;
-    return 1;
   } catch (cli::invalid_color_diagnostics_error error) {
     err() << "`" << error.value
       << "` is not a valid color mode" << std::endl;
-    return 1;
+  } catch (cli::invalid_color_error error) {
+    err() << "`" << error.value
+      << "` is not a valid color mode" << std::endl;
   } catch (cli::option_requires_argument_error error) {
     err() << "option `" << error.option
       << "` requires an argument" << std::endl;
-    return 1;
   } catch (cli::invalid_concurrency_error error) {
     err() << "`" << error.value
       << "` is not a valid concurrency; specify `auto`, "
       << "or a number greater than zero" << std::endl;
-    return 1;
   }
+  return 1;
 }
 
 }

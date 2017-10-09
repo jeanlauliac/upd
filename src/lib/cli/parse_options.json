@@ -33,6 +33,13 @@
       "default": "auto"
     },
     {
+      "name": "color",
+      "description": "Controls whether standard output uses color.",
+      "value_type": {"enum_of": ["always", "auto", "never"]},
+      "default": "auto",
+      "only_for": ["help"]
+    },
+    {
       "name": "all",
       "only_for": ["update", "graph", "script"]
     },
