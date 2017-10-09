@@ -44,7 +44,7 @@ Then you can initialize your project by running the following in the
 project's root directory:
 
 ```sh
-upd --init
+upd init
 ```
 
 This creates a single file `.updroot` that is used by `upd` to know what is the
@@ -145,7 +145,7 @@ yarn
 ./configure.js
 
 # compile `upd` using itself!
-dist/upd dist/upd
+dist/upd update dist/upd
 
 # run unit+e2e tests
 yarn test
