@@ -79,9 +79,6 @@ bool is_file_up_to_date(
     return false;
   }
   auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
-  if (new_hash != record.hash) {
-    std::cerr << root_path + "/" + local_target_path << "     " << new_hash << "       " << record.hash << std::endl;
-  }
   return new_hash == record.hash;
 }
 
@@ -192,7 +189,6 @@ void finalize_scheduled_update(
     cli_template
   );
   auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);
-  std::cerr << new_hash << std::endl;
   cx.log_cache.record(local_target_path, {
     .dependency_local_paths = dep_local_paths,
     .hash = new_hash,
