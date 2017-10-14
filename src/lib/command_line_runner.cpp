@@ -33,6 +33,67 @@ static std::string read_fd_to_string(int fd) {
   return result.str();
 }
 
+struct errno_error {
+  errno_error(int code): code(code) {}
+  int code;
+};
+
+struct spawn_file_actions {
+  spawn_file_actions();
+  ~spawn_file_actions();
+  spawn_file_actions(spawn_file_actions&) = delete;
+  spawn_file_actions(spawn_file_actions&&) = delete;
+
+  void add_close(int fd);
+  void add_dup2(int fd, int newfd);
+  void destroy();
+  const posix_spawn_file_actions_t& posix() const { return pdfa_; }
+
+private:
+  posix_spawn_file_actions_t pdfa_;
+  bool init_;
+};
+
+spawn_file_actions::spawn_file_actions(): init_(true) {
+  if (posix_spawn_file_actions_init(&pdfa_) == 0) return;
+  throw errno_error(errno);
+}
+
+spawn_file_actions::~spawn_file_actions() {
+  destroy();
+}
+
+void spawn_file_actions::add_close(int fd) {
+  if (posix_spawn_file_actions_addclose(&pdfa_, fd) == 0) return;
+  throw errno_error(errno);
+}
+
+void spawn_file_actions::add_dup2(int fd, int newfd) {
+  if (posix_spawn_file_actions_adddup2(&pdfa_, fd, newfd) == 0) return;
+  throw errno_error(errno);
+}
+
+void spawn_file_actions::destroy() {
+  if (!init_) return;
+  init_ = false;
+  if (posix_spawn_file_actions_destroy(&pdfa_) == 0) return;
+  throw errno_error(errno);
+}
+
+static int spawn(
+  const std::string binary_path,
+  const spawn_file_actions& actions,
+  char* const* argv,
+  char* const* env
+) {
+  pid_t pid;
+  auto bin = binary_path.c_str();
+  auto pa = &actions.posix();
+  int res = posix_spawnp(&pid, bin, pa, nullptr, argv, env);
+  if (res == 0) return pid;
+  throw errno_error(errno);
+}
+
 /**
  * `posix_spawn()` to run a command line.
  */
@@ -48,55 +109,28 @@ void command_line_runner::run(
   }
   argv.push_back(nullptr);
 
-  posix_spawn_file_actions_t actions;
-  if (posix_spawn_file_actions_init(&actions) != 0) {
-    throw std::runtime_error("action init failed");
-  }
   int stdout[2];
   if (pipe(stdout) != 0) throw std::runtime_error("pipe() failed");
   int stderr[2];
   if (pipe(stderr) != 0) throw std::runtime_error("pipe() failed");
 
-  if (posix_spawn_file_actions_addclose(&actions, depfile_fds[0]) != 0) {
-    throw std::runtime_error("action addclose failed");
-  }
-  if (posix_spawn_file_actions_addclose(&actions, stdout[0]) != 0) {
-    throw std::runtime_error("action addclose failed");
-  }
-  if (posix_spawn_file_actions_addclose(&actions, stderr[0]) != 0) {
-    throw std::runtime_error("action addclose failed");
-  }
-  if (posix_spawn_file_actions_adddup2(&actions, stdout[1], STDOUT_FILENO) != 0) {
-    throw std::runtime_error("action adddup2 failed");
-  }
-  if (posix_spawn_file_actions_adddup2(&actions, stderr[1], STDERR_FILENO) != 0) {
-    throw std::runtime_error("action adddup2 failed");
-  }
-  if (posix_spawn_file_actions_addclose(&actions, stdout[1]) != 0) {
-    throw std::runtime_error("action addclose failed");
-  }
-  if (posix_spawn_file_actions_addclose(&actions, stderr[1]) != 0) {
-    throw std::runtime_error("action addclose failed");
-  }
+  spawn_file_actions actions;
+  actions.add_close(depfile_fds[0]);
+  actions.add_close(stdout[0]);
+  actions.add_close(stderr[0]);
+  actions.add_dup2(stdout[1], STDOUT_FILENO);
+  actions.add_dup2(stderr[1], STDERR_FILENO);
+  actions.add_close(stdout[1]);
+  actions.add_close(stderr[1]);
 
-  auto read_stdout = std::async(std::launch::async, &read_fd_to_string, stdout[0]);
-  auto read_stderr = std::async(std::launch::async, &read_fd_to_string, stderr[0]);
+  auto read_stdout =
+    std::async(std::launch::async, &read_fd_to_string, stdout[0]);
+  auto read_stderr =
+    std::async(std::launch::async, &read_fd_to_string, stderr[0]);
 
-  pid_t child_pid;
-  int res = posix_spawnp(
-    &child_pid,
-    target.binary_path.c_str(),
-    &actions,
-    nullptr,
-    argv.data(),
-    environ
-  );
-  if (res != 0) {
-    throw std::runtime_error("command line failed");
-  }
-  if (posix_spawn_file_actions_destroy(&actions) != 0) {
-    throw std::runtime_error("action destroy failed");
-  };
+  pid_t child_pid = spawn(target.binary_path, actions, argv.data(), environ);
+  actions.destroy();
+
   if (close(depfile_fds[1]) != 0) throw std::runtime_error("close() failed");
   if (close(stdout[1])) throw std::runtime_error("close() failed");
   if (close(stderr[1])) throw std::runtime_error("close() failed");
