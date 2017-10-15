@@ -113,59 +113,74 @@ void execute_update_plan(
       st.worker.notify();
     }
 
-    do {
-      bool has_in_progress = false;
-      bool has_finished = false;
-      for (size_t i = 0; i < worker_states.size(); ++i) {
-        if (worker_states[i]->status == worker_status::in_progress)
-          has_in_progress = true;
-        if (worker_states[i]->status == worker_status::finished)
-          has_finished = true;
-      }
-      if (has_finished || !has_in_progress) break;
-      global_cv.wait(lock);
-    } while (true);
-
     bool has_errors = false;
-    for (size_t i = 0; i < worker_states.size(); ++i) {
-      if (worker_states[i]->status != worker_status::finished) continue;
-      auto& st = *worker_states[i];
-      st.status = worker_status::idle;
+    bool has_in_progress;
+    do {
+      do {
+        has_in_progress = false;
+        bool has_finished = false;
+        for (size_t i = 0; i < worker_states.size(); ++i) {
+          if (worker_states[i]->status == worker_status::in_progress)
+            has_in_progress = true;
+          if (worker_states[i]->status == worker_status::finished)
+            has_finished = true;
+        }
+        if (has_finished || !has_in_progress) break;
+        global_cv.wait(lock);
+      } while (true);
 
-      std::cout << st.result.stdout;
-      std::cerr << st.result.stderr;
+      for (size_t i = 0; i < worker_states.size(); ++i) {
+        if (worker_states[i]->status != worker_status::finished) continue;
+        auto& st = *worker_states[i];
+        st.status = worker_status::idle;
 
-      if (!WIFEXITED(st.result.status)) {
-        std::cerr
-          << "upd: error: process terminated unexpectedly"
-          << std::endl;
-        has_errors = true;
-        continue;
+        std::cerr << st.result.stderr;
+
+        bool has_error = false;
+        if (st.result.stdout.size() > 0) {
+          std::cerr
+            << "upd: error: process has unexpected output on stdout"
+            << std::endl
+            << "Update commands are not allowed to produce output except "
+            << "diagnostics on strerr." << std::endl
+            << "========= STDOUT ========="  << std::endl
+            << st.result.stdout
+            << "========= END =========" << std::endl;
+          has_error = true;
+        }
+        if (!WIFEXITED(st.result.status)) {
+          std::cerr
+            << "upd: error: process terminated unexpectedly"
+            << std::endl;
+          has_error = true;
+        }
+        if (WEXITSTATUS(st.result.status) != 0) {
+          std::cerr
+            << "upd: error: process terminated with non-zero exit code"
+            << std::endl;
+          has_error = true;
+        }
+        if (has_error) {
+          has_errors = true;
+          continue;
+        }
+
+        finalize_scheduled_update(
+          cx,
+          st.sfu,
+          *st.cli_template,
+          *st.local_src_paths,
+          st.local_target_path,
+          updm,
+          *st.local_dep_file_paths
+        );
+        plan.erase(st.local_target_path);
       }
-      if (WEXITSTATUS(st.result.status) != 0) {
-        std::cerr
-          << "upd: error: process terminated with non-zero exit code"
-          << std::endl;
-        has_errors = true;
-        continue;
-      }
-
-      finalize_scheduled_update(
-        cx,
-        st.sfu,
-        *st.cli_template,
-        *st.local_src_paths,
-        st.local_target_path,
-        updm,
-        *st.local_dep_file_paths
-      );
-      plan.erase(st.local_target_path);
-    }
+    } while (has_errors && has_in_progress);
 
     if (has_errors) {
       break;
     }
-
   }
 
   for (auto& ws: worker_states) {
