@@ -50,11 +50,12 @@ struct worker_state {
     cli_template(nullptr),
     local_src_paths(nullptr),
     local_dep_file_paths(nullptr),
-    worker(status, sfu.job, mutex, cv) {}
+    worker(status, result, sfu.job, mutex, cv) {}
   worker_state(worker_state&) = delete;
   worker_state(worker_state&& other) = delete;
 
   worker_status status;
+  command_line_result result;
   scheduled_file_update sfu;
   std::string local_target_path;
   const command_line_template* cli_template;
@@ -125,10 +126,30 @@ void execute_update_plan(
       global_cv.wait(lock);
     } while (true);
 
+    bool has_errors = false;
     for (size_t i = 0; i < worker_states.size(); ++i) {
       if (worker_states[i]->status != worker_status::finished) continue;
       auto& st = *worker_states[i];
       st.status = worker_status::idle;
+
+      std::cout << st.result.stdout;
+      std::cerr << st.result.stderr;
+
+      if (!WIFEXITED(st.result.status)) {
+        std::cerr
+          << "upd: error: process terminated unexpectedly"
+          << std::endl;
+        has_errors = true;
+        continue;
+      }
+      if (WEXITSTATUS(st.result.status) != 0) {
+        std::cerr
+          << "upd: error: process terminated with non-zero exit code"
+          << std::endl;
+        has_errors = true;
+        continue;
+      }
+
       finalize_scheduled_update(
         cx,
         st.sfu,
@@ -139,6 +160,10 @@ void execute_update_plan(
         *st.local_dep_file_paths
       );
       plan.erase(st.local_target_path);
+    }
+
+    if (has_errors) {
+      break;
     }
 
   }

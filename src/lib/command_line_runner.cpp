@@ -97,7 +97,7 @@ static int spawn(
 /**
  * `posix_spawn()` to run a command line.
  */
-void command_line_runner::run(
+command_line_result command_line_runner::run(
   const std::string& root_path,
   command_line target,
   int depfile_fds[2]
@@ -140,18 +140,16 @@ void command_line_runner::run(
     throw std::runtime_error("waitpid failed");
   }
 
-  std::cerr << read_stdout.get();
-  std::cerr << read_stderr.get();
+  command_line_result result = {
+    .stdout = read_stdout.get(),
+    .stderr = read_stderr.get(),
+    .status = status,
+  };
 
   if (close(stdout[0])) throw std::runtime_error("close() failed");
   if (close(stderr[0])) throw std::runtime_error("close() failed");
 
-  if (!WIFEXITED(status)) {
-    throw std::runtime_error("process did not terminate normally");
-  }
-  if (WEXITSTATUS(status) != 0) {
-    throw std::runtime_error("process terminated with errors");
-  }
+  return result;
 }
 
 }

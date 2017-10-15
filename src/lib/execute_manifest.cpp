@@ -74,6 +74,10 @@ void execute_manifest(
     temp_log_file_path,
     cx.log_cache.records()
   );
+
+  if (!plan.pending_output_file_paths.empty()) {
+    throw update_failed_error();
+  }
 }
 
 }

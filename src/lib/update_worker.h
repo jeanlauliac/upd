@@ -1,5 +1,6 @@
 #pragma once
 
+#include "command_line_runner.h"
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -23,6 +24,7 @@ enum class worker_status { idle, in_progress, finished, shutdown };
 struct update_worker {
   update_worker(
     worker_status& status,
+    command_line_result& result,
     update_job& job,
     std::mutex& mutex,
     std::condition_variable& output_cv
@@ -36,6 +38,7 @@ private:
   void run_();
 
   worker_status& status_;
+  command_line_result& result_;
   update_job& job_;
   std::mutex& mutex_;
   std::condition_variable& output_cv_;

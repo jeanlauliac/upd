@@ -6,11 +6,13 @@ namespace upd {
 
 update_worker::update_worker(
   worker_status& status,
+  command_line_result& result,
   update_job& job,
   std::mutex& mutex,
   std::condition_variable& output_cv
 ):
   status_(status),
+  result_(result),
   job_(job),
   mutex_(mutex),
   output_cv_(output_cv),
@@ -25,8 +27,10 @@ void update_worker::run_() {
     }
     status_ = worker_status::in_progress;
     mutex_.unlock();
-    command_line_runner::run(job_.root_path, job_.target, job_.depfile_fds);
+    std::exception_ptr eptr;
+    auto result = command_line_runner::run(job_.root_path, job_.target, job_.depfile_fds);
     mutex_.lock();
+    result_ = std::move(result);
     status_ = worker_status::finished;
     output_cv_.notify_all();
   }

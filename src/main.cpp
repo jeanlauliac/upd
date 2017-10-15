@@ -86,6 +86,8 @@ int run_with_options(const cli::options& cli_opts, bool auto_color_diags) {
       get_concurrency(cli_opts.concurrency)
     );
     return 0;
+  } catch (update_failed_error error) {
+    err() << "one or more files failed to update" << std::endl;
   } catch (io::cannot_find_root_error) {
     err() << "cannot find a `.updroot' file in the current directory or "
           << "in any of the parent directories" << std::endl

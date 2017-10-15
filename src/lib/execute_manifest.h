@@ -13,6 +13,8 @@ struct unknown_target_error {
 
 struct no_targets_error {};
 
+struct update_failed_error {};
+
 void execute_manifest(
   const std::string& root_path,
   const std::string& working_path,
