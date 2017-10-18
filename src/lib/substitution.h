@@ -43,6 +43,21 @@ inline bool operator==(const segment& left, const segment& right) {
     );
 }
 
+/**
+ * Represent a substitution pattern after parsing. Take, for example,
+ * "src/$1/($2.cpp)". For arguments "foo" and "bar" (in that order), this
+ * would resolve to "src/foo/bar.cpp", with a single captured group "bar.cpp".
+ * This example pattern would be split by the parsing algorithm
+ * into three `segments`:
+ *
+ *   [0] "src/", a simple literal;
+ *   [1] "$1/", composed of the captured group #0, and the literal "/";
+ *   [2] "$2.cpp", ie. the captured group #1 followed by literal ".cpp".
+ *
+ * In addition, there would be a single `capture_groups` from segment indices 2
+ * to 3 (end index is non-inclusive, so that means "only the third segment"
+ * given the segments above).
+ */
 struct pattern {
   std::vector<segment> segments;
   std::vector<std::pair<size_t, size_t>> capture_groups;
