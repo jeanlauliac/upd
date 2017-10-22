@@ -32,11 +32,11 @@ pattern parse(const std::string& input) {
     if (input[i] == '$') {
       finish_segment(result, current);
       ++i;
-      if (i >= input.size()) throw capture_char_at_end_error();
+      if (i >= input.size()) throw placeholder_char_at_end_error();
       auto c = input[i];
-      if (!(c >= '1' && c <= '9')) throw invalid_capture_index_error();
-      current.has_captured_group = true;
-      current.captured_group_ix = c - '1';
+      if (!(c >= '1' && c <= '9')) throw invalid_placeholder_index_error();
+      current.has_placeholder = true;
+      current.placeholder_ix = c - '1';
       continue;
     }
     if (input[i] == '\\') {
@@ -58,8 +58,8 @@ resolved resolve(
   for (size_t i = 0; i < segments.size(); ++i) {
     result.segment_start_ids[i] = result.value.size();
     const auto& segment = segments[i];
-    if (segment.has_captured_group) {
-      result.value += input.get_sub_string(segment.captured_group_ix);
+    if (segment.has_placeholder) {
+      result.value += input.get_sub_string(segment.placeholder_ix);
     }
     result.value += segment.literal;
   }
