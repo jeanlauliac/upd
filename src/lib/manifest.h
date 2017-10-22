@@ -265,7 +265,12 @@ struct missing_manifest_error {
   std::string root_path;
 };
 
-manifest read_file(const std::string& root_path);
+struct invalid_manifest_error {};
+
+manifest read_file(
+  const std::string& root_path,
+  const std::string& working_path
+);
 
 }
 }

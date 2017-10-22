@@ -21,6 +21,10 @@ struct location {
   size_t column;
 };
 
+inline std::ostream& operator<< (std::ostream& os, location loc) {
+  return os << loc.line << ':' << loc.column;
+}
+
 /**
  * Thrown when it encounters a character that is not part of the JSON grammar.
  */

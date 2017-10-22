@@ -21,7 +21,7 @@ void execute_manifest(
   bool print_shell_script,
   size_t concurrency
 ) {
-  auto manifest = manifest::read_file(root_path);
+  auto manifest = manifest::read_file(root_path, working_path);
   const update_map updm = gen_update_map(root_path, manifest);
   const auto& output_files_by_path = updm.output_files_by_path;
   update_plan plan;
