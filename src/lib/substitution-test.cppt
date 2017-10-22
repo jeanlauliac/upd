@@ -11,15 +11,15 @@ using namespace upd::substitution;
   segment s("foo");
   @expect(!s.empty());
   @expect(s.literal == "foo");
-  @expect(!s.has_captured_group);
+  @expect(!s.has_placeholder);
 }
 
 @case "segment() constructs from literal and captured group index" {
   segment s(42, "foo");
   @expect(!s.empty());
   @expect(s.literal == "foo");
-  @expect(s.has_captured_group);
-  @expect(s.captured_group_ix == 42);
+  @expect(s.has_placeholder);
+  @expect(s.placeholder_ix == 42);
 }
 
 @case "segment() is empty after clear()" {

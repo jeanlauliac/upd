@@ -27,7 +27,7 @@ const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
 
 const manifest = new updfile.ManifestBuilder();
 
-const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-fcolor-diagnostics", "-MMD"];
+const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-Werror", "-fcolor-diagnostics", "-MMD"];
 const COMMON_CPLUSPLUS_COMPILE_FLAGS =
   COMMON_NATIVE_COMPILE_FLAGS.concat(["-std=c++14", "-stdlib=libc++"]);
 
