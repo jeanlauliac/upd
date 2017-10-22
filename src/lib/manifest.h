@@ -34,52 +34,30 @@ struct all_unexpected_elements_handler {
   }
 };
 
-template <typename ElementHandler>
-struct vector_elements_handler {
-  typedef void return_type;
-  typedef typename ElementHandler::return_type element_type;
-  typedef typename std::vector<element_type> vector_type;
-
-  vector_elements_handler(vector_type& result): result_(result) {}
-
-  template <typename ObjectReader>
-  void object(ObjectReader& read_object) {
-    result_.push_back(handler_.object(read_object));
-  }
-
-  template <typename ArrayReader>
-  void array(ArrayReader& read_array) {
-    result_.push_back(handler_.array(read_array));
-  }
-
-  void string_literal(const std::string& value) {
-    result_.push_back(handler_.string_literal(value));
-  }
-
-  void number_literal(float number) {
-    result_.push_back(handler_.number_literal(number));
-  }
-
-private:
-  std::vector<element_type>& result_;
-  ElementHandler handler_;
-};
-
+/**
+ * Push each JSON array elements into an existing `std::vector`, where an
+ * instance of `ElementHandler` is used to parse each element of the array.
+ */
 template <typename ElementHandler>
 struct vector_handler: public all_unexpected_elements_handler<void> {
   typedef typename ElementHandler::return_type element_type;
-  typedef vector_elements_handler<ElementHandler> elements_handler_type;
-  typedef typename elements_handler_type::vector_type vector_type;
+  typedef typename std::vector<element_type> vector_type;
 
-  vector_handler(vector_type& result): handler_(result) {}
+  vector_handler(vector_type& result): result_(result) {}
+  vector_handler(vector_type& result, const ElementHandler& handler):
+    result_(result), handler_(handler) {}
 
   template <typename ArrayReader>
-  void array(ArrayReader& read_array) {
-    read_array(handler_);
+  void array(ArrayReader& reader) {
+    element_type value;
+    while (reader.next(handler_, value)) {
+      result_.push_back(value);
+    }
   }
 
 private:
-  elements_handler_type handler_;
+  vector_type& result_;
+  ElementHandler handler_;
 };
 
 template <typename ElementHandler, typename FieldValueReader>

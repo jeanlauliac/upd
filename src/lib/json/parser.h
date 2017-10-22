@@ -151,20 +151,28 @@ struct array_reader;
 template <typename Lexer, typename ItemHandler>
 struct read_array_first_item_handler {
   typedef bool return_type;
-  read_array_first_item_handler(Lexer& lexer, ItemHandler& item_handler):
-    lexer_(lexer), item_handler_(item_handler) {}
+  typedef typename ItemHandler::return_type item_type;
+
+  read_array_first_item_handler(
+    Lexer& lexer,
+    ItemHandler& item_handler,
+    item_type& value
+  ):
+    lexer_(lexer),
+    item_handler_(item_handler),
+    value_(value) {}
 
   bool end() const { throw unexpected_end_error(); }
 
   bool punctuation(punctuation_type type) const {
     if (type == punctuation_type::brace_open) {
       object_reader<Lexer> reader(lexer_);
-      item_handler_.object(reader);
+      value_ = item_handler_.object(reader);
       return true;
     }
     if (type == punctuation_type::bracket_open) {
       array_reader<Lexer> reader(lexer_);
-      item_handler_.array(reader);
+      value_ = item_handler_.array(reader);
       return true;
     }
     if (type == punctuation_type::bracket_close) {
@@ -174,18 +182,19 @@ struct read_array_first_item_handler {
   }
 
   bool string_literal(const std::string& literal) const {
-    item_handler_.string_literal(literal);
+    value_ = item_handler_.string_literal(literal);
     return true;
   }
 
   bool number_literal(float literal) const {
-    item_handler_.number_literal(literal);
+    value_ = item_handler_.number_literal(literal);
     return true;
   }
 
 private:
   Lexer& lexer_;
   ItemHandler& item_handler_;
+  item_type& value_;
 };
 
 struct array_post_item_handler {
@@ -211,22 +220,75 @@ struct array_post_item_handler {
 template <typename Lexer>
 struct array_reader {
   typedef Lexer lexer_type;
-  array_reader(Lexer& lexer): lexer_(lexer) {}
+  enum class state_t { init, reading, done };
+
+  array_reader(Lexer& lexer): lexer_(lexer), state_(state_t::init) {}
+
+  /**
+   * We don't want the reader to be copied so as to ensure the callsite can
+   * validate the reading state at the end of the reading operation.
+   */
+  array_reader(array_reader&) = delete;
+
+  state_t state() const { return state_; }
 
   template <typename ItemHandler>
-  void operator()(ItemHandler& item_handler) {
-    typedef read_array_first_item_handler<Lexer, ItemHandler> first_item_handler;
-    bool has_more_items = lexer_.next(first_item_handler(lexer_, item_handler));
-    if (!has_more_items) return;
-    has_more_items = lexer_.next(array_post_item_handler());
-    while (has_more_items) {
-      parse_expression(lexer_, item_handler);
-      has_more_items = lexer_.next(array_post_item_handler());
-    };
+  bool next(
+    ItemHandler& item_handler,
+    typename ItemHandler::return_type& value
+  ) {
+    if (state_ == state_t::done) return false;
+    if (state_ == state_t::init) {
+      typedef read_array_first_item_handler<Lexer, ItemHandler>
+        first_item_handler;
+      if (lexer_.next(first_item_handler(lexer_, item_handler, value))) {
+        state_ = state_t::reading;
+        return true;
+      };
+      state_ = state_t::done;
+      return false;
+    }
+    if (!lexer_.next(array_post_item_handler())) {
+      state_ = state_t::done;
+      return false;
+    }
+    value = parse_expression(lexer_, item_handler);
+    return true;
   }
 
 private:
   Lexer& lexer_;
+  state_t state_;
+};
+
+template <typename ReturnValue>
+struct array_body {
+  template <typename Lexer, typename Handler>
+  static ReturnValue read(
+    array_reader<Lexer>& reader,
+    Handler& handler
+  ) {
+    ReturnValue value = handler.array(reader);
+    if (reader.state() == array_reader<Lexer>::state_t::done) return value;
+    throw std::runtime_error(
+      "array_reader#next() needs to be called until `false` is returned"
+    );
+  }
+};
+
+template <>
+struct array_body<void> {
+  template <typename Lexer, typename Handler>
+  static void read(
+    array_reader<Lexer>& reader,
+    Handler& handler
+  ) {
+    handler.array(reader);
+    if (reader.state() == array_reader<Lexer>::state_t::done) return;
+    throw std::runtime_error(
+      "array_reader#next() needs to be called until `false` is returned"
+    );
+  }
 };
 
 template <typename Lexer, typename Handler>
@@ -244,11 +306,11 @@ struct parse_expression_handler {
       object_reader<Lexer> reader(lexer_);
       return handler_.object(reader);
     }
-    if (type == punctuation_type::bracket_open) {
-      array_reader<Lexer> reader(lexer_);
-      return handler_.array(reader);
+    if (type != punctuation_type::bracket_open) {
+      throw unexpected_punctuation_error();
     }
-    throw unexpected_punctuation_error();
+    array_reader<Lexer> reader(lexer_);
+    return array_body<return_type>::read(reader, handler_);
   }
 
   return_type string_literal(const std::string& literal) const {

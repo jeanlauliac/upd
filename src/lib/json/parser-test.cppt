@@ -80,24 +80,27 @@ struct expect_object_single_field_handler {
 }
 
 struct array_of_numbers_handler {
-  typedef void return_type;
-  void object(object_reader& read_object) const { throw std::runtime_error("expected number"); }
-  void array(array_reader& read_array) const { throw std::runtime_error("expected number"); }
-  void string_literal(const std::string&) const { throw std::runtime_error("expected number"); }
-  void number_literal(float number) {
-    numbers.push_back(number);
+  typedef float return_type;
+  float object(object_reader& read_object) const { throw std::runtime_error("expected number"); }
+  float array(array_reader& read_array) const { throw std::runtime_error("expected number"); }
+  float string_literal(const std::string&) const { throw std::runtime_error("expected number"); }
+  float number_literal(float number) {
+    return number;
   }
-  std::vector<float> numbers;
 };
 
 struct expect_number_array_handler {
   typedef bool return_type;
   expect_number_array_handler(const std::vector<float>& target):
     target_(target) {}
-  bool array(array_reader& read_array) const {
+  bool array(array_reader& reader) const {
     array_of_numbers_handler handler;
-    read_array(handler);
-    return handler.numbers == target_;
+    float number;
+    std::vector<float> numbers;
+    while (reader.next(handler, number)) {
+      numbers.push_back(number);
+    }
+    return numbers == target_;
   }
   bool object(object_reader& read_object) const { return false; }
   bool string_literal(const std::string&) const { return false; }
