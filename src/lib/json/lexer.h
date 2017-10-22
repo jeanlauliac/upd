@@ -14,6 +14,24 @@ enum class punctuation_type {
   comma,
 };
 
+struct location {
+  location(): line(1), column(1) {}
+
+  size_t line;
+  size_t column;
+};
+
+/**
+ * Thrown when it encounters a character that is not part of the JSON grammar.
+ */
+struct invalid_character_error {
+  invalid_character_error(char chr, location location):
+    chr(chr), location(location) {}
+
+  char chr;
+  location location;
+};
+
 template <typename CharReader>
 struct lexer {
   lexer(CharReader& char_reader):
@@ -55,7 +73,7 @@ private:
     if (c_ >= '0' && c_ <= '9') {
       return read_number_(handler);
     }
-    throw std::runtime_error(std::string("unhandled JSON character: `") + c_ + '`');
+    throw invalid_character_error(c_, loc_);
   }
 
   template <typename Handler>
@@ -90,6 +108,14 @@ private:
       return;
     }
     good_ = char_reader_.next(c_);
+    if (!good_) return;
+    loc_ = next_loc_;
+    if (c_ == '\n') {
+      ++next_loc_.line;
+      next_loc_.column = 1;
+    } else {
+      ++next_loc_.column;
+    }
   }
 
   bool is_whitespace_() {
@@ -100,6 +126,8 @@ private:
   bool has_lookahead_;
   bool good_;
   char c_;
+  location loc_;
+  location next_loc_;
 };
 
 }

@@ -26,3 +26,17 @@ using namespace upd;
   @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_close)));
   @expect(lx.next(expect_end_handler()));
 }
+
+@case "throws on invalid characters" {
+  string_char_reader reader("{\n  foo  }\n");
+  json::lexer<string_char_reader> lx(reader);
+  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
+  try {
+    lx.next(expect_punctuation_handler(json::punctuation_type::brace_close));
+    @expect(false);
+  } catch (json::invalid_character_error error) {
+    @expect(error.chr == 'f');
+    @expect(error.location.line == 2);
+    @expect(error.location.column == 3);
+  }
+}
