@@ -83,7 +83,8 @@ int run_with_options(const cli::options& cli_opts, bool auto_color_diags) {
       cli_opts.rest_args,
       cli_opts.print_commands,
       cli_opts.command == cli::command::script,
-      get_concurrency(cli_opts.concurrency)
+      get_concurrency(cli_opts.concurrency),
+      color_diags
     );
     return 0;
   } catch (update_failed_error error) {

@@ -269,7 +269,8 @@ struct invalid_manifest_error {};
 
 manifest read_file(
   const std::string& root_path,
-  const std::string& working_path
+  const std::string& working_path,
+  bool use_color
 );
 
 }

@@ -19,9 +19,10 @@ void execute_manifest(
   const std::vector<std::string>& relative_target_paths,
   bool print_commands,
   bool print_shell_script,
-  size_t concurrency
+  size_t concurrency,
+  bool use_color
 ) {
-  auto manifest = manifest::read_file(root_path, working_path);
+  auto manifest = manifest::read_file(root_path, working_path, use_color);
   const update_map updm = gen_update_map(root_path, manifest);
   const auto& output_files_by_path = updm.output_files_by_path;
   update_plan plan;
