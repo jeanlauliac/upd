@@ -40,13 +40,13 @@ update_map gen_update_map(
     const auto& rule = manifest.rules[i];
     std::unordered_map<std::string, std::pair<std::vector<std::string>, std::vector<size_t>>> data_by_path;
     for (const auto& input: rule.inputs) {
-      if (input.type == manifest::update_rule_input_type::rule) {
+      if (input.type == manifest::update_rule_input::type::rule) {
         if (input.input_ix >= i) {
           throw cannot_refer_to_later_rule_error();
         }
       }
       const auto& input_captures =
-        input.type == manifest::update_rule_input_type::source
+        input.type == manifest::update_rule_input::type::source
         ? matches[input.input_ix]
         : rule_captured_paths[input.input_ix];
       for (const auto& input_capture: input_captures) {
@@ -58,13 +58,13 @@ update_map gen_update_map(
     }
     std::unordered_set<std::string> all_dependencies;
     for (const auto& dependency: rule.dependencies) {
-      if (dependency.type == manifest::update_rule_input_type::rule) {
+      if (dependency.type == manifest::update_rule_input::type::rule) {
         if (dependency.input_ix >= i) {
           throw cannot_refer_to_later_rule_error();
         }
       }
       const auto& input_captures =
-        dependency.type == manifest::update_rule_input_type::source
+        dependency.type == manifest::update_rule_input::type::source
         ? matches[dependency.input_ix]
         : rule_captured_paths[dependency.input_ix];
       for (const auto& input_capture: input_captures) {

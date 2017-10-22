@@ -2,66 +2,12 @@
 
 #include "command_line_template.h"
 #include "json/parser.h"
+#include "manifest/struct.h"
 #include "path_glob.h"
 #include "substitution.h"
 
 namespace upd {
 namespace manifest {
-
-enum class update_rule_input_type { source, rule };
-
-struct update_rule_input {
-  static update_rule_input from_source(size_t ix) {
-    return {
-      .type = update_rule_input_type::source,
-      .input_ix = ix,
-    };
-  }
-
-  static update_rule_input from_rule(size_t ix) {
-    return {
-      .type = update_rule_input_type::rule,
-      .input_ix = ix,
-    };
-  }
-
-  update_rule_input_type type;
-  size_t input_ix;
-};
-
-inline bool operator==(const update_rule_input& left, const update_rule_input& right) {
-  return
-    left.type == right.type &&
-    left.input_ix == right.input_ix;
-}
-
-struct update_rule {
-  size_t command_line_ix;
-  std::vector<update_rule_input> inputs;
-  std::vector<update_rule_input> dependencies;
-  substitution::pattern output;
-};
-
-inline bool operator==(const update_rule& left, const update_rule& right) {
-  return
-    left.command_line_ix == right.command_line_ix &&
-    left.inputs == right.inputs &&
-    left.dependencies == right.dependencies &&
-    left.output == right.output;
-}
-
-struct manifest {
-  std::vector<command_line_template> command_line_templates;
-  std::vector<path_glob::pattern> source_patterns;
-  std::vector<update_rule> rules;
-};
-
-inline bool operator==(const manifest& left, const manifest& right) {
-  return
-    left.command_line_templates == right.command_line_templates &&
-    left.source_patterns == right.source_patterns &&
-    left.rules == right.rules;
-}
 
 struct unexpected_element_error {};
 
@@ -187,12 +133,12 @@ struct rule_input_handler:
       ) {
         if (field_name == "source_ix") {
           input.input_ix = read_field_value.read(read_size_t_handler());
-          input.type = update_rule_input_type::source;
+          input.type = update_rule_input::type::source;
           return;
         }
         if (field_name == "rule_ix") {
           input.input_ix = read_field_value.read(read_size_t_handler());
-          input.type = update_rule_input_type::rule;
+          input.type = update_rule_input::type::rule;
           return;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
