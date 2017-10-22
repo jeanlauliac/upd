@@ -1,4 +1,4 @@
-#include "command_line_runner.h"
+#include "run_command_line.h"
 #include "update_worker.h"
 #include <iostream>
 
@@ -28,7 +28,7 @@ void update_worker::run_() {
     status_ = worker_status::in_progress;
     mutex_.unlock();
     std::exception_ptr eptr;
-    auto result = command_line_runner::run(job_.root_path, job_.target, job_.depfile_fds);
+    auto result = run_command_line(job_.root_path, job_.target, job_.depfile_fds);
     mutex_.lock();
     result_ = std::move(result);
     status_ = worker_status::finished;

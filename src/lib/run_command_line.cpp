@@ -1,4 +1,4 @@
-#include "command_line_runner.h"
+#include "run_command_line.h"
 #include <future>
 #include <iostream>
 #include <spawn.h>
@@ -97,9 +97,9 @@ static int spawn(
 /**
  * `posix_spawn()` to run a command line.
  */
-command_line_result command_line_runner::run(
+command_line_result run_command_line(
   const std::string& root_path,
-  command_line target,
+  const command_line& target,
   int depfile_fds[2]
 ) {
   std::vector<char*> argv;
