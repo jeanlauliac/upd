@@ -23,6 +23,7 @@ struct inspect_options {
 };
 
 std::string inspect(size_t value, const inspect_options& options);
+std::string inspect(float value, const inspect_options& options);
 std::string inspect(const std::string& value, const inspect_options& options);
 std::string inspect(const char* value, const inspect_options& options);
 

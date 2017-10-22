@@ -93,9 +93,10 @@ struct read_field_colon_handler {
 template <typename Lexer>
 struct object_reader {
   typedef Lexer lexer_type;
-  enum struct state_t { init, reading, done };
+  enum struct state_t { init, reading, reading_value, done };
 
   object_reader(Lexer& lexer): lexer_(lexer), state_(state_t::init) {}
+  object_reader(object_reader&) = delete;
 
   /**
    * Read the next field, return `true` if there is a field, `false` if we
@@ -103,6 +104,11 @@ struct object_reader {
    * field if it returned `true`.
    */
   bool next(std::string& field_name) {
+    if (state_ == state_t::reading_value) {
+      throw std::runtime_error(
+        "invalid use of object_reader#next(): call next_value() first"
+      );
+    }
     if (state_ == state_t::reading) {
       post_field_handler pf_handler;
       if (!lexer_.next(pf_handler)) {
@@ -123,23 +129,34 @@ struct object_reader {
       state_ = state_t::done;
       return false;
     }
-    state_ = state_t::reading;
     read_field_colon_handler rfc_handler;
     lexer_.next(rfc_handler);
+    state_ = state_t::reading_value;
     return true;
   }
 
   template <typename Handler>
   typename Handler::return_type next_value(Handler& handler) {
-    return parse_expression(lexer_, handler);
+    return next_value_(handler);
   }
 
   template <typename Handler>
   typename Handler::return_type next_value(const Handler& handler) {
-    return parse_expression(lexer_, handler);
+    return next_value_(handler);
   }
 
 private:
+  template <typename Handler>
+  typename Handler::return_type next_value_(Handler& handler) {
+    if (state_ != state_t::reading_value) {
+      throw std::runtime_error(
+        "invalid use of object_reader#next_value(): call next() first"
+      );
+    }
+    state_ = state_t::reading;
+    return parse_expression(lexer_, handler);
+  }
+
   Lexer& lexer_;
   state_t state_;
 };

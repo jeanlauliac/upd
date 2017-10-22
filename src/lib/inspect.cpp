@@ -8,6 +8,10 @@ std::string inspect(size_t value, const inspect_options& options) {
   return stream.str();
 }
 
+std::string inspect(float value, const inspect_options& options) {
+  return std::to_string(value);
+}
+
 /**
  * We'll probably want to add all the proper chars that need escaping.
  */
