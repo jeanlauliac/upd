@@ -103,24 +103,22 @@ struct read_rule_output_handler: public all_unexpected_elements_handler<substitu
 struct rule_input_handler:
   public all_unexpected_elements_handler<update_rule_input> {
     template <typename ObjectReader>
-    update_rule_input object(ObjectReader& read_object) const {
+    update_rule_input object(ObjectReader& reader) const {
       update_rule_input input;
-      read_object([&input](
-        const std::string& field_name,
-        typename ObjectReader::field_value_reader& read_field_value
-      ) {
+      std::string field_name;
+      while (reader.next(field_name)) {
         if (field_name == "source_ix") {
-          input.input_ix = read_field_value.read(read_size_t_handler());
+          input.input_ix = reader.next_value(read_size_t_handler());
           input.type = update_rule_input::type::source;
-          return;
+          continue;
         }
         if (field_name == "rule_ix") {
-          input.input_ix = read_field_value.read(read_size_t_handler());
+          input.input_ix = reader.next_value(read_size_t_handler());
           input.type = update_rule_input::type::rule;
-          return;
+          continue;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
-      });
+      }
       return input;
     }
   };
@@ -128,32 +126,30 @@ struct rule_input_handler:
 struct update_rule_handler:
   public all_unexpected_elements_handler<update_rule> {
     template <typename ObjectReader>
-    update_rule object(ObjectReader& read_object) const {
+    update_rule object(ObjectReader& reader) const {
       update_rule rule;
-      read_object([&rule](
-        const std::string& field_name,
-        typename ObjectReader::field_value_reader& read_field_value
-      ) {
+      std::string field_name;
+      while (reader.next(field_name)) {
         if (field_name == "command_line_ix") {
-          rule.command_line_ix = read_field_value.read(read_size_t_handler());
-          return;
+          rule.command_line_ix = reader.next_value(read_size_t_handler());
+          continue;
         }
         if (field_name == "output") {
-          rule.output = read_field_value.read(read_rule_output_handler());
-          return;
+          rule.output = reader.next_value(read_rule_output_handler());
+          continue;
         }
         if (field_name == "inputs") {
-          read_vector_field_value<rule_input_handler>
-            (read_field_value, rule.inputs);
-          return;
+          vector_handler<rule_input_handler> handler(rule.inputs);
+          reader.next_value(handler);
+          continue;
         }
         if (field_name == "dependencies") {
-          read_vector_field_value<rule_input_handler>
-            (read_field_value, rule.dependencies);
-          return;
+          vector_handler<rule_input_handler> handler(rule.dependencies);
+          reader.next_value(handler);
+          continue;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
-      });
+      }
       return rule;
     }
   };
@@ -183,24 +179,22 @@ struct command_line_template_variable_handler:
 struct command_line_template_part_handler:
   public all_unexpected_elements_handler<command_line_template_part> {
     template <typename ObjectReader>
-    command_line_template_part object(ObjectReader& read_object) const {
+    command_line_template_part object(ObjectReader& reader) const {
       command_line_template_part part;
-      read_object([&part](
-        const std::string& field_name,
-        typename ObjectReader::field_value_reader& read_field_value
-      ) {
+      std::string field_name;
+      while (reader.next(field_name)) {
         if (field_name == "literals") {
-          read_vector_field_value<string_handler>
-            (read_field_value, part.literal_args);
-          return;
+          vector_handler<string_handler> handler(part.literal_args);
+          reader.next_value(handler);
+          continue;
         }
         if (field_name == "variables") {
-          read_vector_field_value<command_line_template_variable_handler>
-            (read_field_value, part.variable_args);
-          return;
+          vector_handler<command_line_template_variable_handler> handler(part.variable_args);
+          reader.next_value(handler);
+          continue;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
-      });
+      }
       return part;
     }
   };
@@ -208,23 +202,21 @@ struct command_line_template_part_handler:
 struct command_line_template_handler:
   public all_unexpected_elements_handler<command_line_template> {
     template <typename ObjectReader>
-    command_line_template object(ObjectReader& read_object) {
+    command_line_template object(ObjectReader& reader) {
       command_line_template tpl;
-      read_object([&tpl](
-        const std::string& field_name,
-        typename ObjectReader::field_value_reader& read_field_value
-      ) {
+      std::string field_name;
+      while (reader.next(field_name)) {
         if (field_name == "binary_path") {
-          tpl.binary_path = read_field_value.read(read_string_handler());
-          return;
+          tpl.binary_path = reader.next_value(read_string_handler());
+          continue;
         }
         if (field_name == "arguments") {
-          read_vector_field_value<command_line_template_part_handler>
-            (read_field_value, tpl.parts);
-          return;
+          vector_handler<command_line_template_part_handler> handler(tpl.parts);
+          reader.next_value(handler);
+          continue;
         }
         throw std::runtime_error("doesn't know field `" + field_name + "`");
-      });
+      }
       return tpl;
     }
   };
@@ -233,29 +225,27 @@ struct manifest_expression_handler: public all_unexpected_elements_handler<manif
   typedef manifest return_type;
 
   template <typename ObjectReader>
-  manifest object(ObjectReader& read_object) const {
+  manifest object(ObjectReader& reader) const {
     manifest result;
-    read_object([&result](
-      const std::string& field_name,
-      typename ObjectReader::field_value_reader& read_field_value
-    ) {
+    std::string field_name;
+    while (reader.next(field_name)) {
       if (field_name == "source_patterns") {
-        read_vector_field_value<source_pattern_handler>
-          (read_field_value, result.source_patterns);
-        return;
+        vector_handler<source_pattern_handler> handler(result.source_patterns);
+        reader.next_value(handler);
+        continue;
       }
       if (field_name == "rules") {
-        read_vector_field_value<update_rule_handler>
-          (read_field_value, result.rules);
-        return;
+        vector_handler<update_rule_handler> handler(result.rules);
+        reader.next_value(handler);
+        continue;
       }
       if (field_name == "command_line_templates") {
-        read_vector_field_value<command_line_template_handler>
-          (read_field_value, result.command_line_templates);
-        return;
+        vector_handler<command_line_template_handler> handler(result.command_line_templates);
+        reader.next_value(handler);
+        continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
-    });
+    }
     return result;
   }
 };

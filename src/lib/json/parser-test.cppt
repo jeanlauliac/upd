@@ -11,27 +11,11 @@ typedef json::array_reader<string_lexer> array_reader;
 
 struct empty {};
 
-struct no_op_handler {
-  typedef empty return_type;
-  empty object(object_reader& read_object) const { return empty(); }
-  empty array(array_reader& read_object) const { return empty(); }
-  empty string_literal(const std::string&) const { return empty(); }
-  empty number_literal(float) const { return empty(); }
-};
-
 struct expect_empty_object_handler {
   typedef bool return_type;
-  bool object(object_reader& read_object) const {
-    bool good = true;
-    read_object([&good](
-      const std::string& field_name,
-      json::field_value_reader<string_lexer>& read_field_value
-    ){
-      no_op_handler noh;
-      good = false;
-      read_field_value.read(noh);
-    });
-    return good;
+  bool object(object_reader& reader) const {
+    std::string field_name;
+    return !reader.next(field_name);
   }
   bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
   bool string_literal(const std::string&) const { return false; }
@@ -48,16 +32,14 @@ struct expect_number_handler {
 
 struct expect_object_single_field_handler {
   typedef bool return_type;
-  bool object(object_reader& read_object) const {
+  bool object(object_reader& reader) const {
     std::vector<std::string> field_names;
-    read_object([&field_names](
-      const std::string& field_name,
-      json::field_value_reader<string_lexer>& read_field_value
-    ) {
+    std::string field_name;
+    while (reader.next(field_name)) {
       field_names.push_back(field_name);
-      auto result = read_field_value.read(expect_number_handler());
+      auto result = reader.next_value(expect_number_handler());
       if (!result) throw std::runtime_error("not a number");
-    });
+    }
     return field_names == std::vector<std::string>({ "foo" });
   }
   bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }

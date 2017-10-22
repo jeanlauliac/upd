@@ -91,50 +91,58 @@ struct read_field_colon_handler {
 };
 
 template <typename Lexer>
-struct field_value_reader {
-  field_value_reader(Lexer& lexer): lexer_(lexer) {}
-
-  template <typename Handler>
-  typename Handler::return_type read(Handler& handler) {
-    return parse_expression(lexer_, handler);
-  }
-
-  template <typename Handler>
-  typename Handler::return_type read(const Handler& handler) {
-    return parse_expression(lexer_, handler);
-  }
-
-private:
-  Lexer& lexer_;
-};
-
-template <typename Lexer>
 struct object_reader {
   typedef Lexer lexer_type;
-  typedef field_value_reader<Lexer> field_value_reader;
+  enum struct state_t { init, reading, done };
 
-  object_reader(Lexer& lexer): lexer_(lexer) {}
+  object_reader(Lexer& lexer): lexer_(lexer), state_(state_t::init) {}
 
-  template <typename FieldReader>
-  void operator()(FieldReader read_field) {
-    std::string field_name;
-    read_field_name_handler rfn_handler(field_name);
-    read_field_colon_handler rfc_handler;
-    bool has_field = lexer_.next(rfn_handler);
-    while (has_field) {
-      lexer_.next(rfc_handler);
-      field_value_reader read_field_value(lexer_);
-      read_field(field_name, read_field_value);
+  /**
+   * Read the next field, return `true` if there is a field, `false` if we
+   * reached the end of the object. `field_name` contains the name of the
+   * field if it returned `true`.
+   */
+  bool next(std::string& field_name) {
+    if (state_ == state_t::reading) {
       post_field_handler pf_handler;
-      has_field = lexer_.next(pf_handler);
-      if (!has_field) continue;
-      read_new_field_name_handler rnfn_handler(field_name);
-      lexer_.next(rnfn_handler);
+      if (!lexer_.next(pf_handler)) {
+        state_ = state_t::done;
+        return false;
+      }
     }
+    if (state_ == state_t::done) return false;
+    bool has_field;
+    if (state_ == state_t::init) {
+      read_field_name_handler rfn_handler(field_name);
+      has_field = lexer_.next(rfn_handler);
+    } else {
+      read_new_field_name_handler rnfn_handler(field_name);
+      has_field = lexer_.next(rnfn_handler);
+    }
+    if (!has_field) {
+      state_ = state_t::done;
+      return false;
+    }
+    state_ = state_t::reading;
+    read_field_colon_handler rfc_handler;
+    lexer_.next(rfc_handler);
+    return true;
+  }
+
+  template <typename Handler>
+  typename Handler::return_type next_value(Handler& handler) {
+    return parse_expression(lexer_, handler);
+  }
+
+  template <typename Handler>
+  typename Handler::return_type next_value(const Handler& handler) {
+    return parse_expression(lexer_, handler);
   }
 
 private:
   Lexer& lexer_;
+  state_t state_;
 };
+
 }
 }
