@@ -13,6 +13,7 @@ struct command_line_result {
 
 command_line_result run_command_line(const std::string &root_path,
                                      const command_line &target,
-                                     int depfile_fds[2]);
+                                     int depfile_fds[2], int stderr_read_fd,
+                                     const std::string &stderr_pts);
 
 } // namespace upd

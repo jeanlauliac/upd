@@ -6,6 +6,8 @@ const chalk = require('chalk');
 const util = require('util');
 const path = require('path');
 
+chalk.enabled = process.stderr.isTTY;
+
 const ERROR_PREFIX = chalk.red('error:');
 const MAIN_NAME = path.basename(process.mainModule.filename);
 

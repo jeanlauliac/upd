@@ -1,8 +1,25 @@
 #include "update_worker.h"
 #include "run_command_line.h"
+#include <fcntl.h>
 #include <iostream>
+#include <stdlib.h>
+#include <unistd.h>
 
 namespace upd {
+
+pseudoterminal::pseudoterminal() {
+  fd_ = posix_openpt(O_RDWR | O_NOCTTY);
+  if (fd_ < 0) throw std::runtime_error("could not open pseudoterminal");
+  if (grantpt(fd_) != 0) {
+    throw std::runtime_error("could not grantpt()");
+  }
+  if (unlockpt(fd_) != 0) {
+    throw std::runtime_error("could not unlockpt()");
+  }
+  ptsname_ = ::ptsname(fd_);
+}
+
+pseudoterminal::~pseudoterminal() { close(fd_); }
 
 update_worker::update_worker(worker_status &status, command_line_result &result,
                              update_job &job, std::mutex &mutex,
@@ -21,7 +38,8 @@ void update_worker::run_() {
     mutex_.unlock();
     std::exception_ptr eptr;
     auto result =
-        run_command_line(job_.root_path, job_.target, job_.depfile_fds);
+        run_command_line(job_.root_path, job_.target, job_.depfile_fds,
+                         stderr_pty_.fd(), stderr_pty_.ptsname());
     mutex_.lock();
     result_ = std::move(result);
     status_ = worker_status::finished;
