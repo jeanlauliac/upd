@@ -2,7 +2,9 @@
 
 set -ev
 
+./check_clang_format.sh
 node_modules/.bin/flow
-dist/upd update dist/unit_tests
 node_modules/.bin/jest
-dist/unit_tests | node_modules/.bin/faucet && e2e_tests/run.js
+dist/upd update dist/unit_tests
+dist/unit_tests | node_modules/.bin/faucet
+e2e_tests/run.js
