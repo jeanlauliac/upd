@@ -1,22 +1,14 @@
-#include "run_command_line.h"
 #include "update_worker.h"
+#include "run_command_line.h"
 #include <iostream>
 
 namespace upd {
 
-update_worker::update_worker(
-  worker_status& status,
-  command_line_result& result,
-  update_job& job,
-  std::mutex& mutex,
-  std::condition_variable& output_cv
-):
-  status_(status),
-  result_(result),
-  job_(job),
-  mutex_(mutex),
-  output_cv_(output_cv),
-  thread_(&update_worker::run_, this) {}
+update_worker::update_worker(worker_status &status, command_line_result &result,
+                             update_job &job, std::mutex &mutex,
+                             std::condition_variable &output_cv)
+    : status_(status), result_(result), job_(job), mutex_(mutex),
+      output_cv_(output_cv), thread_(&update_worker::run_, this) {}
 
 void update_worker::run_() {
   std::unique_lock<std::mutex> lock(mutex_);
@@ -28,7 +20,8 @@ void update_worker::run_() {
     status_ = worker_status::in_progress;
     mutex_.unlock();
     std::exception_ptr eptr;
-    auto result = run_command_line(job_.root_path, job_.target, job_.depfile_fds);
+    auto result =
+        run_command_line(job_.root_path, job_.target, job_.depfile_fds);
     mutex_.lock();
     result_ = std::move(result);
     status_ = worker_status::finished;
@@ -36,12 +29,8 @@ void update_worker::run_() {
   }
 }
 
-void update_worker::notify() {
-  cv_.notify_one();
-}
+void update_worker::notify() { cv_.notify_one(); }
 
-void update_worker::join() {
-  thread_.join();
-}
+void update_worker::join() { thread_.join(); }
 
-}
+} // namespace upd

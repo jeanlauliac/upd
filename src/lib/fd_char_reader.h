@@ -7,14 +7,14 @@ namespace upd {
  * to avoid too many I/O calls.
  */
 struct fd_char_reader {
-  fd_char_reader(int fd): fd_(fd), next_(buffer_), end_(buffer_) {}
-  bool next(char& c);
+  fd_char_reader(int fd) : fd_(fd), next_(buffer_), end_(buffer_) {}
+  bool next(char &c);
 
 private:
   int fd_;
-  char* next_;
-  char* end_;
+  char *next_;
+  char *end_;
   char buffer_[1 << 12];
 };
 
-}
+} // namespace upd

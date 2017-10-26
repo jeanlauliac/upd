@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace upd {
 
@@ -23,18 +23,18 @@ enum class command_line_template_variable {
 struct command_line_template_part {
   command_line_template_part() {}
   command_line_template_part(
-    std::vector<std::string> literal_args_,
-    std::vector<command_line_template_variable> variable_args_
-  ): literal_args(literal_args_), variable_args(variable_args_) {}
+      std::vector<std::string> literal_args_,
+      std::vector<command_line_template_variable> variable_args_)
+      : literal_args(literal_args_), variable_args(variable_args_) {}
 
   std::vector<std::string> literal_args;
   std::vector<command_line_template_variable> variable_args;
 };
 
-inline bool operator==(const command_line_template_part& left, const command_line_template_part& right) {
-  return
-    left.literal_args == right.literal_args &&
-    left.variable_args == right.variable_args;
+inline bool operator==(const command_line_template_part &left,
+                       const command_line_template_part &right) {
+  return left.literal_args == right.literal_args &&
+         left.variable_args == right.variable_args;
 }
 
 /**
@@ -57,10 +57,9 @@ struct command_line_template {
   std::vector<command_line_template_part> parts;
 };
 
-inline bool operator==(const command_line_template& left, const command_line_template& right) {
-  return
-    left.binary_path == right.binary_path &&
-    left.parts == right.parts;
+inline bool operator==(const command_line_template &left,
+                       const command_line_template &right) {
+  return left.binary_path == right.binary_path && left.parts == right.parts;
 }
 
 /**
@@ -78,31 +77,31 @@ struct command_line {
  * arguments.
  */
 template <typename OStream>
-OStream& shell_escape(OStream& os, const std::string& value) {
+OStream &shell_escape(OStream &os, const std::string &value) {
   for (size_t ix = 0; ix < value.size(); ++ix) {
     char c = value[ix];
     switch (c) {
-      case '\0':
-        os << "\\\\0";
-        continue;
-      case '\\':
-        os << "\\\\";
-        continue;
-      case '"':
-        os << "\\\"";
-        continue;
-      case '\'':
-        os << "\\'";
-        continue;
-      case '\n':
-        os << "\\\\n";
-        continue;
-      case '\r':
-        os << "\\\\r";
-        continue;
-      case ' ':
-        os << "\\ ";
-        continue;
+    case '\0':
+      os << "\\\\0";
+      continue;
+    case '\\':
+      os << "\\\\";
+      continue;
+    case '"':
+      os << "\\\"";
+      continue;
+    case '\'':
+      os << "\\'";
+      continue;
+    case '\n':
+      os << "\\\\n";
+      continue;
+    case '\r':
+      os << "\\\\r";
+      continue;
+    case ' ':
+      os << "\\ ";
+      continue;
     }
     os << c;
   }
@@ -115,9 +114,9 @@ OStream& shell_escape(OStream& os, const std::string& value) {
  * that can be executed using `exec()` and the like.
  */
 template <typename OStream>
-OStream& operator<<(OStream& os, command_line value) {
+OStream &operator<<(OStream &os, command_line value) {
   shell_escape(os, value.binary_path);
-  for (const auto& arg: value.args) {
+  for (const auto &arg : value.args) {
     shell_escape(os << ' ', arg);
   }
   return os;
@@ -136,11 +135,9 @@ struct command_line_parameters {
 /**
  * Specialize a command line template for a particular set of files.
  */
-command_line reify_command_line(
-  const command_line_template& base,
-  const command_line_parameters& parameters,
-  const std::string& root_path,
-  const std::string& working_path
-);
+command_line reify_command_line(const command_line_template &base,
+                                const command_line_parameters &parameters,
+                                const std::string &root_path,
+                                const std::string &working_path);
 
-}
+} // namespace upd

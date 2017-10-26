@@ -19,18 +19,18 @@ struct update_plan {
    * succesfully. This potentially allows descendants to be available for
    * update.
    */
-  void erase(const std::string& local_target_path) {
+  void erase(const std::string &local_target_path) {
     pending_output_file_paths.erase(local_target_path);
     auto descendants_iter = descendants_by_path.find(local_target_path);
     if (descendants_iter == descendants_by_path.end()) {
       return;
     }
-    for (auto const& descendant_path: descendants_iter->second) {
+    for (auto const &descendant_path : descendants_iter->second) {
       auto count_iter = pending_input_counts_by_path.find(descendant_path);
       if (count_iter == pending_input_counts_by_path.end()) {
         throw std::runtime_error("update plan is corrupted");
       }
-      int& input_count = count_iter->second;
+      int &input_count = count_iter->second;
       --input_count;
       if (input_count == 0) {
         queued_output_file_paths.push(descendant_path);
@@ -64,23 +64,17 @@ struct update_plan {
 };
 
 bool build_update_plan_for_path(
-  update_plan& plan,
-  const std::unordered_map<std::string, output_file>& output_files_by_path,
-  const std::string& local_target_path,
-  const std::string& local_input_path
-);
+    update_plan &plan,
+    const std::unordered_map<std::string, output_file> &output_files_by_path,
+    const std::string &local_target_path, const std::string &local_input_path);
 
 void build_update_plan(
-  update_plan& plan,
-  const std::unordered_map<std::string, output_file>& output_files_by_path,
-  const std::pair<std::string, output_file>& target_descriptor
-);
+    update_plan &plan,
+    const std::unordered_map<std::string, output_file> &output_files_by_path,
+    const std::pair<std::string, output_file> &target_descriptor);
 
 void execute_update_plan(
-  update_context& context,
-  const update_map& updm,
-  update_plan& plan,
-  std::vector<command_line_template> command_line_templates
-);
+    update_context &context, const update_map &updm, update_plan &plan,
+    std::vector<command_line_template> command_line_templates);
 
-}
+} // namespace upd

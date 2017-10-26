@@ -16,12 +16,12 @@ enum class placeholder {
 };
 
 struct segment {
-  segment(): prefix(placeholder::none) {}
-  segment(placeholder prefix): prefix(prefix) {}
-  segment(const std::string& literal):
-    prefix(placeholder::none), literal(literal) {}
-  segment(placeholder prefix, const std::string& literal):
-    prefix(prefix), literal(literal) {}
+  segment() : prefix(placeholder::none) {}
+  segment(placeholder prefix) : prefix(prefix) {}
+  segment(const std::string &literal)
+      : prefix(placeholder::none), literal(literal) {}
+  segment(placeholder prefix, const std::string &literal)
+      : prefix(prefix), literal(literal) {}
 
   void clear() {
     prefix = placeholder::none;
@@ -36,7 +36,7 @@ struct segment {
   std::string literal;
 };
 
-inline bool operator==(const segment& left, const segment& right) {
+inline bool operator==(const segment &left, const segment &right) {
   return left.prefix == right.prefix && left.literal == right.literal;
 }
 
@@ -52,7 +52,7 @@ inline bool operator==(const segment& left, const segment& right) {
  */
 typedef std::vector<segment> pattern;
 
-bool match(const pattern& target, const std::string& candidate);
+bool match(const pattern &target, const std::string &candidate);
 
 /**
  * If it matches, the `indices` vector has the same size as the number of
@@ -62,11 +62,8 @@ bool match(const pattern& target, const std::string& candidate);
  * For example `foo*.cpp` has 2 segments, `foo` and `*.cpp`. If it matches
  * `foobar.cpp`, then the indices will be `{ 0, 3 }`.
  */
-bool match(
-  const pattern& target,
-  const std::string& candidate,
-  std::vector<size_t>& indices
-);
+bool match(const pattern &target, const std::string &candidate,
+           std::vector<size_t> &indices);
 
-}
-}
+} // namespace glob
+} // namespace upd

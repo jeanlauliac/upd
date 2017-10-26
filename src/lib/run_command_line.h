@@ -11,10 +11,8 @@ struct command_line_result {
   int status;
 };
 
-command_line_result run_command_line(
-  const std::string& root_path,
-  const command_line& target,
-  int depfile_fds[2]
-);
+command_line_result run_command_line(const std::string &root_path,
+                                     const command_line &target,
+                                     int depfile_fds[2]);
 
-}
+} // namespace upd

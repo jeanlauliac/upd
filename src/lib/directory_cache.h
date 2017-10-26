@@ -5,7 +5,7 @@
 
 namespace upd {
 
-typedef int(*mkdir_type)(const char* pathname, mode_t mode);
+typedef int (*mkdir_type)(const char *pathname, mode_t mode);
 
 struct failed_to_create_directory_error {};
 
@@ -15,18 +15,17 @@ struct failed_to_create_directory_error {};
  * track of existing folder for ever. For a long-lived update process, we'd
  * want to add cache invalidation.
  */
-template <mkdir_type Mkdir>
-struct directory_cache {
+template <mkdir_type Mkdir> struct directory_cache {
   /**
    * The root path is assumed pointing at an existing directory.
    */
-  directory_cache(const std::string& root_path): root_path_(root_path) {}
+  directory_cache(const std::string &root_path) : root_path_(root_path) {}
 
   /**
    * The directory is created if it doesn't already exist, along with its
    * parents. `local_path` is considered relative to the root path.
    */
-  void create(const std::string& local_path) {
+  void create(const std::string &local_path) {
     if (local_path == ".") return;
     if (existing_local_paths_.count(local_path) > 0) return;
     auto local_dir_path = io::dirname_string(local_path);
@@ -43,4 +42,4 @@ private:
   std::unordered_set<std::string> existing_local_paths_;
 };
 
-}
+} // namespace upd

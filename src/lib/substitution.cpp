@@ -5,13 +5,13 @@
 namespace upd {
 namespace substitution {
 
-void finish_segment(pattern& result, segment& current) {
+void finish_segment(pattern &result, segment &current) {
   if (current.empty()) return;
   result.segments.push_back(std::move(current));
   current.clear();
 }
 
-pattern parse(const std::string& input) {
+pattern parse(const std::string &input) {
   pattern result;
   segment current;
   std::stack<size_t> capture_group_ids;
@@ -19,13 +19,13 @@ pattern parse(const std::string& input) {
     if (input[i] == '(') {
       finish_segment(result, current);
       capture_group_ids.push(result.capture_groups.size());
-      result.capture_groups.push_back({ result.segments.size(), 0 });
+      result.capture_groups.push_back({result.segments.size(), 0});
       continue;
     }
     if (input[i] == ')') {
       finish_segment(result, current);
       result.capture_groups[capture_group_ids.top()].second =
-        result.segments.size();
+          result.segments.size();
       capture_group_ids.pop();
       continue;
     }
@@ -49,15 +49,13 @@ pattern parse(const std::string& input) {
   return result;
 }
 
-resolved resolve(
-  const std::vector<segment>& segments,
-  const captured_string& input
-) {
+resolved resolve(const std::vector<segment> &segments,
+                 const captured_string &input) {
   resolved result;
   result.segment_start_ids.resize(segments.size());
   for (size_t i = 0; i < segments.size(); ++i) {
     result.segment_start_ids[i] = result.value.size();
-    const auto& segment = segments[i];
+    const auto &segment = segments[i];
     if (segment.has_placeholder) {
       result.value += input.get_sub_string(segment.placeholder_ix);
     }
@@ -66,27 +64,26 @@ resolved resolve(
   return result;
 }
 
-captured_string capture(
-  const std::vector<std::pair<size_t, size_t>>& capture_groups,
-  const std::string& resolved_string,
-  const std::vector<size_t>& resolved_start_segment_ids
-) {
+captured_string
+capture(const std::vector<std::pair<size_t, size_t>> &capture_groups,
+        const std::string &resolved_string,
+        const std::vector<size_t> &resolved_start_segment_ids) {
   captured_string result;
   result.value = resolved_string;
   result.captured_groups.resize(capture_groups.size());
   for (size_t j = 0; j < capture_groups.size(); ++j) {
-    const auto& capture_group = capture_groups[j];
+    const auto &capture_group = capture_groups[j];
     result.captured_groups[j].first =
-      capture_group.first < resolved_start_segment_ids.size()
-      ? resolved_start_segment_ids[capture_group.first]
-      : resolved_string.size();
+        capture_group.first < resolved_start_segment_ids.size()
+            ? resolved_start_segment_ids[capture_group.first]
+            : resolved_string.size();
     result.captured_groups[j].second =
-      capture_group.second < resolved_start_segment_ids.size()
-      ? resolved_start_segment_ids[capture_group.second]
-      : resolved_string.size();
+        capture_group.second < resolved_start_segment_ids.size()
+            ? resolved_start_segment_ids[capture_group.second]
+            : resolved_string.size();
   }
   return result;
 }
 
-}
-}
+} // namespace substitution
+} // namespace upd

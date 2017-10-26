@@ -1,16 +1,16 @@
+#include "xxhash64.h"
 #include "io.h"
 #include "path.h"
-#include "xxhash64.h"
 #include <array>
 #include <fstream>
 
 namespace upd {
 
-XXH64_hash_t hash(const std::string& str) {
+XXH64_hash_t hash(const std::string &str) {
   return XXH64(str.c_str(), str.size(), 0);
 }
 
-XXH64_hash_t hash_file(unsigned long long seed, const std::string& file_path) {
+XXH64_hash_t hash_file(unsigned long long seed, const std::string &file_path) {
   upd::xxhash64 hash(seed);
   std::ifstream ifs(file_path, std::ifstream::binary);
   std::array<char, 4096> buffer;
@@ -24,7 +24,7 @@ XXH64_hash_t hash_file(unsigned long long seed, const std::string& file_path) {
   return hash.digest();
 }
 
-unsigned long long file_hash_cache::hash(const std::string& file_path) {
+unsigned long long file_hash_cache::hash(const std::string &file_path) {
   if (!is_path_absolute(file_path)) {
     throw std::runtime_error("expected absolute path");
   }
@@ -37,8 +37,8 @@ unsigned long long file_hash_cache::hash(const std::string& file_path) {
   return hash;
 }
 
-void file_hash_cache::invalidate(const std::string& file_path) {
+void file_hash_cache::invalidate(const std::string &file_path) {
   cache_.erase(file_path);
 }
 
-}
+} // namespace upd

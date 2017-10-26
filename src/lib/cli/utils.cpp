@@ -10,7 +10,7 @@ std::string ansi_sgr(std::vector<size_t> sgr_codes, bool use_color) {
   std::ostringstream os;
   os << "\033[";
   bool first = true;
-  for (auto code: sgr_codes) {
+  for (auto code : sgr_codes) {
     if (!first) os << ';';
     os << code;
     first = false;
@@ -25,5 +25,5 @@ std::string ansi_sgr(size_t sgr_code, bool use_color) {
   return ansi_sgr(codes, use_color);
 }
 
-}
-}
+} // namespace cli
+} // namespace upd

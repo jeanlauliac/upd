@@ -70,33 +70,27 @@ struct undeclared_rule_dependency_error {
   std::string local_dependency_path;
 };
 
-XXH64_hash_t hash_command_line(const command_line& command_line);
+XXH64_hash_t hash_command_line(const command_line &command_line);
 
-XXH64_hash_t hash_files(
-  file_hash_cache& hash_cache,
-  const std::string& root_path,
-  const std::vector<std::string>& local_paths
-);
+XXH64_hash_t hash_files(file_hash_cache &hash_cache,
+                        const std::string &root_path,
+                        const std::vector<std::string> &local_paths);
 
-bool is_file_up_to_date(
-  update_log::cache& log_cache,
-  file_hash_cache& hash_cache,
-  const std::string& root_path,
-  const std::string& local_target_path,
-  const std::vector<std::string>& local_src_paths,
-  const command_line_template& cli_template
-);
+bool is_file_up_to_date(update_log::cache &log_cache,
+                        file_hash_cache &hash_cache,
+                        const std::string &root_path,
+                        const std::string &local_target_path,
+                        const std::vector<std::string> &local_src_paths,
+                        const command_line_template &cli_template);
 
 struct file_descriptor {
-  file_descriptor(): fd_(-1) {}
-  file_descriptor(int fd): fd_(fd) {}
+  file_descriptor() : fd_(-1) {}
+  file_descriptor(int fd) : fd_(fd) {}
   ~file_descriptor() { close(); }
-  file_descriptor(file_descriptor& other) = delete;
-  file_descriptor(file_descriptor&& other): fd_(other.fd_) {
-    other.fd_ = -1;
-  }
-  file_descriptor& operator=(file_descriptor&) = delete;
-  file_descriptor& operator=(file_descriptor&& other) {
+  file_descriptor(file_descriptor &other) = delete;
+  file_descriptor(file_descriptor &&other) : fd_(other.fd_) { other.fd_ = -1; }
+  file_descriptor &operator=(file_descriptor &) = delete;
+  file_descriptor &operator=(file_descriptor &&other) {
     fd_ = other.fd_;
     other.fd_ = -1;
     return *this;
@@ -114,34 +108,29 @@ private:
 struct scheduled_file_update {
   scheduled_file_update();
   scheduled_file_update(
-    update_job&& job,
-    std::future<std::unique_ptr<depfile::depfile_data>>&& read_depfile_future,
-    file_descriptor&& input_fd
-  );
-  scheduled_file_update(scheduled_file_update&) = delete;
-  scheduled_file_update(scheduled_file_update&&);
-  scheduled_file_update& operator=(scheduled_file_update&&);
+      update_job &&job,
+      std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future,
+      file_descriptor &&input_fd);
+  scheduled_file_update(scheduled_file_update &) = delete;
+  scheduled_file_update(scheduled_file_update &&);
+  scheduled_file_update &operator=(scheduled_file_update &&);
 
   update_job job;
   std::future<std::unique_ptr<depfile::depfile_data>> read_depfile_future;
   file_descriptor input_fd;
 };
 
-scheduled_file_update schedule_file_update(
-  update_context& cx,
-  const command_line_template& cli_template,
-  const std::vector<std::string>& local_src_paths,
-  const std::string& local_target_path
-);
+scheduled_file_update
+schedule_file_update(update_context &cx,
+                     const command_line_template &cli_template,
+                     const std::vector<std::string> &local_src_paths,
+                     const std::string &local_target_path);
 
 void finalize_scheduled_update(
-  update_context& cx,
-  scheduled_file_update& sfu,
-  const command_line_template& cli_template,
-  const std::vector<std::string>& local_src_paths,
-  const std::string& local_target_path,
-  const update_map& updm,
-  const std::unordered_set<std::string>& local_dependency_file_paths
-);
+    update_context &cx, scheduled_file_update &sfu,
+    const command_line_template &cli_template,
+    const std::vector<std::string> &local_src_paths,
+    const std::string &local_target_path, const update_map &updm,
+    const std::unordered_set<std::string> &local_dependency_file_paths);
 
-}
+} // namespace upd

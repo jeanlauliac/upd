@@ -10,8 +10,8 @@
 namespace upd {
 namespace io {
 
-const char* ROOTFILE_SUFFIX = "/.updroot";
-const char* UPDFILE_SUFFIX = "/updfile.json";
+const char *ROOTFILE_SUFFIX = "/.updroot";
+const char *UPDFILE_SUFFIX = "/updfile.json";
 
 std::string getcwd_string() {
   char temp[MAXPATHLEN];
@@ -21,7 +21,7 @@ std::string getcwd_string() {
   return temp;
 }
 
-std::string dirname_string(const std::string& path) {
+std::string dirname_string(const std::string &path) {
   if (path.size() >= MAXPATHLEN) {
     throw std::runtime_error("string too long");
   }
@@ -30,7 +30,7 @@ std::string dirname_string(const std::string& path) {
   return dirname(temp);
 }
 
-static bool is_regular_file(const std::string& path) {
+static bool is_regular_file(const std::string &path) {
   struct stat data;
   auto stat_ret = stat(path.c_str(), &data);
   if (stat_ret != 0) {
@@ -52,17 +52,17 @@ std::string find_root_path(std::string path) {
   return path;
 }
 
-dir::dir(const std::string& path): ptr_(opendir(path.c_str())) {
+dir::dir(const std::string &path) : ptr_(opendir(path.c_str())) {
   if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
 }
 
-dir::dir(): ptr_(nullptr) {}
+dir::dir() : ptr_(nullptr) {}
 
 dir::~dir() {
   if (ptr_ != nullptr) closedir(ptr_);
 }
 
-void dir::open(const std::string& path) {
+void dir::open(const std::string &path) {
   if (ptr_ != nullptr) closedir(ptr_);
   ptr_ = opendir(path.c_str());
   if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
@@ -73,21 +73,17 @@ void dir::close() {
   ptr_ = nullptr;
 }
 
-dir_files_reader::dir_files_reader(const std::string& path): target_(path) {}
+dir_files_reader::dir_files_reader(const std::string &path) : target_(path) {}
 dir_files_reader::dir_files_reader() {}
 
-struct dirent* dir_files_reader::next() {
+struct dirent *dir_files_reader::next() {
   if (target_.ptr() == nullptr) throw std::runtime_error("no dir is open");
   return readdir(target_.ptr());
 }
 
-void dir_files_reader::open(const std::string& path) {
-  target_.open(path);
-}
+void dir_files_reader::open(const std::string &path) { target_.open(path); }
 
-void dir_files_reader::close() {
-  target_.close();
-}
+void dir_files_reader::close() { target_.close(); }
 
-}
-}
+} // namespace io
+} // namespace upd

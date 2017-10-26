@@ -7,12 +7,11 @@ namespace upd {
  * too many I/O calls. We use templating to avoid using virtual functions as
  * much as possible.
  */
-template <typename istream_t>
-struct istream_char_reader {
-  istream_char_reader(istream_t& stream):
-    stream_(stream), next_(buffer_), end_(buffer_) {}
+template <typename istream_t> struct istream_char_reader {
+  istream_char_reader(istream_t &stream)
+      : stream_(stream), next_(buffer_), end_(buffer_) {}
 
-  bool next(char& c) {
+  bool next(char &c) {
     if (next_ >= end_) {
       stream_.read(buffer_, sizeof(buffer_));
       end_ = buffer_ + stream_.gcount();
@@ -27,10 +26,10 @@ struct istream_char_reader {
   }
 
 private:
-  istream_t& stream_;
-  char* next_;
-  char* end_;
+  istream_t &stream_;
+  char *next_;
+  char *end_;
   char buffer_[1 << 12];
 };
 
-}
+} // namespace upd

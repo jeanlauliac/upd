@@ -34,34 +34,32 @@ static std::string read_fd_to_string(int fd) {
 }
 
 struct errno_error {
-  errno_error(int code): code(code) {}
+  errno_error(int code) : code(code) {}
   int code;
 };
 
 struct spawn_file_actions {
   spawn_file_actions();
   ~spawn_file_actions();
-  spawn_file_actions(spawn_file_actions&) = delete;
-  spawn_file_actions(spawn_file_actions&&) = delete;
+  spawn_file_actions(spawn_file_actions &) = delete;
+  spawn_file_actions(spawn_file_actions &&) = delete;
 
   void add_close(int fd);
   void add_dup2(int fd, int newfd);
   void destroy();
-  const posix_spawn_file_actions_t& posix() const { return pdfa_; }
+  const posix_spawn_file_actions_t &posix() const { return pdfa_; }
 
 private:
   posix_spawn_file_actions_t pdfa_;
   bool init_;
 };
 
-spawn_file_actions::spawn_file_actions(): init_(true) {
+spawn_file_actions::spawn_file_actions() : init_(true) {
   if (posix_spawn_file_actions_init(&pdfa_) == 0) return;
   throw errno_error(errno);
 }
 
-spawn_file_actions::~spawn_file_actions() {
-  destroy();
-}
+spawn_file_actions::~spawn_file_actions() { destroy(); }
 
 void spawn_file_actions::add_close(int fd) {
   if (posix_spawn_file_actions_addclose(&pdfa_, fd) == 0) return;
@@ -80,12 +78,9 @@ void spawn_file_actions::destroy() {
   throw errno_error(errno);
 }
 
-static int spawn(
-  const std::string binary_path,
-  const spawn_file_actions& actions,
-  char* const* argv,
-  char* const* env
-) {
+static int spawn(const std::string binary_path,
+                 const spawn_file_actions &actions, char *const *argv,
+                 char *const *env) {
   pid_t pid;
   auto bin = binary_path.c_str();
   auto pa = &actions.posix();
@@ -97,15 +92,13 @@ static int spawn(
 /**
  * `posix_spawn()` to run a command line.
  */
-command_line_result run_command_line(
-  const std::string& root_path,
-  const command_line& target,
-  int depfile_fds[2]
-) {
-  std::vector<char*> argv;
-  argv.push_back(const_cast<char*>(target.binary_path.c_str()));
-  for (auto const& arg: target.args) {
-    argv.push_back(const_cast<char*>(arg.c_str()));
+command_line_result run_command_line(const std::string &root_path,
+                                     const command_line &target,
+                                     int depfile_fds[2]) {
+  std::vector<char *> argv;
+  argv.push_back(const_cast<char *>(target.binary_path.c_str()));
+  for (auto const &arg : target.args) {
+    argv.push_back(const_cast<char *>(arg.c_str()));
   }
   argv.push_back(nullptr);
 
@@ -124,9 +117,9 @@ command_line_result run_command_line(
   actions.add_close(stderr[1]);
 
   auto read_stdout =
-    std::async(std::launch::async, &read_fd_to_string, stdout[0]);
+      std::async(std::launch::async, &read_fd_to_string, stdout[0]);
   auto read_stderr =
-    std::async(std::launch::async, &read_fd_to_string, stderr[0]);
+      std::async(std::launch::async, &read_fd_to_string, stderr[0]);
 
   pid_t child_pid = spawn(target.binary_path, actions, argv.data(), environ);
   actions.destroy();
@@ -141,9 +134,9 @@ command_line_result run_command_line(
   }
 
   command_line_result result = {
-    .stdout = read_stdout.get(),
-    .stderr = read_stderr.get(),
-    .status = status,
+      .stdout = read_stdout.get(),
+      .stderr = read_stderr.get(),
+      .status = status,
   };
 
   if (close(stdout[0])) throw std::runtime_error("close() failed");
@@ -152,4 +145,4 @@ command_line_result run_command_line(
   return result;
 }
 
-}
+} // namespace upd

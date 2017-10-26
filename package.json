@@ -10,7 +10,8 @@
     "url": "git+https://github.com/jeanlauliac/upd.git"
   },
   "dependencies": {
-    "chalk": "^1.1.3"
+    "chalk": "^1.1.3",
+    "clang-format": "^1.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -25,7 +26,8 @@
     "test": "./test.sh",
     "preinstall": "mkdir -p dist && touch dist/upd",
     "install": "bash bootstrap/gen_upd.sh",
-    "prepublishOnly": "./prepublish.sh"
+    "prepublishOnly": "./prepublish.sh",
+    "format": "clang-format src/**/*.cpp src/**/*.h -i"
   },
   "files": [
     "src",
@@ -36,6 +38,8 @@
     "tools/lib/updfile.js"
   ],
   "jest": {
-    "roots": ["gen/tools"]
+    "roots": [
+      "gen/tools"
+    ]
   }
 }

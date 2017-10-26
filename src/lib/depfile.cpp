@@ -5,11 +5,8 @@ namespace upd {
 namespace depfile {
 
 bool parse_token_handler::end() {
-  if (!(
-    state_ == state_t::read_target ||
-    state_ == state_t::read_dep ||
-    state_ == state_t::done
-  )) {
+  if (!(state_ == state_t::read_target || state_ == state_t::read_dep ||
+        state_ == state_t::done)) {
     throw parse_error("unexpected end");
   }
   state_ = state_t::done;
@@ -24,7 +21,7 @@ bool parse_token_handler::colon() {
   return true;
 }
 
-bool parse_token_handler::string(const std::string& file_path) {
+bool parse_token_handler::string(const std::string &file_path) {
   if (state_ == state_t::read_target) {
     data_.reset(new depfile_data());
     data_->target_path = file_path;
@@ -54,5 +51,5 @@ std::unique_ptr<depfile_data> read(int fd) {
   return parse(char_reader);
 }
 
-}
-}
+} // namespace depfile
+} // namespace upd

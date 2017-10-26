@@ -6,8 +6,7 @@ namespace upd {
 namespace path_glob {
 
 struct pattern_string_parser {
-  pattern_string_parser(const std::string& input):
-    input(input) {}
+  pattern_string_parser(const std::string &input) : input(input) {}
 
   pattern operator()() {
     input_ix = 0;
@@ -25,7 +24,8 @@ struct pattern_string_parser {
     current_segment.ent_name.clear();
     current_segment.has_wildcard = read_directory_wildcard();
     if (read_directory_wildcard()) {
-      throw invalid_pattern_string_error(invalid_pattern_string_reason::duplicate_directory_wildcard);
+      throw invalid_pattern_string_error(
+          invalid_pattern_string_reason::duplicate_directory_wildcard);
     }
     while (input_ix < input.size() && input[input_ix] != '/') {
       process_input_char();
@@ -37,11 +37,10 @@ struct pattern_string_parser {
 
   void process_input_char() {
     if (input[input_ix] == '*') {
-      if (
-        current_glob_segment.prefix == upd::glob::placeholder::wildcard &&
-        current_glob_segment.literal.empty()
-      ) {
-        throw invalid_pattern_string_error(invalid_pattern_string_reason::duplicate_wildcard);
+      if (current_glob_segment.prefix == upd::glob::placeholder::wildcard &&
+          current_glob_segment.literal.empty()) {
+        throw invalid_pattern_string_error(
+            invalid_pattern_string_reason::duplicate_wildcard);
       }
       finish_glob_segment();
       current_glob_segment.prefix = upd::glob::placeholder::wildcard;
@@ -62,7 +61,8 @@ struct pattern_string_parser {
     }
     if (input[input_ix] == '\\') ++input_ix;
     if (input_ix == input.size()) {
-      throw invalid_pattern_string_error(invalid_pattern_string_reason::escape_char_at_end);
+      throw invalid_pattern_string_error(
+          invalid_pattern_string_reason::escape_char_at_end);
     }
     current_glob_segment.literal += input[input_ix];
   }
@@ -70,23 +70,24 @@ struct pattern_string_parser {
   void open_capture_group_in_name() {
     finish_glob_segment();
     open_capture_group({
-      .type = capture_point_type::ent_name,
-      .ent_name_segment_ix = current_segment.ent_name.size(),
-      .segment_ix = result.segments.size(),
+        .type = capture_point_type::ent_name,
+        .ent_name_segment_ix = current_segment.ent_name.size(),
+        .segment_ix = result.segments.size(),
     });
   }
 
   void close_capture_group() {
     finish_glob_segment();
     if (capture_groups_ids.empty()) {
-      throw invalid_pattern_string_error(invalid_pattern_string_reason::unexpected_capture_close);
+      throw invalid_pattern_string_error(
+          invalid_pattern_string_reason::unexpected_capture_close);
     }
-    auto& group = result.capture_groups[capture_groups_ids.top()];
+    auto &group = result.capture_groups[capture_groups_ids.top()];
     capture_groups_ids.pop();
     group.to = {
-      .type = capture_point_type::ent_name,
-      .ent_name_segment_ix = current_segment.ent_name.size(),
-      .segment_ix = result.segments.size(),
+        .type = capture_point_type::ent_name,
+        .ent_name_segment_ix = current_segment.ent_name.size(),
+        .segment_ix = result.segments.size(),
     };
   }
 
@@ -117,8 +118,8 @@ struct pattern_string_parser {
     input_ix = ix + 1;
     if (open_capture) {
       open_capture_group({
-        .type = capture_point_type::wildcard,
-        .segment_ix = result.segments.size(),
+          .type = capture_point_type::wildcard,
+          .segment_ix = result.segments.size(),
       });
     }
     if (close_capture) {
@@ -127,12 +128,12 @@ struct pattern_string_parser {
     return true;
   }
 
-  void open_capture_group(const capture_point& from) {
-    result.capture_groups.push_back(capture_group({ .from = from }));
+  void open_capture_group(const capture_point &from) {
+    result.capture_groups.push_back(capture_group({.from = from}));
     capture_groups_ids.push(result.capture_groups.size() - 1);
   }
 
-  const std::string& input;
+  const std::string &input;
   size_t input_ix;
   segment current_segment;
   upd::glob::segment current_glob_segment;
@@ -140,9 +141,9 @@ struct pattern_string_parser {
   std::stack<size_t> capture_groups_ids;
 };
 
-pattern parse(const std::string& pattern_string) {
+pattern parse(const std::string &pattern_string) {
   return pattern_string_parser(pattern_string)();
 }
 
-}
-}
+} // namespace path_glob
+} // namespace upd

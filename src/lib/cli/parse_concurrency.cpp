@@ -4,7 +4,7 @@
 namespace upd {
 namespace cli {
 
-size_t parse_concurrency(const std::string& str) {
+size_t parse_concurrency(const std::string &str) {
   if (str == "auto") {
     return 0;
   }
@@ -17,5 +17,5 @@ size_t parse_concurrency(const std::string& str) {
   return result;
 }
 
-}
-}
+} // namespace cli
+} // namespace upd

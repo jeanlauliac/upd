@@ -4,7 +4,7 @@
 
 namespace upd {
 
-bool fd_char_reader::next(char& c) {
+bool fd_char_reader::next(char &c) {
   if (next_ >= end_) {
     auto count = read(fd_, buffer_, sizeof(buffer_));
     if (count < 0) {
@@ -21,4 +21,4 @@ bool fd_char_reader::next(char& c) {
   return true;
 }
 
-}
+} // namespace upd

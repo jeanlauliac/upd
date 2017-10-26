@@ -2,6 +2,7 @@
 
 #include "xxhash.h"
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -12,15 +13,18 @@ namespace upd {
  * that takes care of the state automatically.
  */
 struct xxhash64 {
-  xxhash64(unsigned long long seed):
-    state_(XXH64_createState(), XXH64_freeState) { reset(seed); }
+  xxhash64(unsigned long long seed)
+      : state_(XXH64_createState(), XXH64_freeState) {
+    reset(seed);
+  }
   void reset(unsigned long long seed) { XXH64_reset(state_.get(), seed); }
-  void update(const void* input, size_t length) {
+  void update(const void *input, size_t length) {
     XXH64_update(state_.get(), input, length);
   }
   XXH64_hash_t digest() { return XXH64_digest(state_.get()); }
+
 private:
-  std::unique_ptr<XXH64_state_t, XXH_errorcode(*)(XXH64_state_t*)> state_;
+  std::unique_ptr<XXH64_state_t, XXH_errorcode (*)(XXH64_state_t *)> state_;
 };
 
 /**
@@ -30,8 +34,8 @@ private:
  * files, that would be sensitive to collisions.
  */
 struct xxhash64_stream {
-  xxhash64_stream(unsigned long long seed): hash_(seed) {}
-  xxhash64_stream& operator<<(unsigned long long value) {
+  xxhash64_stream(unsigned long long seed) : hash_(seed) {}
+  xxhash64_stream &operator<<(unsigned long long value) {
     hash_.update(&value, sizeof(value));
     return *this;
   }
@@ -44,7 +48,7 @@ private:
 /**
  * Shorthand for hashing std::string instances.
  */
-XXH64_hash_t hash(const std::string& str);
+XXH64_hash_t hash(const std::string &str);
 
 /**
  * A sensible way to hash a vector is to hash each element separately
@@ -53,10 +57,9 @@ XXH64_hash_t hash(const std::string& str);
  * Ex. `{ "foo", "bar" }` and `{ "f", "oobar" }` should not
  * have the same digest.
  */
-template <typename T>
-XXH64_hash_t hash(const std::vector<T>& target) {
+template <typename T> XXH64_hash_t hash(const std::vector<T> &target) {
   xxhash64_stream target_hash(0);
-  for (auto const& item: target) {
+  for (auto const &item : target) {
     target_hash << hash(item);
   }
   return target_hash.digest();
@@ -67,7 +70,7 @@ XXH64_hash_t hash(const std::vector<T>& target) {
  * small changes, this is a handy way to check if a source file changed
  * since a previous update.
  */
-XXH64_hash_t hash_file(unsigned long long seed, const std::string& file_path);
+XXH64_hash_t hash_file(unsigned long long seed, const std::string &file_path);
 
 /**
  * Many source files, such as C++ headers, have an impact on the compilation of
@@ -75,15 +78,15 @@ XXH64_hash_t hash_file(unsigned long long seed, const std::string& file_path);
  * source files.
  */
 struct file_hash_cache {
-  unsigned long long hash(const std::string& file_path);
+  unsigned long long hash(const std::string &file_path);
   /**
    * After a file was updated, or we detected changes on the filesystem, we
    * want to invalidate the digest we kept track of, as it likely changed.
    */
-  void invalidate(const std::string& file_path);
+  void invalidate(const std::string &file_path);
 
 private:
   std::unordered_map<std::string, unsigned long long> cache_;
 };
 
-}
+} // namespace upd

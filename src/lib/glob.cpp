@@ -4,21 +4,14 @@ namespace upd {
 namespace glob {
 
 struct matcher {
-  matcher(const pattern& target, const std::string& candidate):
-    target(target),
-    candidate(candidate),
-    indices(nullptr) {}
+  matcher(const pattern &target, const std::string &candidate)
+      : target(target), candidate(candidate), indices(nullptr) {}
 
-  matcher(
-    const pattern& target,
-    const std::string& candidate,
-    std::vector<size_t>& indices_
-  ):
-    target(target),
-    candidate(candidate),
-    indices(&indices_) {
-      indices->resize(target.size());
-    }
+  matcher(const pattern &target, const std::string &candidate,
+          std::vector<size_t> &indices_)
+      : target(target), candidate(candidate), indices(&indices_) {
+    indices->resize(target.size());
+  }
 
   /**
    * A glob pattern is matched only if we can find a sequence of segments
@@ -70,8 +63,7 @@ struct matcher {
     do {
       do {
         does_match =
-          match_prefix() &&
-          match_literal(target[segment_ix].literal);
+            match_prefix() && match_literal(target[segment_ix].literal);
       } while (!does_match && restore_wildcard());
       ++segment_ix;
     } while (does_match && start_new_segment());
@@ -83,11 +75,11 @@ struct matcher {
    */
   bool match_prefix() {
     switch (target[segment_ix].prefix) {
-      case placeholder::none:
-      case placeholder::wildcard:
-        return true;
-      case placeholder::single_wildcard:
-        return match_single_wildcard();
+    case placeholder::none:
+    case placeholder::wildcard:
+      return true;
+    case placeholder::single_wildcard:
+      return match_single_wildcard();
     }
   }
 
@@ -123,13 +115,10 @@ struct matcher {
   /**
    * Just match the literal character by character.
    */
-  bool match_literal(const std::string& literal) {
+  bool match_literal(const std::string &literal) {
     size_t literal_ix = 0;
-    while (
-      candidate_ix < candidate.size() &&
-      literal_ix < literal.size() &&
-      candidate[candidate_ix] == literal[literal_ix]
-    ) {
+    while (candidate_ix < candidate.size() && literal_ix < literal.size() &&
+           candidate[candidate_ix] == literal[literal_ix]) {
       ++candidate_ix;
       ++literal_ix;
     }
@@ -149,19 +138,19 @@ struct matcher {
   /**
    * The whole description of what we're trying to match.
    */
-  const pattern& target;
+  const pattern &target;
 
   /**
    * The string that we're trying to fit into the target pattern.
    */
-  const std::string& candidate;
+  const std::string &candidate;
 
   /**
    * For each segment of the pattern we matched, we store the index of the
    * first candidate's character that matches that segment. If it's `nullptr`
    * we don't bother with it.
    */
-  std::vector<size_t>* indices;
+  std::vector<size_t> *indices;
 
   /**
    * The current segment we're trying to match.
@@ -194,17 +183,14 @@ struct matcher {
   size_t last_wildcard_segment_ix;
 };
 
-bool match(const pattern& target, const std::string& candidate) {
+bool match(const pattern &target, const std::string &candidate) {
   return matcher(target, candidate)();
 }
 
-bool match(
-  const pattern& target,
-  const std::string& candidate,
-  std::vector<size_t>& indices
-) {
+bool match(const pattern &target, const std::string &candidate,
+           std::vector<size_t> &indices) {
   return matcher(target, candidate, indices)();
 }
 
-}
-}
+} // namespace glob
+} // namespace upd

@@ -13,20 +13,29 @@ namespace depfile {
  * ahead to know when a token ends. For example a string is ended when we know
  * the next character is space.
  */
-template <typename CharReader>
-struct tokenizer {
-  tokenizer(CharReader& char_reader): char_reader_(char_reader) { read_(); }
+template <typename CharReader> struct tokenizer {
+  tokenizer(CharReader &char_reader) : char_reader_(char_reader) { read_(); }
 
   template <typename handler_t, typename retval_t>
-  retval_t next(handler_t& handler) {
+  retval_t next(handler_t &handler) {
     while (good_ && (c_ == ' ')) read_();
-    if (!good_) { return handler.end(); };
-    if (c_ == ':') { read_(); return handler.colon(); }
-    if (c_ == '\n') { read_(); return handler.new_line(); }
+    if (!good_) {
+      return handler.end();
+    };
+    if (c_ == ':') {
+      read_();
+      return handler.colon();
+    }
+    if (c_ == '\n') {
+      read_();
+      return handler.new_line();
+    }
     std::ostringstream oss;
     // TODO: refactor as a `do...while`, condition is always true for first pass
     while (good_ && !(c_ == ' ' || c_ == ':' || c_ == '\n')) {
-      if (c_ == '\\') { read_(); }
+      if (c_ == '\\') {
+        read_();
+      }
       oss.put(c_);
       read_();
     }
@@ -82,8 +91,9 @@ struct depfile_data {
  * or it uses some unsupported features (see `struct depfile_data`).
  */
 struct parse_error {
-  parse_error(const std::string& message): message_(message) {}
+  parse_error(const std::string &message) : message_(message) {}
   std::string message() const { return message_; };
+
 private:
   std::string message_;
 };
@@ -92,16 +102,16 @@ private:
  * State machine that updates the depfile data for each type of token.
  */
 struct parse_token_handler {
-  parse_token_handler(std::unique_ptr<depfile_data>& data):
-    data_(data), state_(state_t::read_target) {}
+  parse_token_handler(std::unique_ptr<depfile_data> &data)
+      : data_(data), state_(state_t::read_target) {}
   bool end();
   bool colon();
-  bool string(const std::string& file_path);
+  bool string(const std::string &file_path);
   bool new_line();
 
 private:
   enum class state_t { read_target, read_colon, read_dep, done };
-  std::unique_ptr<depfile_data>& data_;
+  std::unique_ptr<depfile_data> &data_;
   state_t state_;
 };
 
@@ -121,11 +131,12 @@ private:
  * these instead.
  */
 template <typename CharReader>
-std::unique_ptr<depfile_data> parse(CharReader& char_reader) {
+std::unique_ptr<depfile_data> parse(CharReader &char_reader) {
   std::unique_ptr<depfile_data> data;
   tokenizer<CharReader> tokens(char_reader);
   parse_token_handler handler(data);
-  while (tokens.template next<parse_token_handler, bool>(handler));
+  while (tokens.template next<parse_token_handler, bool>(handler))
+    ;
   return data;
 }
 
@@ -134,5 +145,5 @@ std::unique_ptr<depfile_data> parse(CharReader& char_reader) {
  */
 std::unique_ptr<depfile_data> read(int fd);
 
-}
-}
+} // namespace depfile
+} // namespace upd

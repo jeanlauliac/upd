@@ -21,7 +21,7 @@ struct captured_string {
    */
   std::string get_sub_string(size_t index) const {
     if (index >= captured_groups.size()) throw no_such_captured_group_error();
-    const auto& group = captured_groups[index];
+    const auto &group = captured_groups[index];
     return value.substr(group.first, group.second - group.first);
   }
 
@@ -38,11 +38,11 @@ struct captured_string {
 /**
  * This allows us to readily sort a vector of captured strings.
  */
-inline
-bool operator<(const captured_string& left, const captured_string& right) {
+inline bool operator<(const captured_string &left,
+                      const captured_string &right) {
   if (left.value < right.value) return true;
   if (left.value > right.value) return false;
   return left.captured_groups < right.captured_groups;
 }
 
-}
+} // namespace upd
