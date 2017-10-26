@@ -1,6 +1,6 @@
 {
   "name": "@jeanlauliac/upd",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Update files, fast.",
   "author": "Jean Lauliac <jean@lauliac.com>",
   "license": "MIT",
@@ -31,11 +31,8 @@
   },
   "files": [
     "src",
-    "bootstrap/gen_upd.sh",
-    "tools/gen_package_info.js",
-    "tools/lib/cli.js",
-    "tools/lib/reporting.js",
-    "tools/lib/updfile.js"
+    "tools",
+    "bootstrap/gen_upd.sh"
   ],
   "jest": {
     "roots": [
