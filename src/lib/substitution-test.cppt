@@ -84,3 +84,4 @@ using namespace upd::substitution;
   auto captured = capture(pattern.capture_groups, result.value, result.segment_start_ids);
   @expect(captured.value == result.value);
   @expect(captured.captured_groups == upd::captured_string::groups({ { 3, 6 } }));
+}

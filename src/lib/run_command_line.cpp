@@ -1,4 +1,5 @@
 #include "run_command_line.h"
+#include "system/spawn.h"
 #include <fcntl.h>
 #include <future>
 #include <iostream>
@@ -35,62 +36,6 @@ static std::string read_fd_to_string(int fd) {
   return result.str();
 }
 
-struct errno_error {
-  errno_error(int code) : code(code) {}
-  int code;
-};
-
-struct spawn_file_actions {
-  spawn_file_actions();
-  ~spawn_file_actions();
-  spawn_file_actions(spawn_file_actions &) = delete;
-  spawn_file_actions(spawn_file_actions &&) = delete;
-
-  void add_close(int fd);
-  void add_dup2(int fd, int newfd);
-  void destroy();
-  const posix_spawn_file_actions_t &posix() const { return pdfa_; }
-
-private:
-  posix_spawn_file_actions_t pdfa_;
-  bool init_;
-};
-
-spawn_file_actions::spawn_file_actions() : init_(true) {
-  if (posix_spawn_file_actions_init(&pdfa_) == 0) return;
-  throw errno_error(errno);
-}
-
-spawn_file_actions::~spawn_file_actions() { destroy(); }
-
-void spawn_file_actions::add_close(int fd) {
-  if (posix_spawn_file_actions_addclose(&pdfa_, fd) == 0) return;
-  throw errno_error(errno);
-}
-
-void spawn_file_actions::add_dup2(int fd, int newfd) {
-  if (posix_spawn_file_actions_adddup2(&pdfa_, fd, newfd) == 0) return;
-  throw errno_error(errno);
-}
-
-void spawn_file_actions::destroy() {
-  if (!init_) return;
-  init_ = false;
-  if (posix_spawn_file_actions_destroy(&pdfa_) == 0) return;
-  throw errno_error(errno);
-}
-
-static int spawn(const std::string binary_path,
-                 const spawn_file_actions &actions, char *const *argv,
-                 char *const *env) {
-  pid_t pid;
-  auto bin = binary_path.c_str();
-  auto pa = &actions.posix();
-  int res = posix_spawnp(&pid, bin, pa, nullptr, argv, env);
-  if (res == 0) return pid;
-  throw errno_error(errno);
-}
-
 /**
  * `posix_spawn()` to run a command line.
  */
@@ -112,7 +57,7 @@ command_line_result run_command_line(const std::string &root_path,
   if (stderr_fd < 0) throw std::runtime_error("open() for stderr failed");
   if (!isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
 
-  spawn_file_actions actions;
+  system::spawn_file_actions actions;
   actions.add_close(depfile_fds[0]);
 
   actions.add_close(stdout[0]);
@@ -128,7 +73,8 @@ command_line_result run_command_line(const std::string &root_path,
   auto read_stderr =
       std::async(std::launch::async, &read_fd_to_string, stderr_read_fd);
 
-  pid_t child_pid = spawn(target.binary_path, actions, argv.data(), environ);
+  pid_t child_pid =
+      system::spawn(target.binary_path, actions, argv.data(), environ);
   actions.destroy();
 
   if (close(depfile_fds[1]) != 0) throw std::runtime_error("close() failed");
