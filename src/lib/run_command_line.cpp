@@ -21,7 +21,7 @@ namespace upd {
  * Read a file descriptor until the end is reached and return the content
  * as a single string.
  */
-static std::string read_fd_to_string(int fd) {
+static std::string read_fd_to_string(int fd, bool allow_eio) {
   std::ostringstream result;
   result.exceptions(std::ostringstream::badbit | std::ostringstream::failbit);
   ssize_t count;
@@ -29,6 +29,11 @@ static std::string read_fd_to_string(int fd) {
     char buffer[1 << 12];
     count = read(fd, buffer, sizeof(buffer));
     if (count < 0) {
+      if (errno == EIO) {
+        // On Linux, EIO is returned when the last
+        // slave of a pseudo-terminal is closed.
+        return result.str();
+      }
       throw std::runtime_error("read() failed: " + std::to_string(errno));
     }
     result.write(buffer, count);
@@ -65,13 +70,13 @@ command_line_result run_command_line(const std::string &root_path,
   actions.add_close(stdout[1]);
 
   actions.add_close(stderr_read_fd);
-  //actions.add_dup2(stderr_fd, STDERR_FILENO);
+  actions.add_dup2(stderr_fd, STDERR_FILENO);
   actions.add_close(stderr_fd);
 
   auto read_stdout =
-      std::async(std::launch::async, &read_fd_to_string, stdout[0]);
-  //auto read_stderr =
-  //    std::async(std::launch::async, &read_fd_to_string, stderr_read_fd);
+      std::async(std::launch::async, &read_fd_to_string, stdout[0], false);
+  auto read_stderr =
+      std::async(std::launch::async, &read_fd_to_string, stderr_read_fd, true);
 
   pid_t child_pid =
       system::spawn(target.binary_path, actions, argv.data(), environ);
@@ -88,7 +93,7 @@ command_line_result run_command_line(const std::string &root_path,
 
   command_line_result result = {
       read_stdout.get(),
-      "", //read_stderr.get(),
+      read_stderr.get(),
       status,
   };
 

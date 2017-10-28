@@ -232,12 +232,9 @@ private:
     std::vector<bookmark> initial_bookmarks;
     for (size_t i = 0; i < patterns.size(); ++i) {
       size_t capture_group_count = patterns[i].capture_groups.size();
-      initial_bookmarks.push_back({
-          i,
-          0,
-          std::vector<size_t>(capture_group_count, 1),
-          std::vector<size_t>(capture_group_count, 1)
-      });
+      initial_bookmarks.push_back(
+          {i, 0, std::vector<size_t>(capture_group_count, 1),
+           std::vector<size_t>(capture_group_count, 1)});
     }
     return pending_dirs_type({{"/", std::move(initial_bookmarks)}});
   }
@@ -263,12 +260,9 @@ private:
   void push_wildcard_match_(const std::string &name, const bookmark &target) {
     auto captured_from_ids = target.captured_from_ids;
     auto captured_to_ids = target.captured_to_ids;
-    pending_dirs_[path_prefix_ + name + '/'].push_back({
-        target.pattern_ix,
-        target.segment_ix,
-        std::move(captured_from_ids),
-        std::move(captured_to_ids)
-    });
+    pending_dirs_[path_prefix_ + name + '/'].push_back(
+        {target.pattern_ix, target.segment_ix, std::move(captured_from_ids),
+         std::move(captured_to_ids)});
   }
 
   void push_ent_name_match_(const std::string &name, const bookmark &target,
@@ -277,12 +271,9 @@ private:
     auto captured_to_ids = target.captured_to_ids;
     update_captures_for_ent_name_(target, match_indices, name.size(),
                                   captured_from_ids, captured_to_ids);
-    pending_dirs_[path_prefix_ + name + '/'].push_back({
-        target.pattern_ix,
-        target.segment_ix + 1,
-        std::move(captured_from_ids),
-        std::move(captured_to_ids)
-    });
+    pending_dirs_[path_prefix_ + name + '/'].push_back(
+        {target.pattern_ix, target.segment_ix + 1, std::move(captured_from_ids),
+         std::move(captured_to_ids)});
   }
 
   void finalize_match_(match &next_match, const std::string &name,

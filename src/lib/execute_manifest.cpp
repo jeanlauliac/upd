@@ -60,13 +60,9 @@ void execute_manifest(const std::string &root_path,
       root_path + "/" + CACHE_FOLDER + "/log_rewritten";
 
   update_context cx = {
-      root_path,
-      update_log::cache::from_log_file(log_file_path),
-      file_hash_cache(),
-      directory_cache<mkdir>(root_path),
-      print_commands,
-      concurrency
-  };
+      root_path,         update_log::cache::from_log_file(log_file_path),
+      file_hash_cache(), directory_cache<mkdir>(root_path),
+      print_commands,    concurrency};
   execute_update_plan(cx, updm, plan, manifest.command_line_templates);
 
   cx.log_cache.close();

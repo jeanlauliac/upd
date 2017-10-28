@@ -128,11 +128,7 @@ schedule_file_update(update_context &cx,
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
   return scheduled_file_update(
-      {
-          cx.root_path,
-          command_line,
-          {depfile_fds[0], depfile_fds[1]}
-      },
+      {cx.root_path, command_line, {depfile_fds[0], depfile_fds[1]}},
       std::move(read_depfile_future), std::move(input_fd));
 }
 

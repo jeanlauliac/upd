@@ -69,11 +69,8 @@ struct pattern_string_parser {
 
   void open_capture_group_in_name() {
     finish_glob_segment();
-    open_capture_group({
-        result.segments.size(),
-        capture_point_type::ent_name,
-        current_segment.ent_name.size()
-    });
+    open_capture_group({result.segments.size(), capture_point_type::ent_name,
+                        current_segment.ent_name.size()});
   }
 
   void close_capture_group() {
@@ -84,11 +81,8 @@ struct pattern_string_parser {
     }
     auto &group = result.capture_groups[capture_groups_ids.top()];
     capture_groups_ids.pop();
-    group.to = {
-        result.segments.size(),
-        capture_point_type::ent_name,
-        current_segment.ent_name.size()
-    };
+    group.to = {result.segments.size(), capture_point_type::ent_name,
+                current_segment.ent_name.size()};
   }
 
   void finish_glob_segment() {
@@ -117,10 +111,8 @@ struct pattern_string_parser {
     if (input[ix] != '/') return false;
     input_ix = ix + 1;
     if (open_capture) {
-      open_capture_group({
-          result.segments.size(),
-          capture_point_type::wildcard
-      });
+      open_capture_group(
+          {result.segments.size(), capture_point_type::wildcard});
     }
     if (close_capture) {
       throw std::runtime_error("not implemented!");
