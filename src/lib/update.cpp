@@ -3,7 +3,9 @@
 #include "path.h"
 #include "run_command_line.h"
 #include "update_worker.h"
+#include <fcntl.h>
 #include <stdexcept>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include "inspect.h"
@@ -83,22 +85,27 @@ scheduled_file_update::scheduled_file_update() {}
 scheduled_file_update::scheduled_file_update(
     update_job &&job,
     std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future,
-    file_descriptor &&input_fd)
+    const std::string &depfile_path, file_descriptor &&depfile_dummy_fd)
     : job(std::move(job)), read_depfile_future(std::move(read_depfile_future)),
-      input_fd(std::move(input_fd)) {}
+      depfile_path(depfile_path),
+      depfile_dummy_fd(std::move(depfile_dummy_fd)) {}
 
 scheduled_file_update::scheduled_file_update(scheduled_file_update &&other)
     : job(std::move(other.job)),
       read_depfile_future(std::move(other.read_depfile_future)),
-      input_fd(std::move(other.input_fd)) {}
+      depfile_path(std::move(other.depfile_path)),
+      depfile_dummy_fd(std::move(other.depfile_dummy_fd)) {}
 
 scheduled_file_update &scheduled_file_update::
 operator=(scheduled_file_update &&other) {
   job = std::move(other.job);
   read_depfile_future = std::move(other.read_depfile_future);
-  input_fd = std::move(other.input_fd);
+  depfile_path = std::move(other.depfile_path);
+  depfile_dummy_fd = std::move(other.depfile_dummy_fd);
   return *this;
 }
+
+static std::string TEMPLATE = "/tmp/upd.XXXXXX";
 
 scheduled_file_update
 schedule_file_update(update_context &cx,
@@ -106,30 +113,37 @@ schedule_file_update(update_context &cx,
                      const std::vector<std::string> &local_src_paths,
                      const std::string &local_target_path) {
 
-  int depfile_fds[2];
-  if (pipe(depfile_fds) != 0) {
-    throw new std::runtime_error("pipe() failed");
+  char *tpl = new char[TEMPLATE.size() + 1];
+  strcpy(tpl, TEMPLATE.c_str());
+  if (mkdtemp(tpl) == NULL) {
+    throw new std::runtime_error("mkdtemp() failed");
   }
-  file_descriptor input_fd(depfile_fds[0]);
+  std::string depfile_path = std::string(tpl) + "/dep";
+  if (mkfifo(depfile_path.c_str(), 0700) != 0) {
+    throw new std::runtime_error("mkfifo() failed");
+  }
 
-  auto command_line =
-      reify_command_line(cli_template,
-                         {.dependency_file = get_fd_path(depfile_fds[1]),
-                          .input_files = local_src_paths,
-                          .output_files = {local_target_path}},
-                         cx.root_path, io::getcwd_string());
+  auto command_line = reify_command_line(
+      cli_template, {depfile_path, local_src_paths, {local_target_path}},
+      cx.root_path, io::getcwd_string());
   std::cout << "updating: " << local_target_path << std::endl;
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
   }
   cx.dir_cache.create(io::dirname_string(local_target_path));
   auto read_depfile_future =
-      std::async(std::launch::async, &depfile::read, input_fd.fd());
+      std::async(std::launch::async, &depfile::read, depfile_path);
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
-  return scheduled_file_update(
-      {cx.root_path, command_line, {depfile_fds[0], depfile_fds[1]}},
-      std::move(read_depfile_future), std::move(input_fd));
+  int fd = open(depfile_path.c_str(), O_WRONLY);
+  if (fd < 0) {
+    throw new std::runtime_error("open() failed");
+  }
+  file_descriptor depfile_dummy_fd(fd);
+
+  return scheduled_file_update({cx.root_path, command_line},
+                               std::move(read_depfile_future), depfile_path,
+                               std::move(depfile_dummy_fd));
 }
 
 void finalize_scheduled_update(
@@ -139,9 +153,15 @@ void finalize_scheduled_update(
     const std::string &local_target_path, const update_map &updm,
     const std::unordered_set<std::string> &local_dependency_file_paths) {
 
+  sfu.depfile_dummy_fd.close();
   std::unique_ptr<depfile::depfile_data> depfile_data =
       sfu.read_depfile_future.get();
-  sfu.input_fd.close();
+  if (unlink(sfu.depfile_path.c_str()) != 0) {
+    throw std::runtime_error("unlink() failed");
+  }
+  if (rmdir(io::dirname_string(sfu.depfile_path).c_str()) != 0) {
+    throw std::runtime_error("rmdir() failed");
+  }
 
   auto root_folder_path = cx.root_path + '/';
 

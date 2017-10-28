@@ -12,7 +12,6 @@ namespace upd {
 struct update_job {
   std::string root_path;
   command_line target;
-  int depfile_fds[2];
 };
 
 enum class worker_status { idle, in_progress, finished, shutdown };

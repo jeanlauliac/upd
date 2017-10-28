@@ -46,7 +46,7 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
  */
 command_line_result run_command_line(const std::string &root_path,
                                      const command_line &target,
-                                     int depfile_fds[2], int stderr_read_fd,
+                                     int stderr_read_fd,
                                      const std::string &stderr_pts) {
   std::vector<char *> argv;
   argv.push_back(const_cast<char *>(target.binary_path.c_str()));
@@ -63,7 +63,6 @@ command_line_result run_command_line(const std::string &root_path,
   if (!isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
 
   system::spawn_file_actions actions;
-  actions.add_close(depfile_fds[0]);
 
   actions.add_close(stdout[0]);
   actions.add_dup2(stdout[1], STDOUT_FILENO);
@@ -82,7 +81,6 @@ command_line_result run_command_line(const std::string &root_path,
       system::spawn(target.binary_path, actions, argv.data(), environ);
   actions.destroy();
 
-  if (close(depfile_fds[1]) != 0) throw std::runtime_error("close() failed");
   if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");
   if (close(stderr_fd) != 0) throw std::runtime_error("close() failed");
 

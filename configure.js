@@ -32,7 +32,7 @@ const manifest = new updfile.ManifestBuilder();
 
 const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-MMD"];
 if (options.compilerBinary === 'clang++') {
-  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror", "-fcolor-diagnostics");
+  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror");
 } else {
   COMMON_NATIVE_COMPILE_FLAGS.push('-fpermissive');
 }
@@ -42,7 +42,7 @@ const COMMON_CPLUSPLUS_COMPILE_FLAGS =
 if (options.compilerBinary === 'clang++') {
   COMMON_CPLUSPLUS_COMPILE_FLAGS.push("-stdlib=libc++");
 }
-  
+
 const compile_optimized_cpp_cli = manifest.cli_template(
   options.compilerBinary,
   updfile.makeCli(
@@ -206,7 +206,7 @@ const compiled_test_files = manifest.rule(
 
 const commonLinkFlags = ["-Wall", "-std=c++14"];
 if (options.compilerBinary === 'clang++') {
-  commonLinkFlags.push("-fcolor-diagnostics", "-stdlib=libc++");
+  commonLinkFlags.push("-stdlib=libc++");
 }
 
 const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [

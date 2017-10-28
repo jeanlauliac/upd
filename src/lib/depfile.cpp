@@ -1,5 +1,9 @@
 #include "depfile.h"
 #include "fd_char_reader.h"
+#include <fcntl.h>
+#include <stdexcept>
+#include <sys/stat.h>
+#include <sys/wait.h>
 
 namespace upd {
 namespace depfile {
@@ -46,7 +50,12 @@ bool parse_token_handler::new_line() {
   return true;
 }
 
-std::unique_ptr<depfile_data> read(int fd) {
+std::unique_ptr<depfile_data> read(const std::string &file_path) {
+  int fd = open(file_path.c_str(), O_RDONLY);
+  if (fd < 0) {
+    throw new std::runtime_error("open() failed");
+  }
+  file_descriptor input_fd(fd);
   fd_char_reader char_reader(fd);
   return parse(char_reader);
 }
