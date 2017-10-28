@@ -233,10 +233,10 @@ private:
     for (size_t i = 0; i < patterns.size(); ++i) {
       size_t capture_group_count = patterns[i].capture_groups.size();
       initial_bookmarks.push_back({
-          .pattern_ix = i,
-          .segment_ix = 0,
-          .captured_from_ids = std::vector<size_t>(capture_group_count, 1),
-          .captured_to_ids = std::vector<size_t>(capture_group_count, 1),
+          i,
+          0,
+          std::vector<size_t>(capture_group_count, 1),
+          std::vector<size_t>(capture_group_count, 1)
       });
     }
     return pending_dirs_type({{"/", std::move(initial_bookmarks)}});
@@ -264,10 +264,10 @@ private:
     auto captured_from_ids = target.captured_from_ids;
     auto captured_to_ids = target.captured_to_ids;
     pending_dirs_[path_prefix_ + name + '/'].push_back({
-        .segment_ix = target.segment_ix,
-        .captured_from_ids = std::move(captured_from_ids),
-        .captured_to_ids = std::move(captured_to_ids),
-        .pattern_ix = target.pattern_ix,
+        target.pattern_ix,
+        target.segment_ix,
+        std::move(captured_from_ids),
+        std::move(captured_to_ids)
     });
   }
 
@@ -278,10 +278,10 @@ private:
     update_captures_for_ent_name_(target, match_indices, name.size(),
                                   captured_from_ids, captured_to_ids);
     pending_dirs_[path_prefix_ + name + '/'].push_back({
-        .segment_ix = target.segment_ix + 1,
-        .captured_from_ids = std::move(captured_from_ids),
-        .captured_to_ids = std::move(captured_to_ids),
-        .pattern_ix = target.pattern_ix,
+        target.pattern_ix,
+        target.segment_ix + 1,
+        std::move(captured_from_ids),
+        std::move(captured_to_ids)
     });
   }
 

@@ -70,9 +70,9 @@ struct pattern_string_parser {
   void open_capture_group_in_name() {
     finish_glob_segment();
     open_capture_group({
-        .type = capture_point_type::ent_name,
-        .ent_name_segment_ix = current_segment.ent_name.size(),
-        .segment_ix = result.segments.size(),
+        result.segments.size(),
+        capture_point_type::ent_name,
+        current_segment.ent_name.size()
     });
   }
 
@@ -85,9 +85,9 @@ struct pattern_string_parser {
     auto &group = result.capture_groups[capture_groups_ids.top()];
     capture_groups_ids.pop();
     group.to = {
-        .type = capture_point_type::ent_name,
-        .ent_name_segment_ix = current_segment.ent_name.size(),
-        .segment_ix = result.segments.size(),
+        result.segments.size(),
+        capture_point_type::ent_name,
+        current_segment.ent_name.size()
     };
   }
 
@@ -118,8 +118,8 @@ struct pattern_string_parser {
     input_ix = ix + 1;
     if (open_capture) {
       open_capture_group({
-          .type = capture_point_type::wildcard,
-          .segment_ix = result.segments.size(),
+          result.segments.size(),
+          capture_point_type::wildcard
       });
     }
     if (close_capture) {

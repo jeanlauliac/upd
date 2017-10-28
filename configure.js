@@ -23,14 +23,26 @@ for (let i = 2; i < argv.length; ++i) {
   }
 }
 
-const OPTIMIZATION_FLAGS = ['-Ofast', '-fno-rtti'];
+const OPTIMIZATION_FLAGS = ['-Ofast'];
+if (options.compilerBinary === 'clang++') {
+  OPTIMIZATION_FLAGS.push('-fno-rtti');
+}
 
 const manifest = new updfile.ManifestBuilder();
 
-const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-Werror", "-fcolor-diagnostics", "-MMD"];
-const COMMON_CPLUSPLUS_COMPILE_FLAGS =
-  COMMON_NATIVE_COMPILE_FLAGS.concat(["-std=c++14", "-stdlib=libc++"]);
+const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-MMD"];
+if (options.compilerBinary === 'clang++') {
+  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror", "-fcolor-diagnostics");
+} else {
+  COMMON_NATIVE_COMPILE_FLAGS.push('-fpermissive');
+}
 
+const COMMON_CPLUSPLUS_COMPILE_FLAGS =
+  COMMON_NATIVE_COMPILE_FLAGS.concat(["-std=c++14"]);
+if (options.compilerBinary === 'clang++') {
+  COMMON_CPLUSPLUS_COMPILE_FLAGS.push("-stdlib=libc++");
+}
+  
 const compile_optimized_cpp_cli = manifest.cli_template(
   options.compilerBinary,
   updfile.makeCli(
@@ -192,7 +204,10 @@ const compiled_test_files = manifest.rule(
   [cli_parser_cpp_file]
 );
 
-const commonLinkFlags = ["-Wall", "-fcolor-diagnostics", "-stdlib=libc++", "-std=c++14"];
+const commonLinkFlags = ["-Wall", "-std=c++14"];
+if (options.compilerBinary === 'clang++') {
+  commonLinkFlags.push("-fcolor-diagnostics", "-stdlib=libc++");
+}
 
 const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-o"], variables: ["output_file"]},

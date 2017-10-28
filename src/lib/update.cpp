@@ -129,9 +129,9 @@ schedule_file_update(update_context &cx,
 
   return scheduled_file_update(
       {
-          .depfile_fds = {depfile_fds[0], depfile_fds[1]},
-          .root_path = cx.root_path,
-          .target = command_line,
+          cx.root_path,
+          command_line,
+          {depfile_fds[0], depfile_fds[1]}
       },
       std::move(read_depfile_future), std::move(input_fd));
 }
@@ -174,9 +174,7 @@ void finalize_scheduled_update(
                          dep_local_paths, cli_template);
   auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);
   cx.log_cache.record(local_target_path,
-                      {.dependency_local_paths = dep_local_paths,
-                       .hash = new_hash,
-                       .imprint = new_imprint});
+                      {new_imprint, new_hash, dep_local_paths});
 }
 
 } // namespace upd

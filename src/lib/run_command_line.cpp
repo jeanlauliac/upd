@@ -29,7 +29,7 @@ static std::string read_fd_to_string(int fd) {
     char buffer[1 << 12];
     count = read(fd, buffer, sizeof(buffer));
     if (count < 0) {
-      throw std::runtime_error("read() failed");
+      throw std::runtime_error("read() failed: " + std::to_string(errno));
     }
     result.write(buffer, count);
   } while (count > 0);
@@ -53,7 +53,7 @@ command_line_result run_command_line(const std::string &root_path,
   int stdout[2];
   if (pipe(stdout) != 0) throw std::runtime_error("pipe() failed");
 
-  int stderr_fd = open(stderr_pts.c_str(), O_WRONLY);
+  int stderr_fd = open(stderr_pts.c_str(), O_WRONLY | O_NOCTTY);
   if (stderr_fd < 0) throw std::runtime_error("open() for stderr failed");
   if (!isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
 
@@ -65,13 +65,13 @@ command_line_result run_command_line(const std::string &root_path,
   actions.add_close(stdout[1]);
 
   actions.add_close(stderr_read_fd);
-  actions.add_dup2(stderr_fd, STDERR_FILENO);
+  //actions.add_dup2(stderr_fd, STDERR_FILENO);
   actions.add_close(stderr_fd);
 
   auto read_stdout =
       std::async(std::launch::async, &read_fd_to_string, stdout[0]);
-  auto read_stderr =
-      std::async(std::launch::async, &read_fd_to_string, stderr_read_fd);
+  //auto read_stderr =
+  //    std::async(std::launch::async, &read_fd_to_string, stderr_read_fd);
 
   pid_t child_pid =
       system::spawn(target.binary_path, actions, argv.data(), environ);
@@ -87,9 +87,9 @@ command_line_result run_command_line(const std::string &root_path,
   }
 
   command_line_result result = {
-      .stdout = read_stdout.get(),
-      .stderr = read_stderr.get(),
-      .status = status,
+      read_stdout.get(),
+      "", //read_stderr.get(),
+      status,
   };
 
   if (close(stdout[0])) throw std::runtime_error("close() failed");

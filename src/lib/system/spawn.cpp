@@ -1,6 +1,8 @@
 #include "spawn.h"
 #include <errno.h>
 
+#include <iostream>
+
 namespace upd {
 namespace system {
 

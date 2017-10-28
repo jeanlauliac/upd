@@ -43,7 +43,7 @@ struct collection_inspector {
                        const inspect_options &options)
       : indent_spaces_(
             std::string((options.depth + 1) * options.global.indent, ' ')),
-        inner_options_({.depth = options.depth + 1, .global = options.global}),
+        inner_options_({options.global, options.depth + 1}),
         begin_(true) {
     os_ << class_name << "({";
   }
