@@ -5,45 +5,32 @@
 namespace upd {
 namespace json {
 
-template <typename ReturnValue>
-struct array_body {
+template <typename ReturnValue> struct array_body {
   template <typename Lexer, typename Handler>
-  static ReturnValue read(
-    array_reader<Lexer>& reader,
-    Handler& handler
-  ) {
+  static ReturnValue read(array_reader<Lexer> &reader, Handler &handler) {
     ReturnValue value = handler.array(reader);
     if (reader.state() == array_reader<Lexer>::state_t::done) return value;
     throw std::runtime_error(
-      "array_reader#next() needs to be called until `false` is returned"
-    );
+        "array_reader#next() needs to be called until `false` is returned");
   }
 };
 
-template <>
-struct array_body<void> {
+template <> struct array_body<void> {
   template <typename Lexer, typename Handler>
-  static void read(
-    array_reader<Lexer>& reader,
-    Handler& handler
-  ) {
+  static void read(array_reader<Lexer> &reader, Handler &handler) {
     handler.array(reader);
     if (reader.state() == array_reader<Lexer>::state_t::done) return;
     throw std::runtime_error(
-      "array_reader#next() needs to be called until `false` is returned"
-    );
+        "array_reader#next() needs to be called until `false` is returned");
   }
 };
 
-template <typename Lexer, typename Handler>
-struct parse_expression_handler {
+template <typename Lexer, typename Handler> struct parse_expression_handler {
   typedef typename Handler::return_type return_type;
-  parse_expression_handler(Lexer& lexer, Handler& handler):
-    lexer_(lexer), handler_(handler) {}
+  parse_expression_handler(Lexer &lexer, Handler &handler)
+      : lexer_(lexer), handler_(handler) {}
 
-  return_type end() const {
-    throw unexpected_end_error();
-  }
+  return_type end() const { throw unexpected_end_error(); }
 
   return_type punctuation(punctuation_type type) const {
     if (type == punctuation_type::brace_open) {
@@ -57,7 +44,7 @@ struct parse_expression_handler {
     return array_body<return_type>::read(reader, handler_);
   }
 
-  return_type string_literal(const std::string& literal) const {
+  return_type string_literal(const std::string &literal) const {
     return handler_.string_literal(literal);
   }
 
@@ -66,21 +53,22 @@ struct parse_expression_handler {
   }
 
 private:
-  Lexer& lexer_;
-  Handler& handler_;
+  Lexer &lexer_;
+  Handler &handler_;
 };
 
 template <typename Lexer, typename Handler>
-typename Handler::return_type parse_expression(Lexer& lexer, Handler& handler) {
+typename Handler::return_type parse_expression(Lexer &lexer, Handler &handler) {
   parse_expression_handler<Lexer, Handler> lx_handler(lexer, handler);
   return lexer.next(lx_handler);
 }
 
 template <typename Lexer, typename Handler>
-typename Handler::return_type parse_expression(Lexer& lexer, const Handler& handler) {
+typename Handler::return_type parse_expression(Lexer &lexer,
+                                               const Handler &handler) {
   parse_expression_handler<Lexer, const Handler> lx_handler(lexer, handler);
   return lexer.next(lx_handler);
 }
 
-}
-}
+} // namespace json
+} // namespace upd

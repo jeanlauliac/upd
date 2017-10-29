@@ -7,7 +7,7 @@ namespace json {
 
 struct read_field_name_handler {
   typedef bool return_type;
-  read_field_name_handler(std::string& field_name): field_name_(field_name) {}
+  read_field_name_handler(std::string &field_name) : field_name_(field_name) {}
 
   bool end() const { throw unexpected_end_error(); }
 
@@ -16,22 +16,21 @@ struct read_field_name_handler {
     throw unexpected_punctuation_error();
   }
 
-  bool string_literal(const std::string& literal) const {
+  bool string_literal(const std::string &literal) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float literal) const {
-    throw unexpected_number_error();
-  }
+  bool number_literal(float literal) const { throw unexpected_number_error(); }
 
 private:
-  std::string& field_name_;
+  std::string &field_name_;
 };
 
 struct read_new_field_name_handler {
   typedef bool return_type;
-  read_new_field_name_handler(std::string& field_name): field_name_(field_name) {}
+  read_new_field_name_handler(std::string &field_name)
+      : field_name_(field_name) {}
 
   bool end() const { throw unexpected_end_error(); }
 
@@ -39,17 +38,15 @@ struct read_new_field_name_handler {
     throw unexpected_punctuation_error();
   }
 
-  bool string_literal(const std::string& literal) const {
+  bool string_literal(const std::string &literal) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float literal) const {
-    throw unexpected_number_error();
-  }
+  bool number_literal(float literal) const { throw unexpected_number_error(); }
 
 private:
-  std::string& field_name_;
+  std::string &field_name_;
 };
 
 struct post_field_handler {
@@ -62,13 +59,11 @@ struct post_field_handler {
     throw unexpected_punctuation_error();
   }
 
-  bool string_literal(const std::string& literal) const {
+  bool string_literal(const std::string &literal) const {
     throw unexpected_string_error();
   }
 
-  bool number_literal(float literal) const {
-    throw unexpected_number_error();
-  }
+  bool number_literal(float literal) const { throw unexpected_number_error(); }
 };
 
 struct read_field_colon_handler {
@@ -81,33 +76,29 @@ struct read_field_colon_handler {
     }
   }
 
-  void string_literal(const std::string& literal) const {
+  void string_literal(const std::string &literal) const {
     throw unexpected_string_error();
   }
 
-  void number_literal(float literal) const {
-    throw unexpected_number_error();
-  }
+  void number_literal(float literal) const { throw unexpected_number_error(); }
 };
 
-template <typename Lexer>
-struct object_reader {
+template <typename Lexer> struct object_reader {
   typedef Lexer lexer_type;
   enum struct state_t { init, reading, reading_value, done };
 
-  object_reader(Lexer& lexer): lexer_(lexer), state_(state_t::init) {}
-  object_reader(object_reader&) = delete;
+  object_reader(Lexer &lexer) : lexer_(lexer), state_(state_t::init) {}
+  object_reader(object_reader &) = delete;
 
   /**
    * Read the next field, return `true` if there is a field, `false` if we
    * reached the end of the object. `field_name` contains the name of the
    * field if it returned `true`.
    */
-  bool next(std::string& field_name) {
+  bool next(std::string &field_name) {
     if (state_ == state_t::reading_value) {
       throw std::runtime_error(
-        "invalid use of object_reader#next(): call next_value() first"
-      );
+          "invalid use of object_reader#next(): call next_value() first");
     }
     if (state_ == state_t::reading) {
       post_field_handler pf_handler;
@@ -136,30 +127,29 @@ struct object_reader {
   }
 
   template <typename Handler>
-  typename Handler::return_type next_value(Handler& handler) {
+  typename Handler::return_type next_value(Handler &handler) {
     return next_value_(handler);
   }
 
   template <typename Handler>
-  typename Handler::return_type next_value(const Handler& handler) {
+  typename Handler::return_type next_value(const Handler &handler) {
     return next_value_(handler);
   }
 
 private:
   template <typename Handler>
-  typename Handler::return_type next_value_(Handler& handler) {
+  typename Handler::return_type next_value_(Handler &handler) {
     if (state_ != state_t::reading_value) {
       throw std::runtime_error(
-        "invalid use of object_reader#next_value(): call next() first"
-      );
+          "invalid use of object_reader#next_value(): call next() first");
     }
     state_ = state_t::reading;
     return parse_expression(lexer_, handler);
   }
 
-  Lexer& lexer_;
+  Lexer &lexer_;
   state_t state_;
 };
 
-}
-}
+} // namespace json
+} // namespace upd

@@ -30,8 +30,7 @@ std::string inspect(const char *value, const inspect_options &options);
 template <typename TFirst, typename TSecond>
 std::string inspect_implicit_pair(const std::pair<TFirst, TSecond> &pair,
                                   const inspect_options &options) {
-  inspect_options inner_options(
-      {.depth = options.depth + 1, .global = options.global});
+  inspect_options inner_options({options.global, options.depth + 1});
   std::ostringstream os;
   os << "{ " << inspect(pair.first, inner_options) << ", "
      << inspect(pair.second, inner_options) << " }";
@@ -158,8 +157,8 @@ std::string inspect(const TAny &any, const inspect_options &options) {
 }
 
 template <typename T> std::string inspect(const T &value) {
-  global_inspect_options global = {.indent = 2, .width = 60};
-  return inspect(value, {.global = global, .depth = 0});
+  global_inspect_options global = {2, 60};
+  return inspect(value, {global, 0});
 }
 
 } // namespace upd

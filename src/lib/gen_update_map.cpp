@@ -15,8 +15,8 @@ crawl_source_patterns(const std::string &root_path,
   path_glob::match match;
   while (matcher.next(match)) {
     matches[match.pattern_ix].push_back({
-        .value = std::move(match.local_path),
-        .captured_groups = std::move(match.captured_groups),
+        std::move(match.local_path),
+        std::move(match.captured_groups),
     });
   }
   for (size_t i = 0; i < matches.size(); ++i) {
@@ -78,15 +78,12 @@ update_map gen_update_map(const std::string &root_path,
     for (const auto &datum : data_by_path) {
       if (result.output_files_by_path.count(datum.first)) {
         throw duplicate_output_error{
-            .local_output_file_path = datum.first,
-            .rule_ids = {rule_ids_by_output_path.at(datum.first), i},
+            datum.first,
+            {rule_ids_by_output_path.at(datum.first), i},
         };
       }
       result.output_files_by_path[datum.first] = {
-          .command_line_ix = rule.command_line_ix,
-          .local_input_file_paths = datum.second.first,
-          .local_dependency_file_paths = all_dependencies,
-      };
+          rule.command_line_ix, datum.second.first, all_dependencies};
       rule_ids_by_output_path[datum.first] = i;
       captured_paths[k] = substitution::capture(
           rule.output.capture_groups, datum.first, datum.second.second);

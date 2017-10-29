@@ -6,26 +6,23 @@
 namespace upd {
 namespace json {
 
-template <typename Lexer>
-struct array_reader {
+template <typename Lexer> struct array_reader {
   typedef Lexer lexer_type;
   enum class state_t { init, reading, done };
 
-  array_reader(Lexer& lexer): lexer_(lexer), state_(state_t::init) {}
+  array_reader(Lexer &lexer) : lexer_(lexer), state_(state_t::init) {}
 
   /**
    * We don't want the reader to be copied so as to ensure the callsite can
    * validate the reading state at the end of the reading operation.
    */
-  array_reader(array_reader&) = delete;
+  array_reader(array_reader &) = delete;
 
   state_t state() const { return state_; }
 
   template <typename ItemHandler>
-  bool next(
-    ItemHandler& item_handler,
-    typename ItemHandler::return_type& value
-  ) {
+  bool next(ItemHandler &item_handler,
+            typename ItemHandler::return_type &value) {
     if (state_ == state_t::done) return false;
     if (state_ == state_t::init) {
       typedef first_item_handler<ItemHandler> handler;
@@ -45,19 +42,13 @@ struct array_reader {
   }
 
 private:
-  template <typename ItemHandler>
-  struct first_item_handler {
+  template <typename ItemHandler> struct first_item_handler {
     typedef bool return_type;
     typedef typename ItemHandler::return_type item_type;
 
-    first_item_handler(
-      Lexer& lexer,
-      ItemHandler& item_handler,
-      item_type& value
-    ):
-      lexer_(lexer),
-      item_handler_(item_handler),
-      value_(value) {}
+    first_item_handler(Lexer &lexer, ItemHandler &item_handler,
+                       item_type &value)
+        : lexer_(lexer), item_handler_(item_handler), value_(value) {}
 
     bool end() const { throw unexpected_end_error(); }
 
@@ -78,7 +69,7 @@ private:
       throw unexpected_punctuation_error();
     }
 
-    bool string_literal(const std::string& literal) const {
+    bool string_literal(const std::string &literal) const {
       value_ = item_handler_.string_literal(literal);
       return true;
     }
@@ -89,9 +80,9 @@ private:
     }
 
   private:
-    Lexer& lexer_;
-    ItemHandler& item_handler_;
-    item_type& value_;
+    Lexer &lexer_;
+    ItemHandler &item_handler_;
+    item_type &value_;
   };
 
   struct post_item_handler {
@@ -105,7 +96,7 @@ private:
       throw unexpected_punctuation_error();
     }
 
-    bool string_literal(const std::string& literal) const {
+    bool string_literal(const std::string &literal) const {
       throw unexpected_string_error();
     }
 
@@ -115,9 +106,9 @@ private:
   };
 
 private:
-  Lexer& lexer_;
+  Lexer &lexer_;
   state_t state_;
 };
 
-}
-}
+} // namespace json
+} // namespace upd

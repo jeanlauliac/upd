@@ -3,6 +3,7 @@
 #include "path.h"
 #include "run_command_line.h"
 #include "update_worker.h"
+#include <cstring>
 #include <fcntl.h>
 #include <stdexcept>
 #include <sys/stat.h>
@@ -177,10 +178,7 @@ void finalize_scheduled_update(
       if (updm.output_files_by_path.find(dep_path) !=
               updm.output_files_by_path.end() &&
           local_dependency_file_paths.count(dep_path) == 0) {
-        throw undeclared_rule_dependency_error({
-            .local_target_path = local_target_path,
-            .local_dependency_path = dep_path,
-        });
+        throw undeclared_rule_dependency_error({local_target_path, dep_path});
       }
       dep_local_paths.push_back(dep_path);
     }

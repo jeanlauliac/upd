@@ -32,7 +32,7 @@ const manifest = new updfile.ManifestBuilder();
 
 const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", "-MMD"];
 if (options.compilerBinary === 'clang++') {
-  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror");
+  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror", '-pedantic');
 } else {
   COMMON_NATIVE_COMPILE_FLAGS.push('-fpermissive');
 }

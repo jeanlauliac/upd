@@ -3,9 +3,9 @@
 namespace upd {
 namespace package {
 
-extern const char* NAME;
-extern const char* VERSION;
-extern const char* DESCRIPTION;
+extern const char *NAME;
+extern const char *VERSION;
+extern const char *DESCRIPTION;
 
-}
-}
+} // namespace package
+} // namespace upd
