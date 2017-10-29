@@ -13,30 +13,30 @@ struct mock_ent {
 static std::unordered_map<std::string, std::vector<mock_ent>>
 MOCK_ENTS_BY_DIR_PATH = {
   { "/root", {
-    { .name = ".", .type = DT_DIR },
-    { .name = "..", .type = DT_DIR },
-    { .name = "src", .type = DT_DIR },
-    { .name = "foo.json", .type = DT_REG },
+    { ".", DT_DIR },
+    { "..", DT_DIR },
+    { "src", DT_DIR },
+    { "foo.json", DT_REG },
   } },
   { "/root/src", {
-    { .name = ".", .type = DT_DIR },
-    { .name = "..", .type = DT_DIR },
-    { .name = "beep1", .type = DT_DIR },
-    { .name = "boop", .type = DT_DIR },
-    { .name = "main.cpp", .type = DT_REG },
-    { .name = "beep2", .type = DT_DIR }
+    { ".", DT_DIR },
+    { "..", DT_DIR },
+    { "beep1", DT_DIR },
+    { "boop", DT_DIR },
+    { "main.cpp", DT_REG },
+    { "beep2", DT_DIR }
   } },
   { "/root/src/beep1", {
-    { .name = "foo.cpp", .type = DT_REG },
-    { .name = "subdir.cpp", .type = DT_DIR },
-    { .name = "bar.cpp", .type = DT_REG }
+    { "foo.cpp", DT_REG },
+    { "subdir.cpp", DT_DIR },
+    { "bar.cpp", DT_REG }
   } },
-  { "/root/src/beep1/subdir.cpp", { { .name = "smth.cpp", .type = DT_REG } } },
+  { "/root/src/beep1/subdir.cpp", { { "smth.cpp", DT_REG } } },
   { "/root/src/boop", {
-    { .name = "foo.cpp", .type = DT_REG },
+    { "foo.cpp", DT_REG },
   } },
   { "/root/src/beep2", {
-    { .name = "smth.cpp", .type = DT_REG },
+    { "smth.cpp", DT_REG },
   } },
 };
 
@@ -82,44 +82,44 @@ private:
 
 @case "pattern_string_parser works" {
   @expect(upd::path_glob::parse("foo/**/beep/*.js") == upd::path_glob::pattern({
-    .capture_groups = {},
-    .segments = {
-      upd::path_glob::segment { .ent_name = parse("foo"), .has_wildcard = false },
-      upd::path_glob::segment { .ent_name = parse("beep"), .has_wildcard = true },
-      upd::path_glob::segment { .ent_name = parse("*.js"), .has_wildcard = false },
+    {},
+    {
+      upd::path_glob::segment { parse("foo"), false },
+      upd::path_glob::segment { parse("beep"), true },
+      upd::path_glob::segment { parse("*.js"), false },
     }
   }));
 }
 
 @case "pattern_string_parser works with capture" {
   @expect(upd::path_glob::parse("foo/(**/beep/*).js") == upd::path_glob::pattern({
-    .capture_groups = { {
-      .from = {
-        .type = upd::path_glob::capture_point_type::wildcard,
-        .segment_ix = 1,
+    { {
+      {
+        1,
+        upd::path_glob::capture_point_type::wildcard,
       },
-      .to = {
-        .type = upd::path_glob::capture_point_type::ent_name,
-        .segment_ix = 2,
-        .ent_name_segment_ix = 1,
+      {
+        2,
+        upd::path_glob::capture_point_type::ent_name,
+        1,
       },
     } },
-    .segments = {
-      upd::path_glob::segment { .ent_name = parse("foo"), .has_wildcard = false },
-      upd::path_glob::segment { .ent_name = parse("beep"), .has_wildcard = true },
-      upd::path_glob::segment { .ent_name = upd::glob::pattern({
+    {
+      upd::path_glob::segment { parse("foo"), false },
+      upd::path_glob::segment { parse("beep"), true },
+      upd::path_glob::segment { upd::glob::pattern({
         upd::glob::segment(upd::glob::placeholder::wildcard),
         upd::glob::segment(".js")
-      }), .has_wildcard = false },
+      }), false },
     }
   }));
 }
 
 @case "pattern_string_parser works with single file" {
   @expect(upd::path_glob::parse("foo.json") == upd::path_glob::pattern({
-    .capture_groups = {},
-    .segments = {
-      upd::path_glob::segment { .ent_name = parse("foo.json"), .has_wildcard = false },
+    {},
+    {
+      upd::path_glob::segment { parse("foo.json"), false },
     }
   }));
 }

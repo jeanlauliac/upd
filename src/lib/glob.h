@@ -45,8 +45,8 @@ inline bool operator==(const segment &left, const segment &right) {
  * example the pattern "foo_*.cpp" is represented as the following vector:
  *
  *     {
- *       { .prefix = placeholder::none, literal. = "foo_" },
- *       { .prefix = placeholder::wildcard, ".cpp" },
+ *       { placeholder::none, "foo_" },
+ *       { placeholder::wildcard, ".cpp" },
  *     }
  *
  */

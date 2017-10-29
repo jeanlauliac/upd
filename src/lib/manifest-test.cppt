@@ -42,10 +42,9 @@ typedef json::lexer<string_char_reader> string_lexer;
   string_lexer lx(reader);
   auto result = manifest::parse(lx);
   manifest::manifest expected = {
-    .command_line_templates = {
+    {
       {
-        .binary_path = "clang++",
-        .parts = {
+        "clang++", {
           command_line_template_part(
             { "-c", "-o" },
             { command_line_template_variable::output_files }
@@ -61,21 +60,21 @@ typedef json::lexer<string_char_reader> string_lexer;
         },
       },
     },
-    .source_patterns = {
+    {
       path_glob::parse("(src/lib/**/*).cppt"),
       path_glob::parse("(src/main).cpp"),
     },
-    .rules = {
+    {
       {
-        .command_line_ix = 13,
-        .output = substitution::parse("dist/($1).o"),
-        .inputs = {
+        13,
+        {
           manifest::update_rule_input::from_source(1),
           manifest::update_rule_input::from_rule(2),
         },
-        .dependencies = {
+        {
           manifest::update_rule_input::from_rule(3),
         },
+        substitution::parse("dist/($1).o"),
       },
     },
   };
