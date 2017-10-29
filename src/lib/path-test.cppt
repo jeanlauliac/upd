@@ -1,66 +1,71 @@
 #include "path.h"
 
-@case "normalize_path() processes dot-dot" {
+@it "normalize_path() processes dot-dot" {
   auto result = upd::normalize_path("foo/../bar");
   @expect(result == "bar");
 }
 
-@case "normalize_path() processes dot" {
+@it "normalize_path() processes dot" {
   auto result = upd::normalize_path("foo/./bar");
   @expect(result == "foo/bar");
 }
 
-@case "normalize_path() removes double separators" {
+@it "normalize_path() removes double separators" {
   auto result = upd::normalize_path("foo//bar");
   @expect(result == "foo/bar");
 }
 
-@case "normalize_path() removes end separator" {
+@it "normalize_path() removes end separator" {
   auto result = upd::normalize_path("foo/bar/");
   @expect(result == "foo/bar");
 }
 
-@case "normalize_path() keeps dot-dot if necessary" {
+@it "normalize_path() keeps dot-dot if necessary" {
   auto result = upd::normalize_path("foo/../../bar");
   @expect(result == "../bar");
 }
 
-@case "normalize_path() processes absolute path" {
+@it "normalize_path() processes absolute path" {
   auto result = upd::normalize_path("/foo/bar");
   @expect(result == "/foo/bar");
 }
 
-@case "normalize_path() processes bare absolute path" {
+@it "normalize_path() processes bare absolute path" {
   auto result = upd::normalize_path("/");
   @expect(result == "/");
 }
 
-@case "get_absolute_path() works" {
+@it "get_absolute_path() works" {
   auto result = upd::get_absolute_path("../foo/bar", "/beep/boop");
   @expect(result == "/beep/foo/bar");
 }
 
-@case "get_root_path() works with relative path" {
-  auto result = upd::get_local_path("/beep/foo", "../foo/bar/glo", "/beep/boop");
+@it "get_root_path() works with relative path" {
+  auto result =
+      upd::get_local_path("/beep/foo", "../foo/bar/glo", "/beep/boop");
   @expect(result == "bar/glo");
 }
 
-@case "get_root_path() works with absolute path" {
-  auto result = upd::get_local_path("/beep/foo", "/beep/foo/bar/glo", "/beep/boop");
+@it "get_root_path() works with absolute path" {
+  auto result =
+      upd::get_local_path("/beep/foo", "/beep/foo/bar/glo", "/beep/boop");
   @expect(result == "bar/glo");
 }
 
-@case "get_relative_path() works with same directory" {
-  auto result = upd::get_relative_path("/beep/boop/foo/bar", "foo/bar/glo", "/beep/boop");
+@it "get_relative_path() works with same directory" {
+  auto result =
+      upd::get_relative_path("/beep/boop/foo/bar", "foo/bar/glo", "/beep/boop");
   @expect(result == "glo");
 }
 
-@case "get_relative_path() works with different directory" {
-  auto result = upd::get_relative_path("/beep/qux/tra", "foo/bar/glo", "/beep/boop");
+@it "get_relative_path() works with different directory" {
+  auto result =
+      upd::get_relative_path("/beep/qux/tra", "foo/bar/glo", "/beep/boop");
   @expect(result == "../../boop/foo/bar/glo");
 }
 
-@case "get_relative_path() works with parent directory" {
-  auto result = upd::get_relative_path("/beep/boop/glo/bar", "/beep", "/beep/boop");
+@it "get_relative_path() works with parent directory" {
+  auto result =
+      upd::get_relative_path("/beep/boop/glo/bar", "/beep", "/beep/boop");
   @expect(result == "../../..");
 }

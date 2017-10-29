@@ -13,81 +13,100 @@ struct empty {};
 
 struct expect_empty_object_handler {
   typedef bool return_type;
-  bool object(object_reader& reader) const {
+  bool object(object_reader &reader) const {
     std::string field_name;
     return !reader.next(field_name);
   }
-  bool array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
-  bool string_literal(const std::string&) const { return false; }
+  bool array(array_reader &read_object) const {
+    throw std::runtime_error("unexpected array");
+  }
+  bool string_literal(const std::string &) const { return false; }
   bool number_literal(float) const { return false; }
 };
 
 struct expect_number_handler {
   typedef float return_type;
-  return_type object(object_reader& read_object) const { throw std::runtime_error("unexpected object"); }
-  return_type array(array_reader& read_object) const { throw std::runtime_error("unexpected array"); }
-  return_type string_literal(const std::string&) const { throw std::runtime_error("unexpected"); }
+  return_type object(object_reader &read_object) const {
+    throw std::runtime_error("unexpected object");
+  }
+  return_type array(array_reader &read_object) const {
+    throw std::runtime_error("unexpected array");
+  }
+  return_type string_literal(const std::string &) const {
+    throw std::runtime_error("unexpected");
+  }
   return_type number_literal(float value) const { return value; }
 };
 
 struct expect_object_single_field_handler {
   typedef std::vector<std::pair<std::string, float>> return_type;
-  return_type object(object_reader& reader) const {
+  return_type object(object_reader &reader) const {
     return_type fields;
     std::string field_name;
     while (reader.next(field_name)) {
       auto result = reader.next_value(expect_number_handler());
-      fields.push_back({ field_name, result });
+      fields.push_back({field_name, result});
     }
     return fields;
   }
-  return_type array(array_reader& read_object) const { throw std::runtime_error("unexpected"); }
-  return_type string_literal(const std::string&) const { throw std::runtime_error("unexpected"); }
-  return_type number_literal(float) const { throw std::runtime_error("unexpected"); }
+  return_type array(array_reader &read_object) const {
+    throw std::runtime_error("unexpected");
+  }
+  return_type string_literal(const std::string &) const {
+    throw std::runtime_error("unexpected");
+  }
+  return_type number_literal(float) const {
+    throw std::runtime_error("unexpected");
+  }
 };
 
-@case "parses empty object" {
+@it "parses empty object" {
   string_char_reader reader("{}");
   string_lexer lx(reader);
   @expect(json::parse_expression(lx, expect_empty_object_handler()));
   @expect(lx.next(expect_end_handler()));
 }
 
-@case "parses object with a field" {
+@it "parses object with a field" {
   string_char_reader reader("{\"foo\": 42}");
   string_lexer lx(reader);
   auto res = json::parse_expression(lx, expect_object_single_field_handler());
-  @expect(res == expect_object_single_field_handler::return_type({ { "foo", 42 } }));
+  @expect(res ==
+          expect_object_single_field_handler::return_type({{"foo", 42}}));
   @expect(lx.next(expect_end_handler()));
 }
 
-@case "parses object with several fields" {
+@it "parses object with several fields" {
   string_char_reader reader("{\"foo\": 42, \"bar\": 2, \"glo\": 76}");
   string_lexer lx(reader);
   auto res = json::parse_expression(lx, expect_object_single_field_handler());
   @expect(res == expect_object_single_field_handler::return_type({
-    { "foo", 42 },
-    { "bar", 2 },
-    { "glo", 76 },
-  }));
+                     {"foo", 42},
+                     {"bar", 2},
+                     {"glo", 76},
+                 }));
   @expect(lx.next(expect_end_handler()));
 }
 
 struct array_of_numbers_handler {
   typedef float return_type;
-  float object(object_reader& read_object) const { throw std::runtime_error("expected number"); }
-  float array(array_reader& read_array) const { throw std::runtime_error("expected number"); }
-  float string_literal(const std::string&) const { throw std::runtime_error("expected number"); }
-  float number_literal(float number) {
-    return number;
+  float object(object_reader &read_object) const {
+    throw std::runtime_error("expected number");
   }
+  float array(array_reader &read_array) const {
+    throw std::runtime_error("expected number");
+  }
+  float string_literal(const std::string &) const {
+    throw std::runtime_error("expected number");
+  }
+  float number_literal(float number) { return number; }
 };
 
 struct expect_number_array_handler {
   typedef bool return_type;
-  expect_number_array_handler(const std::vector<float>& target):
-    target_(target) {}
-  bool array(array_reader& reader) const {
+  expect_number_array_handler(const std::vector<float> &target)
+      : target_(target) {}
+  bool array(array_reader &reader) const {
     array_of_numbers_handler handler;
     float number;
     std::vector<float> numbers;
@@ -96,26 +115,25 @@ struct expect_number_array_handler {
     }
     return numbers == target_;
   }
-  bool object(object_reader& read_object) const { return false; }
-  bool string_literal(const std::string&) const { return false; }
+  bool object(object_reader &read_object) const { return false; }
+  bool string_literal(const std::string &) const { return false; }
   bool number_literal(float) const { return false; }
 
 private:
   std::vector<float> target_;
 };
 
-@case "parses empty array" {
+@it "parses empty array" {
   string_char_reader reader("[]");
   string_lexer lx(reader);
   @expect(json::parse_expression(lx, expect_number_array_handler({})));
   @expect(lx.next(expect_end_handler()));
 }
 
-@case "parses array of numbers" {
+@it "parses array of numbers" {
   string_char_reader reader("[3, 5, 7, 13]");
   string_lexer lx(reader);
-  @expect(json::parse_expression(lx, expect_number_array_handler(
-    { 3, 5, 7, 13 }
-  )));
+  @expect(
+      json::parse_expression(lx, expect_number_array_handler({3, 5, 7, 13})));
   @expect(lx.next(expect_end_handler()));
 }

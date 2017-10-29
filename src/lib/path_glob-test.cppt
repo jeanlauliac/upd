@@ -11,49 +11,48 @@ struct mock_ent {
 };
 
 static std::unordered_map<std::string, std::vector<mock_ent>>
-MOCK_ENTS_BY_DIR_PATH = {
-  { "/root", {
-    { ".", DT_DIR },
-    { "..", DT_DIR },
-    { "src", DT_DIR },
-    { "foo.json", DT_REG },
-  } },
-  { "/root/src", {
-    { ".", DT_DIR },
-    { "..", DT_DIR },
-    { "beep1", DT_DIR },
-    { "boop", DT_DIR },
-    { "main.cpp", DT_REG },
-    { "beep2", DT_DIR }
-  } },
-  { "/root/src/beep1", {
-    { "foo.cpp", DT_REG },
-    { "subdir.cpp", DT_DIR },
-    { "bar.cpp", DT_REG }
-  } },
-  { "/root/src/beep1/subdir.cpp", { { "smth.cpp", DT_REG } } },
-  { "/root/src/boop", {
-    { "foo.cpp", DT_REG },
-  } },
-  { "/root/src/beep2", {
-    { "smth.cpp", DT_REG },
-  } },
+    MOCK_ENTS_BY_DIR_PATH = {
+        {"/root",
+         {
+             {".", DT_DIR},
+             {"..", DT_DIR},
+             {"src", DT_DIR},
+             {"foo.json", DT_REG},
+         }},
+        {"/root/src",
+         {{".", DT_DIR},
+          {"..", DT_DIR},
+          {"beep1", DT_DIR},
+          {"boop", DT_DIR},
+          {"main.cpp", DT_REG},
+          {"beep2", DT_DIR}}},
+        {"/root/src/beep1",
+         {{"foo.cpp", DT_REG}, {"subdir.cpp", DT_DIR}, {"bar.cpp", DT_REG}}},
+        {"/root/src/beep1/subdir.cpp", {{"smth.cpp", DT_REG}}},
+        {"/root/src/boop",
+         {
+             {"foo.cpp", DT_REG},
+         }},
+        {"/root/src/beep2",
+         {
+             {"smth.cpp", DT_REG},
+         }},
 };
 
 struct mock_dir_reader {
-  mock_dir_reader(): is_open_(false) {}
+  mock_dir_reader() : is_open_(false) {}
 
   bool is_open() { return is_open_; }
 
-  dirent* next() {
+  dirent *next() {
     if (!is_open_) {
       throw std::runtime_error("dir reader is not open");
     }
-    const auto& mock_ents = MOCK_ENTS_BY_DIR_PATH.at(dir_path_);
+    const auto &mock_ents = MOCK_ENTS_BY_DIR_PATH.at(dir_path_);
     if (ent_ix_ >= mock_ents.size()) {
       return nullptr;
     }
-    const auto& ent = mock_ents[ent_ix_++];
+    const auto &ent = mock_ents[ent_ix_++];
     current_dirent_.d_ino = 42;
     current_dirent_.d_reclen = sizeof(dirent);
     current_dirent_.d_type = ent.type;
@@ -80,84 +79,86 @@ private:
   dirent current_dirent_;
 };
 
-@case "pattern_string_parser works" {
-  @expect(upd::path_glob::parse("foo/**/beep/*.js") == upd::path_glob::pattern({
-    {},
-    {
-      upd::path_glob::segment { parse("foo"), false },
-      upd::path_glob::segment { parse("beep"), true },
-      upd::path_glob::segment { parse("*.js"), false },
-    }
-  }));
+@it "pattern_string_parser works" {
+  @expect(upd::path_glob::parse("foo/**/beep/*.js") ==
+          upd::path_glob::pattern(
+              {{},
+               {
+                   upd::path_glob::segment{parse("foo"), false},
+                   upd::path_glob::segment{parse("beep"), true},
+                   upd::path_glob::segment{parse("*.js"), false},
+               }}));
 }
 
-@case "pattern_string_parser works with capture" {
-  @expect(upd::path_glob::parse("foo/(**/beep/*).js") == upd::path_glob::pattern({
-    { {
-      {
-        1,
-        upd::path_glob::capture_point_type::wildcard,
-      },
-      {
-        2,
-        upd::path_glob::capture_point_type::ent_name,
-        1,
-      },
-    } },
-    {
-      upd::path_glob::segment { parse("foo"), false },
-      upd::path_glob::segment { parse("beep"), true },
-      upd::path_glob::segment { upd::glob::pattern({
-        upd::glob::segment(upd::glob::placeholder::wildcard),
-        upd::glob::segment(".js")
-      }), false },
-    }
-  }));
+@it "pattern_string_parser works with capture" {
+  @expect(
+      upd::path_glob::parse("foo/(**/beep/*).js") ==
+      upd::path_glob::pattern(
+          {{{
+               {
+                   1,
+                   upd::path_glob::capture_point_type::wildcard,
+               },
+               {
+                   2,
+                   upd::path_glob::capture_point_type::ent_name,
+                   1,
+               },
+           }},
+           {
+               upd::path_glob::segment{parse("foo"), false},
+               upd::path_glob::segment{parse("beep"), true},
+               upd::path_glob::segment{
+                   upd::glob::pattern(
+                       {upd::glob::segment(upd::glob::placeholder::wildcard),
+                        upd::glob::segment(".js")}),
+                   false},
+           }}));
 }
 
-@case "pattern_string_parser works with single file" {
-  @expect(upd::path_glob::parse("foo.json") == upd::path_glob::pattern({
-    {},
-    {
-      upd::path_glob::segment { parse("foo.json"), false },
-    }
-  }));
+@it "pattern_string_parser works with single file" {
+  @expect(upd::path_glob::parse("foo.json") ==
+          upd::path_glob::pattern(
+              {{},
+               {
+                   upd::path_glob::segment{parse("foo.json"), false},
+               }}));
 }
 
-@case "find single root file" {
+@it "find single root file" {
   auto pattern = upd::path_glob::parse("foo.json");
   upd::path_glob::matcher<mock_dir_reader> mtcr("/root", pattern);
   upd::path_glob::match mt;
   std::unordered_set<std::string> mts;
   while (mtcr.next(mt)) mts.insert(mt.local_path);
-  std::unordered_set<std::string> expected = { "foo.json" };
+  std::unordered_set<std::string> expected = {"foo.json"};
   @expect(mts == expected);
 }
 
-@case "find files" {
+@it "find files" {
   auto pattern = upd::path_glob::parse("src/beep*/*.cpp");
   upd::path_glob::matcher<mock_dir_reader> mtcr("/root", pattern);
   upd::path_glob::match mt;
   std::unordered_set<std::string> mts;
   while (mtcr.next(mt)) mts.insert(mt.local_path);
-  std::unordered_set<std::string> expected =
-    { "src/beep1/foo.cpp", "src/beep1/bar.cpp", "src/beep2/smth.cpp" };
+  std::unordered_set<std::string> expected = {
+      "src/beep1/foo.cpp", "src/beep1/bar.cpp", "src/beep2/smth.cpp"};
   @expect(mts == expected);
 }
 
-@case "find files with folder wildcard" {
+@it "find files with folder wildcard" {
   auto pattern = upd::path_glob::parse("src/**/*.cpp");
   upd::path_glob::matcher<mock_dir_reader> mtcr("/root", pattern);
   upd::path_glob::match mt;
   std::unordered_set<std::string> mts;
   while (mtcr.next(mt)) mts.insert(mt.local_path);
   std::unordered_set<std::string> expected = {
-    "src/beep1/foo.cpp",
-    "src/beep1/bar.cpp",
-    "src/beep1/subdir.cpp/smth.cpp",
-    "src/beep2/smth.cpp",
-    "src/boop/foo.cpp",
-    "src/main.cpp",
+      "src/beep1/foo.cpp",
+      "src/beep1/bar.cpp",
+      "src/beep1/subdir.cpp/smth.cpp",
+      "src/beep2/smth.cpp",
+      "src/boop/foo.cpp",
+      "src/main.cpp",
   };
   @expect(mts == expected);
 }
@@ -165,65 +166,71 @@ private:
 typedef std::vector<std::pair<size_t, size_t>> captures;
 typedef std::unordered_map<std::string, captures> matches;
 
-@case "find and capture files" {
+@it "find and capture files" {
   auto pattern = upd::path_glob::parse("src/(**/*).cpp");
   upd::path_glob::matcher<mock_dir_reader> mtcr("/root", pattern);
   upd::path_glob::match mt;
   matches mts;
   while (mtcr.next(mt)) mts[mt.local_path] = mt.captured_groups;
   matches expected = {
-    { "src/beep1/foo.cpp", { { 4, 13, } } },
-    { "src/beep1/bar.cpp", { { 4, 13 } } },
-    { "src/beep1/subdir.cpp/smth.cpp", { { 4, 25 } } },
-    { "src/beep2/smth.cpp", { { 4, 14 } } },
-    { "src/boop/foo.cpp", { { 4, 12 } } },
-    { "src/main.cpp", { { 4, 8 } } },
+      {"src/beep1/foo.cpp",
+       {{
+           4,
+           13,
+       }}},
+      {"src/beep1/bar.cpp", {{4, 13}}},
+      {"src/beep1/subdir.cpp/smth.cpp", {{4, 25}}},
+      {"src/beep2/smth.cpp", {{4, 14}}},
+      {"src/boop/foo.cpp", {{4, 12}}},
+      {"src/main.cpp", {{4, 8}}},
   };
   @expect(mts == expected);
 }
 
-@case "find and capture files, even at top-level" {
+@it "find and capture files, even at top-level" {
   auto pattern = upd::path_glob::parse("(**/*).cpp");
   upd::path_glob::matcher<mock_dir_reader> mtcr("/root/src", pattern);
   upd::path_glob::match mt;
   matches mts;
   while (mtcr.next(mt)) mts[mt.local_path] = mt.captured_groups;
   matches expected = {
-    { "beep1/foo.cpp", { { 0, 9, } } },
-    { "beep1/bar.cpp", { { 0, 9 } } },
-    { "beep1/subdir.cpp/smth.cpp", { { 0, 21 } } },
-    { "beep2/smth.cpp", { { 0, 10 } } },
-    { "boop/foo.cpp", { { 0, 8 } } },
-    { "main.cpp", { { 0, 4 } } },
+      {"beep1/foo.cpp",
+       {{
+           0,
+           9,
+       }}},
+      {"beep1/bar.cpp", {{0, 9}}},
+      {"beep1/subdir.cpp/smth.cpp", {{0, 21}}},
+      {"beep2/smth.cpp", {{0, 10}}},
+      {"boop/foo.cpp", {{0, 8}}},
+      {"main.cpp", {{0, 4}}},
   };
   @expect(mts == expected);
 }
 
-@case "handle several patterns at once" {
+@it "handle several patterns at once" {
   auto pattern1 = upd::path_glob::parse("src/(**/f*).cpp");
   auto pattern2 = upd::path_glob::parse("src/(**/sm*).cpp");
   auto pattern3 = upd::path_glob::parse("src/(boop/*.*)");
-  upd::path_glob::matcher<mock_dir_reader> mtcr(
-    "/root",
-    { pattern1, pattern2, pattern3 }
-  );
+  upd::path_glob::matcher<mock_dir_reader> mtcr("/root",
+                                                {pattern1, pattern2, pattern3});
   upd::path_glob::match mt;
   std::array<matches, 3> mts;
   while (mtcr.next(mt)) {
     mts[mt.pattern_ix][mt.local_path] = mt.captured_groups;
   }
   std::array<matches, 3> expected = {{
-    matches {
-      { "src/beep1/foo.cpp", { { 4, 13 } } },
-      { "src/boop/foo.cpp", { { 4, 12 } } },
-    },
-    matches {
-      { "src/beep1/subdir.cpp/smth.cpp", { { 4, 25 } } },
-      { "src/beep2/smth.cpp", { { 4, 14 } } },
-    },
-    matches {
-      { "src/boop/foo.cpp", { { 4, 16 } } },
-    },
+      matches{
+          {"src/beep1/foo.cpp", {{4, 13}}},
+          {"src/boop/foo.cpp", {{4, 12}}},
+      },
+      matches{
+          {"src/beep1/subdir.cpp/smth.cpp", {{4, 25}}},
+          {"src/beep2/smth.cpp", {{4, 14}}},
+      },
+      matches{
+          {"src/boop/foo.cpp", {{4, 16}}},
+      },
   }};
   @expect(mts == expected);
 }

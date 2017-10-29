@@ -1,58 +1,62 @@
 #include "../../../gen/src/lib/cli/parse_options.h"
 
-upd::cli::options parse(std::vector<const char*> argv) {
+upd::cli::options parse(std::vector<const char *> argv) {
   argv.push_back(nullptr);
   return upd::cli::parse_options(argv.data());
 }
 
-@case "parse_options() parses the command `update`" {
-  auto opts = parse({ "upd", "update", nullptr });
+@it "parse_options() parses the command `update`" {
+  auto opts = parse({"upd", "update", nullptr});
   @expect(opts.command == upd::cli::command::update);
 }
 
-@case "parse_options() parses the command `help`" {
-  auto opts = parse({ "upd", "help", nullptr });
+@it "parse_options() parses the command `help`" {
+  auto opts = parse({"upd", "help", nullptr});
   @expect(opts.command == upd::cli::command::help);
 }
 
-@case "parse_options() throws on invalid command" {
+@it "parse_options() throws on invalid command" {
   try {
-    auto opts = parse({ "upd", "foo", nullptr });
+    auto opts = parse({"upd", "foo", nullptr});
     @expect(false);
-  } catch (upd::cli::invalid_command_error error) {}
+  } catch (upd::cli::invalid_command_error error) {
+  }
 }
 
-@case "parse_options() has default for --all" {
-  auto opts = parse({ "upd", "update", nullptr });
+@it "parse_options() has default for --all" {
+  auto opts = parse({"upd", "update", nullptr});
   @expect(!opts.all);
 }
 
-@case "parse_options() parses --all" {
-  auto opts = parse({ "upd", "update", "--all", nullptr });
+@it "parse_options() parses --all" {
+  auto opts = parse({"upd", "update", "--all", nullptr});
   @expect(opts.all);
 }
 
-@case "parse_options() throws if --all is used with incorrect command" {
+@it "parse_options() throws if --all is used with incorrect command" {
   try {
-    auto opts = parse({ "upd", "help", "--all", nullptr });
+    auto opts = parse({"upd", "help", "--all", nullptr});
     @expect(false);
-  } catch (upd::cli::unavailable_option_for_command_error error) {}
+  } catch (upd::cli::unavailable_option_for_command_error error) {
+  }
 }
 
-@case "parse_options() parses --color-diagnostics" {
-  const char* argv[] = { "upd", "update", nullptr };
+@it "parse_options() parses --color-diagnostics" {
+  const char *argv[] = {"upd", "update", nullptr};
   auto opts = upd::cli::parse_options(argv);
   @expect(opts.color_diagnostics == upd::cli::color_diagnostics::auto_);
 }
 
-@case "parse_options() parses --color-diagnostics always" {
-  const char* argv[] = { "upd", "update", "--color-diagnostics", "always", nullptr };
+@it "parse_options() parses --color-diagnostics always" {
+  const char *argv[] = {"upd", "update", "--color-diagnostics", "always",
+                        nullptr};
   auto opts = upd::cli::parse_options(argv);
   @expect(opts.color_diagnostics == upd::cli::color_diagnostics::always);
 }
 
-@case "parse_options() thrown on invalid --color-diagnostics" {
-  const char* argv[] = { "upd", "update", "--color-diagnostics", "foobar", nullptr };
+@it "parse_options() thrown on invalid --color-diagnostics" {
+  const char *argv[] = {"upd", "update", "--color-diagnostics", "foobar",
+                        nullptr};
   try {
     auto opts = upd::cli::parse_options(argv);
     @expect(false);
@@ -61,12 +65,12 @@ upd::cli::options parse(std::vector<const char*> argv) {
   }
 }
 
-@case "parse_options() parses --concurrency auto" {
-  auto opts = parse({ "upd", "update", "--concurrency", "auto" });
+@it "parse_options() parses --concurrency auto" {
+  auto opts = parse({"upd", "update", "--concurrency", "auto"});
   @expect(opts.concurrency == 0);
 }
 
-@case "parse_options() parses --concurrency <number>" {
-  auto opts = parse({ "upd", "update", "--concurrency", "42" });
+@it "parse_options() parses --concurrency <number>" {
+  auto opts = parse({"upd", "update", "--concurrency", "42"});
   @expect(opts.concurrency == 42);
 }

@@ -2,19 +2,19 @@
 
 using namespace upd::substitution;
 
-@case "segment() is empty by default" {
+@it "segment() is empty by default" {
   segment s;
   @expect(s.empty());
 }
 
-@case "segment() constructs from literal" {
+@it "segment() constructs from literal" {
   segment s("foo");
   @expect(!s.empty());
   @expect(s.literal == "foo");
   @expect(!s.has_placeholder);
 }
 
-@case "segment() constructs from literal and captured group index" {
+@it "segment() constructs from literal and captured group index" {
   segment s(42, "foo");
   @expect(!s.empty());
   @expect(s.literal == "foo");
@@ -22,66 +22,72 @@ using namespace upd::substitution;
   @expect(s.placeholder_ix == 42);
 }
 
-@case "segment() is empty after clear()" {
+@it "segment() is empty after clear()" {
   segment s(42, "foo");
   s.clear();
   @expect(s.empty());
 }
 
-@case "parse() parses empty string" {
+@it "parse() parses empty string" {
   auto result = parse("");
-  @expect(result == pattern({ {}, {} }));
+  @expect(result == pattern({{}, {}}));
 }
 
-@case "parse() parses single literal" {
+@it "parse() parses single literal" {
   auto result = parse("foobar");
-  @expect(result == pattern({ {
-    segment("foobar"),
-  }, {} }));
+  @expect(result == pattern({{
+                                 segment("foobar"),
+                             },
+                             {}}));
 }
 
-@case "parse() parses literal with captured group indices" {
+@it "parse() parses literal with captured group indices" {
   auto result = parse("foo$1bar$2");
-  @expect(result == pattern({ {
-    segment("foo"),
-    segment(0, "bar"),
-    segment(1),
-  }, {}}));
+  @expect(result == pattern({{
+                                 segment("foo"),
+                                 segment(0, "bar"),
+                                 segment(1),
+                             },
+                             {}}));
 }
 
-@case "parse() escapes captured group character" {
+@it "parse() escapes captured group character" {
   auto result = parse("foo\\$1bar");
-  @expect(result == pattern({ {
-    segment("foo$1bar"),
-  }, {}}));
+  @expect(result == pattern({{
+                                 segment("foo$1bar"),
+                             },
+                             {}}));
 }
 
-@case "parse() allows to capture literal" {
+@it "parse() allows to capture literal" {
   auto result = parse("foo(bar)");
-  @expect(result == pattern({ {
-    segment("foo"),
-    segment("bar"),
-  }, { { 1, 2 } }}));
+  @expect(result == pattern({{
+                                 segment("foo"),
+                                 segment("bar"),
+                             },
+                             {{1, 2}}}));
 }
 
-@case "parse() allows to recapture captured groups" {
+@it "parse() allows to recapture captured groups" {
   auto result = parse("foo($1)bar");
-  @expect(result == pattern({ {
-    segment("foo"),
-    segment(0),
-    segment("bar"),
-  }, { { 1, 2 } }}));
+  @expect(result == pattern({{
+                                 segment("foo"),
+                                 segment(0),
+                                 segment("bar"),
+                             },
+                             {{1, 2}}}));
 }
 
-@case "resolve() and capture() have correct results" {
+@it "resolve() and capture() have correct results" {
   auto pattern = parse("foo($1)");
   auto result = resolve(pattern.segments, {
-    "tadam!",
-    { { 2, 5 } },
-  });
+                                              "tadam!",
+                                              {{2, 5}},
+                                          });
   @expect(result.value == "foodam");
-  @expect(result.segment_start_ids == std::vector<size_t>({ 0, 3 }));
-  auto captured = capture(pattern.capture_groups, result.value, result.segment_start_ids);
+  @expect(result.segment_start_ids == std::vector<size_t>({0, 3}));
+  auto captured =
+      capture(pattern.capture_groups, result.value, result.segment_start_ids);
   @expect(captured.value == result.value);
-  @expect(captured.captured_groups == upd::captured_string::groups({ { 3, 6 } }));
+  @expect(captured.captured_groups == upd::captured_string::groups({{3, 6}}));
 }

@@ -5,7 +5,7 @@ using namespace upd;
 
 typedef json::lexer<string_char_reader> string_lexer;
 
-@case "parses empty manifest" {
+@it "parses empty manifest" {
   string_char_reader reader("{}");
   string_lexer lx(reader);
   auto result = manifest::parse(lx);
@@ -13,7 +13,7 @@ typedef json::lexer<string_char_reader> string_lexer;
   @expect(result == expected);
 }
 
-@case "parses complex manifest" {
+@it "parses complex manifest" {
   string_char_reader reader(R"JSON({
     "command_line_templates": [
       {
@@ -42,41 +42,37 @@ typedef json::lexer<string_char_reader> string_lexer;
   string_lexer lx(reader);
   auto result = manifest::parse(lx);
   manifest::manifest expected = {
-    {
       {
-        "clang++", {
-          command_line_template_part(
-            { "-c", "-o" },
-            { command_line_template_variable::output_files }
-          ),
-          command_line_template_part(
-            { "-std=c++14" },
-            { command_line_template_variable::dependency_file }
-          ),
-          command_line_template_part(
-            { "-I", "/usr/local/include" },
-            { command_line_template_variable::input_files }
-          )
-        },
+          {
+              "clang++",
+              {command_line_template_part(
+                   {"-c", "-o"},
+                   {command_line_template_variable::output_files}),
+               command_line_template_part(
+                   {"-std=c++14"},
+                   {command_line_template_variable::dependency_file}),
+               command_line_template_part(
+                   {"-I", "/usr/local/include"},
+                   {command_line_template_variable::input_files})},
+          },
       },
-    },
-    {
-      path_glob::parse("(src/lib/**/*).cppt"),
-      path_glob::parse("(src/main).cpp"),
-    },
-    {
       {
-        13,
-        {
-          manifest::update_rule_input::from_source(1),
-          manifest::update_rule_input::from_rule(2),
-        },
-        {
-          manifest::update_rule_input::from_rule(3),
-        },
-        substitution::parse("dist/($1).o"),
+          path_glob::parse("(src/lib/**/*).cppt"),
+          path_glob::parse("(src/main).cpp"),
       },
-    },
+      {
+          {
+              13,
+              {
+                  manifest::update_rule_input::from_source(1),
+                  manifest::update_rule_input::from_rule(2),
+              },
+              {
+                  manifest::update_rule_input::from_rule(3),
+              },
+              substitution::parse("dist/($1).o"),
+          },
+      },
   };
   @expect(result == expected);
 }

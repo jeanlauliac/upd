@@ -16,12 +16,12 @@ function fatalError(filePath, content, i, str) {
 
 function readCppString(content, i, filePath) {
   if (content[i] !== '"') {
-    fatalError(filePath, content, i, 'expected title string after @case');
+    fatalError(filePath, content, i, 'expected string');
     return null;
   }
   const j = content.indexOf('"', i + 1);
   if (j === -1) {
-    fatalError(filePath, content, i, 'test @case title lacks closing quote');
+    fatalError(filePath, content, i, 'string lacks closing quote');
     return null;
   }
   return [content.substring(i + 1, j), j + 1];
@@ -139,14 +139,15 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
     '__reporter_' + Math.floor(Math.random() * Math.pow(2,16)).toString(16);
   writeHeader(stream, reporterName, targetDirPath, headerPath);
   while (i < content.length) {
-    let j = content.indexOf('@case ', i);
+    const IT_MARKER = '@it ';
+    let j = content.indexOf(IT_MARKER, i);
     const unchangedContent = content.substring(i, j >= 0 ? j : content.length);
     stream.write(unchangedContent);
     if (j < 0) {
       i = content.length;
       continue;
     }
-    i = j + 6;
+    i = j + IT_MARKER.length;
     const cppString = readCppString(content, i, filePath);
     if (cppString == null) {
       continue;

@@ -1,21 +1,24 @@
 #include "command_line_template.h"
 
-@case "reify_command_line() works" {
+@it "reify_command_line() works" {
   upd::command_line_template tpl = {
-    "program",
-    {
-      upd::command_line_template_part({ "foo", "bar" }, { upd::command_line_template_variable::input_files }),
-      upd::command_line_template_part({ "beep" }, { upd::command_line_template_variable::output_files }),
-    },
+      "program",
+      {
+          upd::command_line_template_part(
+              {"foo", "bar"},
+              {upd::command_line_template_variable::input_files}),
+          upd::command_line_template_part(
+              {"beep"}, {upd::command_line_template_variable::output_files}),
+      },
   };
   upd::command_line_parameters parts = {
-    "",
-    { "input1", "input2" },
-    { "output" },
+      "",
+      {"input1", "input2"},
+      {"output"},
   };
   auto result = upd::reify_command_line(tpl, parts, "/", "/");
   @expect(result.binary_path == tpl.binary_path);
-  @expect(result.args == std::vector<std::string>(
-    { "foo", "bar", "input1", "input2", "beep", "output" }
-  ));
+  @expect(result.args ==
+          std::vector<std::string>(
+              {"foo", "bar", "input1", "input2", "beep", "output"}));
 }

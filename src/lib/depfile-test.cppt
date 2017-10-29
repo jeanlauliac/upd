@@ -3,44 +3,44 @@
 
 using namespace upd;
 
-@case "parse() reads empty input" {
+@it "parse() reads empty input" {
   string_char_reader reader("");
   auto result = upd::depfile::parse(reader);
   @expect(!result);
 }
 
-@case "parse() reads simple depfile" {
+@it "parse() reads simple depfile" {
   string_char_reader reader("target.o: target.cpp target.h other.h\n");
   auto result = upd::depfile::parse(reader);
   @expect(!!result);
   @expect(result->target_path == "target.o");
-  std::vector<std::string> expected = { "target.cpp", "target.h", "other.h" };
+  std::vector<std::string> expected = {"target.cpp", "target.h", "other.h"};
   @expect(result->dependency_paths == expected);
 }
 
-@case "parse() skips escaped newlines" {
+@it "parse() skips escaped newlines" {
   string_char_reader reader("target.o: \\\n  target.cpp \\\n  target.h\n");
   auto result = upd::depfile::parse(reader);
   @expect(!!result);
   @expect(result->target_path == "target.o");
-  std::vector<std::string> expected = { "target.cpp", "target.h" };
+  std::vector<std::string> expected = {"target.cpp", "target.h"};
   @expect(result->dependency_paths == expected);
 }
 
-@case "parse() reads paths with spaces" {
+@it "parse() reads paths with spaces" {
   string_char_reader reader("spaces\\\\ target.o: spaces\\\\ target.cpp\n");
   auto result = upd::depfile::parse(reader);
   @expect(!!result);
   @expect(result->target_path == "spaces target.o");
-  std::vector<std::string> expected = { "spaces target.cpp" };
+  std::vector<std::string> expected = {"spaces target.cpp"};
   @expect(result->dependency_paths == expected);
 }
 
-@case "parse() supports UTF-8" {
+@it "parse() supports UTF-8" {
   string_char_reader reader(u8"汉语.o: 汉语.cpp\n");
   auto result = upd::depfile::parse(reader);
   @expect(!!result);
   @expect(result->target_path == u8"汉语.o");
-  std::vector<std::string> expected = { u8"汉语.cpp" };
+  std::vector<std::string> expected = {u8"汉语.cpp"};
   @expect(result->dependency_paths == expected);
 }
