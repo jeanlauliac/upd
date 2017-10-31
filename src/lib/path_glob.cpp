@@ -6,7 +6,7 @@ namespace upd {
 namespace path_glob {
 
 struct pattern_string_parser {
-  pattern_string_parser(const std::string &input) : input(input) {}
+  pattern_string_parser(const std::string &input_) : input(input_) {}
 
   pattern operator()() {
     input_ix = 0;
@@ -111,8 +111,7 @@ struct pattern_string_parser {
     if (input[ix] != '/') return false;
     input_ix = ix + 1;
     if (open_capture) {
-      open_capture_group(
-          {result.segments.size(), capture_point_type::wildcard});
+      open_capture_group(capture_point::wildcard(result.segments.size()));
     }
     if (close_capture) {
       throw std::runtime_error("not implemented!");
@@ -121,7 +120,7 @@ struct pattern_string_parser {
   }
 
   void open_capture_group(const capture_point &from) {
-    result.capture_groups.push_back(capture_group({from}));
+    result.capture_groups.push_back(capture_group({from, capture_point::wildcard(0)}));
     capture_groups_ids.push(result.capture_groups.size() - 1);
   }
 

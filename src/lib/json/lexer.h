@@ -29,8 +29,8 @@ inline std::ostream &operator<<(std::ostream &os, location loc) {
  * Thrown when it encounters a character that is not part of the JSON grammar.
  */
 struct invalid_character_error {
-  invalid_character_error(char chr, location location)
-      : chr(chr), location(location) {}
+  invalid_character_error(char chr_, location location_)
+      : chr(chr_), location(location_) {}
 
   char chr;
   location location;

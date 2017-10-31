@@ -2,20 +2,20 @@
 
 namespace upd {
 
-std::string inspect(size_t value, const inspect_options &options) {
+std::string inspect(size_t value, const inspect_options &) {
   std::ostringstream stream;
   stream << value;
   return stream.str();
 }
 
-std::string inspect(float value, const inspect_options &options) {
+std::string inspect(float value, const inspect_options &) {
   return std::to_string(value);
 }
 
 /**
  * We'll probably want to add all the proper chars that need escaping.
  */
-std::string inspect(const char *value, const inspect_options &options) {
+std::string inspect(const char *value, const inspect_options &) {
   std::ostringstream stream;
   stream << '"';
   for (; *value != 0; ++value) {
@@ -42,7 +42,7 @@ std::string inspect(const char *value, const inspect_options &options) {
   return stream.str();
 }
 
-std::string inspect(const std::string &value, const inspect_options &options) {
+std::string inspect(const std::string &value, const inspect_options &) {
   return inspect(value.c_str());
 }
 

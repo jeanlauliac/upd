@@ -238,7 +238,7 @@ ${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).jo
       }
       stream.write(`};\n\n`);
       stream.write(`struct invalid_${type.name}_error {
-  invalid_${type.name}_error(const std::string& value): value(value) {}
+  invalid_${type.name}_error(const std::string& value_): value(value_) {}
   const std::string value;
 };
 
@@ -266,19 +266,19 @@ ${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).jo
   }
   stream.write('};\n\n');
   stream.write(`struct unexpected_argument_error {
-  unexpected_argument_error(const std::string& arg): arg(arg) {}
+  unexpected_argument_error(const std::string& arg_): arg(arg_) {}
   const std::string arg;
 };
 
 struct option_requires_argument_error {
-  option_requires_argument_error(const std::string& option): option(option) {}
+  option_requires_argument_error(const std::string& option_): option(option_) {}
   const std::string option;
 };
 
 struct missing_command_error {
-  missing_command_error(const std::string& program_name):
-    program_name(program_name) {}
-  std::string program_name;
+  missing_command_error(const std::string& program_name_):
+    program_name(program_name_) {}
+  const std::string program_name;
 };
 
 struct unavailable_option_for_command_error {};

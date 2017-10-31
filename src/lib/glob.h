@@ -17,11 +17,11 @@ enum class placeholder {
 
 struct segment {
   segment() : prefix(placeholder::none) {}
-  segment(placeholder prefix) : prefix(prefix) {}
-  segment(const std::string &literal)
-      : prefix(placeholder::none), literal(literal) {}
-  segment(placeholder prefix, const std::string &literal)
-      : prefix(prefix), literal(literal) {}
+  segment(placeholder prefix_) : prefix(prefix_) {}
+  segment(const std::string &literal_)
+      : prefix(placeholder::none), literal(literal_) {}
+  segment(placeholder prefix_, const std::string &literal_)
+      : prefix(prefix_), literal(literal_) {}
 
   void clear() {
     prefix = placeholder::none;

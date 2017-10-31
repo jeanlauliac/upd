@@ -6,9 +6,9 @@
 namespace upd {
 
 struct unknown_target_error {
-  unknown_target_error(const std::string &relative_path)
-      : relative_path(relative_path) {}
-  std::string relative_path;
+  unknown_target_error(const std::string &relative_path_)
+      : relative_path(relative_path_) {}
+  const std::string relative_path;
 };
 
 struct no_targets_error {};

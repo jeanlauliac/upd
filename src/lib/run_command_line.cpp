@@ -29,7 +29,7 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
     char buffer[1 << 12];
     count = read(fd, buffer, sizeof(buffer));
     if (count < 0) {
-      if (errno == EIO) {
+      if (allow_eio && errno == EIO) {
         // On Linux, EIO is returned when the last
         // slave of a pseudo-terminal is closed.
         return result.str();
@@ -44,8 +44,7 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
 /**
  * `posix_spawn()` to run a command line.
  */
-command_line_result run_command_line(const std::string &root_path,
-                                     const command_line &target,
+command_line_result run_command_line(const command_line &target,
                                      int stderr_read_fd,
                                      const std::string &stderr_pts) {
   std::vector<char *> argv;

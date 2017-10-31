@@ -11,8 +11,7 @@ struct command_line_result {
   int status;
 };
 
-command_line_result run_command_line(const std::string &root_path,
-                                     const command_line &target,
+command_line_result run_command_line(const command_line &target,
                                      int stderr_read_fd,
                                      const std::string &stderr_pts);
 

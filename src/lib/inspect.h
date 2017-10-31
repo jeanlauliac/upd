@@ -153,6 +153,8 @@ std::string inspect(const std::unordered_map<TKey, TValue> &collection,
 
 template <typename TAny>
 std::string inspect(const TAny &any, const inspect_options &options) {
+  (void)any;
+  (void)options;
   return "<unknown-object>";
 }
 

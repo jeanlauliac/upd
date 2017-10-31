@@ -21,7 +21,7 @@ struct read_field_name_handler {
     return true;
   }
 
-  bool number_literal(float literal) const { throw unexpected_number_error(); }
+  bool number_literal(float) const { throw unexpected_number_error(); }
 
 private:
   std::string &field_name_;
@@ -34,7 +34,7 @@ struct read_new_field_name_handler {
 
   bool end() const { throw unexpected_end_error(); }
 
-  bool punctuation(punctuation_type type) const {
+  bool punctuation(punctuation_type) const {
     throw unexpected_punctuation_error();
   }
 
@@ -43,7 +43,7 @@ struct read_new_field_name_handler {
     return true;
   }
 
-  bool number_literal(float literal) const { throw unexpected_number_error(); }
+  bool number_literal(float) const { throw unexpected_number_error(); }
 
 private:
   std::string &field_name_;
@@ -59,11 +59,11 @@ struct post_field_handler {
     throw unexpected_punctuation_error();
   }
 
-  bool string_literal(const std::string &literal) const {
+  bool string_literal(const std::string &) const {
     throw unexpected_string_error();
   }
 
-  bool number_literal(float literal) const { throw unexpected_number_error(); }
+  bool number_literal(float) const { throw unexpected_number_error(); }
 };
 
 struct read_field_colon_handler {
@@ -76,11 +76,11 @@ struct read_field_colon_handler {
     }
   }
 
-  void string_literal(const std::string &literal) const {
+  void string_literal(const std::string &) const {
     throw unexpected_string_error();
   }
 
-  void number_literal(float literal) const { throw unexpected_number_error(); }
+  void number_literal(float) const { throw unexpected_number_error(); }
 };
 
 template <typename Lexer> struct object_reader {

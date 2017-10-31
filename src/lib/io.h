@@ -73,8 +73,8 @@ private:
 };
 
 struct ifstream_failed_error {
-  ifstream_failed_error(const std::string &file_path) : file_path(file_path) {}
-  std::string file_path;
+  ifstream_failed_error(const std::string &file_path_) : file_path(file_path_) {}
+  const std::string file_path;
 };
 
 template <typename ostream_t> struct stream_string_joiner {

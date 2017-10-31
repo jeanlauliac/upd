@@ -121,6 +121,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
 }
 
 int run(int argc, char *argv[]) {
+  (void)argc;
   auto color_diags = isatty(2);
   err_functor<std::ostream> err(std::cerr, color_diags);
   try {

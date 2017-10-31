@@ -6,7 +6,7 @@ namespace upd {
 namespace cli {
 
 struct invalid_concurrency_error {
-  invalid_concurrency_error(const std::string &value) : value(value) {}
+  invalid_concurrency_error(const std::string &value_) : value(value_) {}
   const std::string value;
 };
 

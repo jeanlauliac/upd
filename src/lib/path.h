@@ -13,8 +13,8 @@ std::string get_absolute_path(const std::string &relative_path,
                               const std::string &working_path);
 
 struct relative_path_out_of_root_error {
-  relative_path_out_of_root_error(const std::string &relative_path)
-      : relative_path(relative_path) {}
+  relative_path_out_of_root_error(const std::string &relative_path_)
+      : relative_path(relative_path_) {}
   const std::string relative_path;
 };
 

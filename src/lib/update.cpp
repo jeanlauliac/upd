@@ -84,12 +84,12 @@ std::string get_fd_path(int fd) {
 scheduled_file_update::scheduled_file_update() {}
 
 scheduled_file_update::scheduled_file_update(
-    update_job &&job,
-    std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future,
-    const std::string &depfile_path, file_descriptor &&depfile_dummy_fd)
-    : job(std::move(job)), read_depfile_future(std::move(read_depfile_future)),
-      depfile_path(depfile_path),
-      depfile_dummy_fd(std::move(depfile_dummy_fd)) {}
+    update_job &&job_,
+    std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future_,
+    const std::string &depfile_path_, file_descriptor &&depfile_dummy_fd_)
+    : job(std::move(job_)), read_depfile_future(std::move(read_depfile_future_)),
+      depfile_path(depfile_path_),
+      depfile_dummy_fd(std::move(depfile_dummy_fd_)) {}
 
 scheduled_file_update::scheduled_file_update(scheduled_file_update &&other)
     : job(std::move(other.job)),

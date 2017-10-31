@@ -30,6 +30,10 @@ struct capture_point {
            segment_ix == target_segment_ix;
   }
 
+  static capture_point wildcard(size_t segment_ix) {
+    return capture_point {segment_ix, capture_point_type::wildcard, 0};
+  }
+
   /**
    * Index of the pattern segment, described by the pattern object provided
    * separately. The pattern parser must ensure that this is always pointing
@@ -142,8 +146,8 @@ enum class invalid_pattern_string_reason {
 };
 
 struct invalid_pattern_string_error {
-  invalid_pattern_string_error(invalid_pattern_string_reason reason)
-      : reason(reason){};
+  invalid_pattern_string_error(invalid_pattern_string_reason reason_)
+      : reason(reason_) {}
 
   invalid_pattern_string_reason reason;
 };

@@ -15,11 +15,11 @@ template <typename RetVal> struct all_unexpected_elements_handler {
   typedef RetVal return_type;
 
   template <typename ObjectReader>
-  RetVal object(ObjectReader &read_object) const {
+  RetVal object(ObjectReader &) const {
     throw unexpected_element_error();
   }
 
-  template <typename ArrayReader> RetVal array(ArrayReader &read_array) const {
+  template <typename ArrayReader> RetVal array(ArrayReader &) const {
     throw unexpected_element_error();
   }
 
@@ -27,7 +27,7 @@ template <typename RetVal> struct all_unexpected_elements_handler {
     throw unexpected_element_error();
   }
 
-  RetVal number_literal(float number) const {
+  RetVal number_literal(float) const {
     throw unexpected_element_error();
   }
 };
@@ -257,8 +257,8 @@ template <typename Lexer> manifest parse(Lexer &lexer) {
  * cannot be found.
  */
 struct missing_manifest_error {
-  missing_manifest_error(const std::string &root_path) : root_path(root_path) {}
-  std::string root_path;
+  missing_manifest_error(const std::string &root_path_) : root_path(root_path_) {}
+  const std::string root_path;
 };
 
 struct invalid_manifest_error {};

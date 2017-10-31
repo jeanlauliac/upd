@@ -4,12 +4,12 @@ namespace upd {
 namespace glob {
 
 struct matcher {
-  matcher(const pattern &target, const std::string &candidate)
-      : target(target), candidate(candidate), indices(nullptr) {}
+  matcher(const pattern &target_, const std::string &candidate_)
+      : target(target_), candidate(candidate_), indices(nullptr) {}
 
-  matcher(const pattern &target, const std::string &candidate,
+  matcher(const pattern &target_, const std::string &candidate_,
           std::vector<size_t> &indices_)
-      : target(target), candidate(candidate), indices(&indices_) {
+      : target(target_), candidate(candidate_), indices(&indices_) {
     indices->resize(target.size());
   }
 

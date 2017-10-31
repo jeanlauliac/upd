@@ -97,10 +97,12 @@ private:
     }
 
     bool string_literal(const std::string &literal) const {
+      (void)literal;
       throw unexpected_string_error();
     }
 
     bool number_literal(float literal) const {
+      (void)literal;
       throw unexpected_number_error();
     }
   };

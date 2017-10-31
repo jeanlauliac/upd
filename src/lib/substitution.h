@@ -36,17 +36,17 @@ struct segment {
    * Create a segment containing just a literal, that always resolves to that
    * literal. Ex. "foo".
    */
-  segment(const std::string &literal)
-      : literal(literal), has_placeholder(false) {}
+  segment(const std::string &literal_)
+      : literal(literal_), has_placeholder(false) {}
 
   /**
    * Create a segment containing a placeholder followed by a literal.
    * Ex. "$2.cpp", where the placeholder has the index #1 and the
    * literal is ".cpp".
    */
-  segment(size_t placeholder_ix, const std::string &literal = "")
-      : literal(literal), has_placeholder(true),
-        placeholder_ix(placeholder_ix) {}
+  segment(size_t placeholder_ix_, const std::string &literal_ = "")
+      : literal(literal_), has_placeholder(true),
+        placeholder_ix(placeholder_ix_) {}
 
   /**
    * Set the segment to an empty literal and no capture group.

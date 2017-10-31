@@ -37,7 +37,7 @@ void update_worker::run_() {
     status_ = worker_status::in_progress;
     mutex_.unlock();
     std::exception_ptr eptr;
-    auto result = run_command_line(job_.root_path, job_.target,
+    auto result = run_command_line(job_.target,
                                    stderr_pty_.fd(), stderr_pty_.ptsname());
     mutex_.lock();
     result_ = std::move(result);

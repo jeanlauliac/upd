@@ -5,9 +5,9 @@ namespace upd {
 
 std::vector<std::string> split_path(const std::string &path) {
   std::vector<std::string> parts;
-  int i = 0;
+  size_t i = 0;
   while (i < path.size()) {
-    int j = i;
+    size_t j = i;
     while (j < path.size() && path[j] != '/') ++j;
     auto part = path.substr(i, j - i);
     if (part == ".." && !parts.empty()) {

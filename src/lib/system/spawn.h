@@ -7,8 +7,8 @@ namespace upd {
 namespace system {
 
 struct errno_error {
-  errno_error(int code) : code(code) {}
-  int code;
+  errno_error(int code_) : code(code_) {}
+  const int code;
 };
 
 /**

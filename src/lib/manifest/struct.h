@@ -11,8 +11,8 @@ struct update_rule_input {
   enum class type { source, rule };
 
   update_rule_input() {}
-  update_rule_input(type type, size_t input_ix)
-      : type(type), input_ix(input_ix) {}
+  update_rule_input(type type_, size_t input_ix_)
+      : type(type_), input_ix(input_ix_) {}
 
   static update_rule_input from_source(size_t ix) {
     return update_rule_input(type::source, ix);
