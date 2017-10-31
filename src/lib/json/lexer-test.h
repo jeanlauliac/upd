@@ -11,7 +11,7 @@ struct always_false_handler {
 };
 
 struct expect_punctuation_handler : public always_false_handler {
-  expect_punctuation_handler(upd::json::punctuation_type type) : type(type) {}
+  expect_punctuation_handler(upd::json::punctuation_type type_) : type(type_) {}
   bool punctuation(upd::json::punctuation_type that_type) const {
     return that_type == type;
   }
@@ -19,8 +19,8 @@ struct expect_punctuation_handler : public always_false_handler {
 };
 
 struct expect_string_literal_handler : public always_false_handler {
-  expect_string_literal_handler(const std::string &literal)
-      : literal(literal) {}
+  expect_string_literal_handler(const std::string &literal_)
+      : literal(literal_) {}
   bool string_literal(const std::string &that_literal) const {
     return that_literal == literal;
   }
@@ -28,7 +28,7 @@ struct expect_string_literal_handler : public always_false_handler {
 };
 
 struct expect_number_literal_handler : public always_false_handler {
-  expect_number_literal_handler(float literal) : literal(literal) {}
+  expect_number_literal_handler(float literal_) : literal(literal_) {}
   bool number_literal(float that_literal) const {
     return that_literal == literal;
   }

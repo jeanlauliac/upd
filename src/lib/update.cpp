@@ -87,7 +87,8 @@ scheduled_file_update::scheduled_file_update(
     update_job &&job_,
     std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future_,
     const std::string &depfile_path_, file_descriptor &&depfile_dummy_fd_)
-    : job(std::move(job_)), read_depfile_future(std::move(read_depfile_future_)),
+    : job(std::move(job_)),
+      read_depfile_future(std::move(read_depfile_future_)),
       depfile_path(depfile_path_),
       depfile_dummy_fd(std::move(depfile_dummy_fd_)) {}
 

@@ -120,7 +120,8 @@ struct pattern_string_parser {
   }
 
   void open_capture_group(const capture_point &from) {
-    result.capture_groups.push_back(capture_group({from, capture_point::wildcard(0)}));
+    result.capture_groups.push_back(
+        capture_group({from, capture_point::wildcard(0)}));
     capture_groups_ids.push(result.capture_groups.size() - 1);
   }
 

@@ -19,7 +19,7 @@ using namespace upd::substitution;
   @expect(!s.empty());
   @expect(s.literal == "foo");
   @expect(s.has_placeholder);
-  @expect(s.placeholder_ix == 42);
+  @expect(s.placeholder_ix == 42ull);
 }
 
 @it "segment() is empty after clear()" {

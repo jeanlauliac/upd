@@ -15,7 +15,7 @@ struct string_char_reader {
 
 private:
   std::string str_;
-  int next_index_;
+  size_t next_index_;
 };
 
 } // namespace upd

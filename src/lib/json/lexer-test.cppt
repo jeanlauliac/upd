@@ -43,7 +43,7 @@ using namespace upd;
     @expect(false);
   } catch (json::invalid_character_error error) {
     @expect(error.chr == 'f');
-    @expect(error.location.line == 2);
-    @expect(error.location.column == 3);
+    @expect(error.location.line == 2ul);
+    @expect(error.location.column == 3ul);
   }
 }

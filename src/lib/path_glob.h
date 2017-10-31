@@ -31,7 +31,7 @@ struct capture_point {
   }
 
   static capture_point wildcard(size_t segment_ix) {
-    return capture_point {segment_ix, capture_point_type::wildcard, 0};
+    return capture_point{segment_ix, capture_point_type::wildcard, 0};
   }
 
   /**

@@ -17,7 +17,7 @@ struct expect_empty_object_handler {
     std::string field_name;
     return !reader.next(field_name);
   }
-  bool array(array_reader &read_object) const {
+  bool array(array_reader &) const {
     throw std::runtime_error("unexpected array");
   }
   bool string_literal(const std::string &) const { return false; }
@@ -26,10 +26,10 @@ struct expect_empty_object_handler {
 
 struct expect_number_handler {
   typedef float return_type;
-  return_type object(object_reader &read_object) const {
+  return_type object(object_reader &) const {
     throw std::runtime_error("unexpected object");
   }
-  return_type array(array_reader &read_object) const {
+  return_type array(array_reader &) const {
     throw std::runtime_error("unexpected array");
   }
   return_type string_literal(const std::string &) const {
@@ -49,7 +49,7 @@ struct expect_object_single_field_handler {
     }
     return fields;
   }
-  return_type array(array_reader &read_object) const {
+  return_type array(array_reader &) const {
     throw std::runtime_error("unexpected");
   }
   return_type string_literal(const std::string &) const {
@@ -90,10 +90,10 @@ struct expect_object_single_field_handler {
 
 struct array_of_numbers_handler {
   typedef float return_type;
-  float object(object_reader &read_object) const {
+  float object(object_reader &) const {
     throw std::runtime_error("expected number");
   }
-  float array(array_reader &read_array) const {
+  float array(array_reader &) const {
     throw std::runtime_error("expected number");
   }
   float string_literal(const std::string &) const {
@@ -115,7 +115,7 @@ struct expect_number_array_handler {
     }
     return numbers == target_;
   }
-  bool object(object_reader &read_object) const { return false; }
+  bool object(object_reader &) const { return false; }
   bool string_literal(const std::string &) const { return false; }
   bool number_literal(float) const { return false; }
 

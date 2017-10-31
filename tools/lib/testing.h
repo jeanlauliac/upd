@@ -14,10 +14,10 @@ public:
 
 struct equality_expectation_failed_error {
   equality_expectation_failed_error(
-    const std::string& target,
-    const std::string& expectation,
-    const std::string& expr_string
-  ): target(target), expectation(expectation), expr_string(expr_string) {};
+    const std::string& target_,
+    const std::string& expectation_,
+    const std::string& expr_string_
+  ): target(target_), expectation(expectation_), expr_string(expr_string_) {};
   const std::string target;
   const std::string expectation;
   const std::string expr_string;

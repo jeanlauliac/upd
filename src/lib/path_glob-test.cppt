@@ -95,10 +95,7 @@ private:
       upd::path_glob::parse("foo/(**/beep/*).js") ==
       upd::path_glob::pattern(
           {{{
-               {
-                   1,
-                   upd::path_glob::capture_point_type::wildcard,
-               },
+               upd::path_glob::capture_point::wildcard(1),
                {
                    2,
                    upd::path_glob::capture_point_type::ent_name,

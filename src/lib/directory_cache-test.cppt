@@ -4,7 +4,7 @@
 
 static std::vector<std::string> created_dirs;
 
-int mock_mkdir(const char *pathname, mode_t mode) {
+int mock_mkdir(const char *pathname, mode_t) {
   if (std::string("root/foo") == pathname) {
     errno = EEXIST;
     return 1;

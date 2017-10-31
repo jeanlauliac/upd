@@ -67,10 +67,10 @@ upd::cli::options parse(std::vector<const char *> argv) {
 
 @it "parse_options() parses --concurrency auto" {
   auto opts = parse({"upd", "update", "--concurrency", "auto"});
-  @expect(opts.concurrency == 0);
+  @expect(opts.concurrency == 0ul);
 }
 
 @it "parse_options() parses --concurrency <number>" {
   auto opts = parse({"upd", "update", "--concurrency", "42"});
-  @expect(opts.concurrency == 42);
+  @expect(opts.concurrency == 42ul);
 }
