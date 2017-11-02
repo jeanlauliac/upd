@@ -30,25 +30,27 @@ template <typename Lexer, typename Handler> struct parse_expression_handler {
   parse_expression_handler(Lexer &lexer, Handler &handler)
       : lexer_(lexer), handler_(handler) {}
 
-  return_type end() const { throw unexpected_end_error(); }
+  return_type end(const location &) const { throw unexpected_end_error(); }
 
-  return_type punctuation(punctuation_type type) const {
+  return_type punctuation(punctuation_type type, const location &loc) const {
     if (type == punctuation_type::brace_open) {
       object_reader<Lexer> reader(lexer_);
       return handler_.object(reader);
     }
     if (type != punctuation_type::bracket_open) {
-      throw unexpected_punctuation_error();
+      throw unexpected_punctuation_error(
+          type, loc, unexpected_punctuation_situation::expression);
     }
     array_reader<Lexer> reader(lexer_);
     return array_body<return_type>::read(reader, handler_);
   }
 
-  return_type string_literal(const std::string &literal) const {
+  return_type string_literal(const std::string &literal,
+                             const location_range_ref &) const {
     return handler_.string_literal(literal);
   }
 
-  return_type number_literal(float literal) const {
+  return_type number_literal(float literal, const location_range_ref &) const {
     return handler_.number_literal(literal);
   }
 

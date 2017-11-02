@@ -9,19 +9,23 @@ struct read_field_name_handler {
   typedef bool return_type;
   read_field_name_handler(std::string &field_name) : field_name_(field_name) {}
 
-  bool end() const { throw unexpected_end_error(); }
+  bool end(const location &) const { throw unexpected_end_error(); }
 
-  bool punctuation(punctuation_type type) const {
+  bool punctuation(punctuation_type type, const location &loc) const {
     if (type == punctuation_type::brace_close) return false;
-    throw unexpected_punctuation_error();
+    throw unexpected_punctuation_error(
+        type, loc, unexpected_punctuation_situation::first_field_name);
   }
 
-  bool string_literal(const std::string &literal) const {
+  bool string_literal(const std::string &literal,
+                      const location_range_ref &) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float) const { throw unexpected_number_error(); }
+  bool number_literal(float, const location_range_ref &) const {
+    throw unexpected_number_error();
+  }
 
 private:
   std::string &field_name_;
@@ -32,18 +36,22 @@ struct read_new_field_name_handler {
   read_new_field_name_handler(std::string &field_name)
       : field_name_(field_name) {}
 
-  bool end() const { throw unexpected_end_error(); }
+  bool end(const location &) const { throw unexpected_end_error(); }
 
-  bool punctuation(punctuation_type) const {
-    throw unexpected_punctuation_error();
+  bool punctuation(punctuation_type type, const location &loc) const {
+    throw unexpected_punctuation_error(
+        type, loc, unexpected_punctuation_situation::field_name);
   }
 
-  bool string_literal(const std::string &literal) const {
+  bool string_literal(const std::string &literal,
+                      const location_range_ref &) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float) const { throw unexpected_number_error(); }
+  bool number_literal(float, const location_range_ref &) const {
+    throw unexpected_number_error();
+  }
 
 private:
   std::string &field_name_;
@@ -51,36 +59,44 @@ private:
 
 struct post_field_handler {
   typedef bool return_type;
-  bool end() const { throw unexpected_end_error(); }
 
-  bool punctuation(punctuation_type type) const {
+  bool end(const location &) const { throw unexpected_end_error(); }
+
+  bool punctuation(punctuation_type type, const location &loc) const {
     if (type == punctuation_type::brace_close) return false;
     if (type == punctuation_type::comma) return true;
-    throw unexpected_punctuation_error();
+    throw unexpected_punctuation_error(
+        type, loc, unexpected_punctuation_situation::post_field);
   }
 
-  bool string_literal(const std::string &) const {
+  bool string_literal(const std::string &, const location_range_ref &) const {
     throw unexpected_string_error();
   }
 
-  bool number_literal(float) const { throw unexpected_number_error(); }
+  bool number_literal(float, const location_range_ref &) const {
+    throw unexpected_number_error();
+  }
 };
 
 struct read_field_colon_handler {
   typedef void return_type;
-  void end() const { throw unexpected_end_error(); }
 
-  void punctuation(punctuation_type type) const {
+  void end(const location &) const { throw unexpected_end_error(); }
+
+  void punctuation(punctuation_type type, const location &loc) const {
     if (type != punctuation_type::colon) {
-      throw unexpected_punctuation_error();
+      throw unexpected_punctuation_error(
+          type, loc, unexpected_punctuation_situation::field_colon);
     }
   }
 
-  void string_literal(const std::string &) const {
+  void string_literal(const std::string &, const location_range_ref &) const {
     throw unexpected_string_error();
   }
 
-  void number_literal(float) const { throw unexpected_number_error(); }
+  void number_literal(float, const location_range_ref &) const {
+    throw unexpected_number_error();
+  }
 };
 
 template <typename Lexer> struct object_reader {

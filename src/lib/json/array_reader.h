@@ -50,9 +50,9 @@ private:
                        item_type &value)
         : lexer_(lexer), item_handler_(item_handler), value_(value) {}
 
-    bool end() const { throw unexpected_end_error(); }
+    bool end(const location &) const { throw unexpected_end_error(); }
 
-    bool punctuation(punctuation_type type) const {
+    bool punctuation(punctuation_type type, const location &loc) const {
       if (type == punctuation_type::brace_open) {
         object_reader<Lexer> reader(lexer_);
         value_ = item_handler_.object(reader);
@@ -66,15 +66,17 @@ private:
       if (type == punctuation_type::bracket_close) {
         return false;
       }
-      throw unexpected_punctuation_error();
+      throw unexpected_punctuation_error(
+          type, loc, unexpected_punctuation_situation::first_item);
     }
 
-    bool string_literal(const std::string &literal) const {
+    bool string_literal(const std::string &literal,
+                        const location_range_ref &) const {
       value_ = item_handler_.string_literal(literal);
       return true;
     }
 
-    bool number_literal(float literal) const {
+    bool number_literal(float literal, const location_range_ref &) const {
       value_ = item_handler_.number_literal(literal);
       return true;
     }
@@ -88,20 +90,22 @@ private:
   struct post_item_handler {
     typedef bool return_type;
 
-    bool end() const { throw unexpected_end_error(); }
+    bool end(const location &) const { throw unexpected_end_error(); }
 
-    bool punctuation(punctuation_type type) const {
+    bool punctuation(punctuation_type type, const location &loc) const {
       if (type == punctuation_type::comma) return true;
       if (type == punctuation_type::bracket_close) return false;
-      throw unexpected_punctuation_error();
+      throw unexpected_punctuation_error(
+          type, loc, unexpected_punctuation_situation::post_item);
     }
 
-    bool string_literal(const std::string &literal) const {
+    bool string_literal(const std::string &literal,
+                        const location_range_ref &) const {
       (void)literal;
       throw unexpected_string_error();
     }
 
-    bool number_literal(float literal) const {
+    bool number_literal(float literal, const location_range_ref &) const {
       (void)literal;
       throw unexpected_number_error();
     }
