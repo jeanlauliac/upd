@@ -144,6 +144,22 @@ int run(int argc, char *argv[]) {
     err() << "`" << error.value
           << "` is not a valid concurrency; specify `auto`, "
           << "or a number greater than zero" << std::endl;
+  } catch (const std::exception &error) {
+    std::cerr << "*******************************************************"
+              << std::endl
+              << "AN UNEXPECTED ERROR OCCURRED: " << error.what() << std::endl
+              << "This is a bug in upd itself. Please report." << std::endl
+              << "*******************************************************"
+              << std::endl;
+    return 125;
+  } catch (...) {
+    std::cerr << "*******************************************************"
+              << std::endl
+              << "AN UNEXPECTED ERROR OCCURRED" << std::endl
+              << "This is a bug in upd itself. Please report." << std::endl
+              << "*******************************************************"
+              << std::endl;
+    return 125;
   }
   return 1;
 }
