@@ -71,12 +71,12 @@ private:
     }
 
     bool string_literal(const std::string &literal,
-                        const location_range_ref &) const {
+                        const location_range &) const {
       value_ = item_handler_.string_literal(literal);
       return true;
     }
 
-    bool number_literal(float literal, const location_range_ref &) const {
+    bool number_literal(float literal, const location_range &) const {
       value_ = item_handler_.number_literal(literal);
       return true;
     }
@@ -100,14 +100,13 @@ private:
     }
 
     bool string_literal(const std::string &literal,
-                        const location_range_ref &) const {
+                        const location_range &) const {
       (void)literal;
       throw unexpected_string_error();
     }
 
-    bool number_literal(float literal, const location_range_ref &) const {
-      (void)literal;
-      throw unexpected_number_error();
+    bool number_literal(float, const location_range &loc) const {
+      throw unexpected_number_error(loc, unexpected_number_reason::post_item);
     }
   };
 

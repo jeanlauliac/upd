@@ -10,10 +10,10 @@ struct always_false_handler {
     return false;
   }
   bool string_literal(const std::string &,
-                      const upd::json::location_range_ref &) const {
+                      const upd::json::location_range &) const {
     return false;
   }
-  bool number_literal(float, const upd::json::location_range_ref &) const {
+  bool number_literal(float, const upd::json::location_range &) const {
     return false;
   }
 };
@@ -31,7 +31,7 @@ struct expect_string_literal_handler : public always_false_handler {
   expect_string_literal_handler(const std::string &literal_)
       : literal(literal_) {}
   bool string_literal(const std::string &that_literal,
-                      const upd::json::location_range_ref &) const {
+                      const upd::json::location_range &) const {
     return that_literal == literal;
   }
   std::string literal;
@@ -40,7 +40,7 @@ struct expect_string_literal_handler : public always_false_handler {
 struct expect_number_literal_handler : public always_false_handler {
   expect_number_literal_handler(float literal_) : literal(literal_) {}
   bool number_literal(float that_literal,
-                      const upd::json::location_range_ref &) const {
+                      const upd::json::location_range &) const {
     return that_literal == literal;
   }
   float literal;

@@ -18,13 +18,14 @@ struct read_field_name_handler {
   }
 
   bool string_literal(const std::string &literal,
-                      const location_range_ref &) const {
+                      const location_range &) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float, const location_range_ref &) const {
-    throw unexpected_number_error();
+  bool number_literal(float, const location_range &loc) const {
+    throw unexpected_number_error(loc,
+                                  unexpected_number_reason::first_field_name);
   }
 
 private:
@@ -44,13 +45,13 @@ struct read_new_field_name_handler {
   }
 
   bool string_literal(const std::string &literal,
-                      const location_range_ref &) const {
+                      const location_range &) const {
     field_name_ = literal;
     return true;
   }
 
-  bool number_literal(float, const location_range_ref &) const {
-    throw unexpected_number_error();
+  bool number_literal(float, const location_range &loc) const {
+    throw unexpected_number_error(loc, unexpected_number_reason::field_name);
   }
 
 private:
@@ -69,12 +70,12 @@ struct post_field_handler {
         type, loc, unexpected_punctuation_situation::post_field);
   }
 
-  bool string_literal(const std::string &, const location_range_ref &) const {
+  bool string_literal(const std::string &, const location_range &) const {
     throw unexpected_string_error();
   }
 
-  bool number_literal(float, const location_range_ref &) const {
-    throw unexpected_number_error();
+  bool number_literal(float, const location_range &loc) const {
+    throw unexpected_number_error(loc, unexpected_number_reason::post_field);
   }
 };
 
@@ -90,12 +91,12 @@ struct read_field_colon_handler {
     }
   }
 
-  void string_literal(const std::string &, const location_range_ref &) const {
+  void string_literal(const std::string &, const location_range &) const {
     throw unexpected_string_error();
   }
 
-  void number_literal(float, const location_range_ref &) const {
-    throw unexpected_number_error();
+  void number_literal(float, const location_range &loc) const {
+    throw unexpected_number_error(loc, unexpected_number_reason::field_colon);
   }
 };
 

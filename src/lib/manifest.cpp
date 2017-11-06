@@ -30,7 +30,6 @@ manifest read_file(const std::string &root_path,
        << cli::ansi_sgr(31, use_color)
        << "error:" << cli::ansi_sgr({}, use_color) << " invalid character `"
        << error.chr << "`" << std::endl;
-    throw invalid_manifest_error();
   } catch (json::unexpected_punctuation_error error) {
     es << cli::ansi_sgr(1, use_color)
        << get_relative_path(working_path, file_path, root_path) << ":"
@@ -63,8 +62,15 @@ manifest read_file(const std::string &root_path,
       break;
     }
     es << std::endl;
-    throw invalid_manifest_error();
+  } catch (json::unexpected_number_error error) {
+    es << cli::ansi_sgr(1, use_color)
+       << get_relative_path(working_path, file_path, root_path) << ":"
+       << error.location.from << ":" << cli::ansi_sgr({}, use_color) << " "
+       << cli::ansi_sgr(31, use_color)
+       << "error:" << cli::ansi_sgr({}, use_color) << " unexpected number"
+       << std::endl;
   }
+  throw invalid_manifest_error();
 }
 
 } // namespace manifest

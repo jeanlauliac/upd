@@ -46,11 +46,11 @@ template <typename Lexer, typename Handler> struct parse_expression_handler {
   }
 
   return_type string_literal(const std::string &literal,
-                             const location_range_ref &) const {
+                             const location_range &) const {
     return handler_.string_literal(literal);
   }
 
-  return_type number_literal(float literal, const location_range_ref &) const {
+  return_type number_literal(float literal, const location_range &) const {
     return handler_.number_literal(literal);
   }
 

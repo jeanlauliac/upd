@@ -22,12 +22,12 @@ struct location {
   size_t index;
 };
 
-struct location_range_ref {
-  location_range_ref(const location &from_, const location &to_)
+struct location_range {
+  location_range(const location &from_, const location &to_)
       : from(from_), to(to_) {}
 
-  const location &from;
-  const location &to;
+  location from;
+  location to;
 };
 
 inline std::ostream &operator<<(std::ostream &os, location loc) {
@@ -122,8 +122,8 @@ private:
       next_char_();
     }
     if (!good_) throw std::runtime_error("unexpected end in string literal");
-    const location_range_ref loc_ref = location_range_ref(from_loc, loc_);
-    return handler.string_literal(value, loc_ref);
+    const location_range loc_rg(from_loc, loc_);
+    return handler.string_literal(value, loc_rg);
   }
 
   template <typename Handler>
@@ -137,8 +137,8 @@ private:
       next_char_();
     } while (good_ && c_ >= '0' && c_ <= '9');
     has_lookahead_ = true;
-    const location_range_ref loc_ref = location_range_ref(from_loc, to_loc_);
-    return handler.number_literal(value, loc_ref);
+    const location_range loc_rg(from_loc, to_loc_);
+    return handler.number_literal(value, loc_rg);
   }
 
   void next_char_() {

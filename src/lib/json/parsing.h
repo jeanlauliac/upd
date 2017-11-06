@@ -6,17 +6,33 @@ namespace upd {
 namespace json {
 
 struct unexpected_end_error {};
-struct unexpected_number_error {};
 struct unexpected_string_error {};
+
+enum class unexpected_number_reason {
+  field_colon,
+  field_name,
+  post_item,
+  post_field,
+  first_field_name,
+};
+
+struct unexpected_number_error {
+  unexpected_number_error(const location_range &loc_,
+                          unexpected_number_reason reason_)
+      : location(loc_), reason(reason_) {}
+
+  location_range location;
+  unexpected_number_reason reason;
+};
 
 enum class unexpected_punctuation_situation {
   expression,
+  field_colon,
   field_name,
   first_field_name,
+  first_item,
   post_field,
   post_item,
-  first_item,
-  field_colon,
 };
 
 struct unexpected_punctuation_error {
