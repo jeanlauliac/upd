@@ -27,9 +27,11 @@ function readCppString(content, i, filePath) {
   return [content.substring(i + 1, j), j + 1];
 }
 
-function readCppBlock(content, i, filePath) {
+type Location = {line: number};
+
+function readCppBlock(content, i, filePath, loc: Location) {
   if (content[i] !== '{') {
-    fatalError(filePath, content, i, 'expected block after @case title');
+    fatalError(filePath, content, i, 'expected block after @it title');
     return null;
   }
   i += 1;
@@ -40,11 +42,13 @@ function readCppBlock(content, i, filePath) {
       ++braceCount;
     } else if (content[i] === '}') {
       --braceCount;
+    } else if (content[i] === '\n') {
+      ++loc.line;
     }
     ++i;
   }
   if (braceCount > 0) {
-    fatalError(filePath, content, i, 'block after @case title isn\'t closed');
+    fatalError(filePath, content, i, 'block after @it title isn\'t closed');
     return null;
   }
   return [content.substring(blockStart, i - 1), i];
@@ -79,9 +83,10 @@ function readCppParenExpr(content, i, filePath) {
   return [content.substring(start, i - 1), i];
 }
 
-function writeTestFunction(stream, caseCount, caseName, blockContent, reporterName, filePath) {
+function writeTestFunction(stream, caseCount, caseName, blockContent, filePath, relFilePath: string, startLine: number) {
   const functionName = `test_case_${caseCount}`;
-  stream.write(`static void ${functionName}() {`);
+  stream.write(`static void ${functionName}() {\n`);
+  stream.write(`#line ${startLine} "${path.resolve(filePath)}"\n`);
   let i = 0;
   while (i < blockContent.length) {
     let j = blockContent.indexOf('@expect', i);
@@ -113,7 +118,7 @@ function writeTestFunction(stream, caseCount, caseName, blockContent, reporterNa
   return functionName;
 }
 
-function writeHeader(stream, reporterName, targetDirPath, testingHeaderPath) {
+function writeHeader(stream, targetDirPath, testingHeaderPath) {
   const headerPath = path.relative(targetDirPath, testingHeaderPath);
   stream.write('#include <iostream>\n');
   stream.write(`#include "${headerPath}"\n`);
@@ -131,22 +136,47 @@ function writeMain(stream, testFunctions, filePath) {
   stream.write('}\n');
 }
 
+const IT_MARKER = '@it ';
+
+function startsWith(content, marker, contentIx) {
+  let i = 0;
+  while (
+    contentIx < content.length &&
+    i < marker.length &&
+    content[contentIx] === marker[i]
+  ) {
+    ++i;
+    ++contentIx;
+  }
+  return i === marker.length;
+}
+
 function transform(content, stream, filePath, targetDirPath, headerPath) {
+  const relFilePath = path.relative(targetDirPath, filePath);
+  let loc = {line: 1};
   let i = 0;
   let caseCount = 0;
   const testFunctions = [];
-  const reporterName =
-    '__reporter_' + Math.floor(Math.random() * Math.pow(2,16)).toString(16);
-  writeHeader(stream, reporterName, targetDirPath, headerPath);
+  writeHeader(stream, targetDirPath, headerPath);
   while (i < content.length) {
-    const IT_MARKER = '@it ';
-    let j = content.indexOf(IT_MARKER, i);
-    const unchangedContent = content.substring(i, j >= 0 ? j : content.length);
+    let j = i;
+    let startLine = loc.line;
+    let found = startsWith(content, IT_MARKER, j);
+    while (j < content.length && !found) {
+      if (content[j] === '\n') {
+        ++loc.line;
+      }
+      ++j;
+      found = startsWith(content, IT_MARKER, j);
+    }
+    const unchangedContent = content.substring(i, j);
+    stream.write(`\n#line ${startLine} "${path.resolve(filePath)}"\n`);
     stream.write(unchangedContent);
-    if (j < 0) {
+    if (j === content.length) {
       i = content.length;
       continue;
     }
+    startLine = loc.line;
     i = j + IT_MARKER.length;
     const cppString = readCppString(content, i, filePath);
     if (cppString == null) {
@@ -155,11 +185,11 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
     let caseName;
     [caseName, i] = cppString;
     if (content[i] !== ' ') {
-      fatalError(filePath, content, i, 'expected space after @case title');
+      fatalError(filePath, content, i, 'expected space after @it title');
       continue;
     }
     i += 1;
-    const cppBlock = readCppBlock(content, i, filePath);
+    const cppBlock = readCppBlock(content, i, filePath, loc);
     if (cppBlock == null) {
       continue;
     }
@@ -168,7 +198,7 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
     ++caseCount;
     testFunctions.push({
       name: caseName,
-      functionName: writeTestFunction(stream, caseCount, caseName, blockContent, reporterName, filePath)
+      functionName: writeTestFunction(stream, caseCount, caseName, blockContent, filePath, relFilePath, startLine)
     });
   }
   stream.write('\n');
