@@ -9,11 +9,34 @@
 namespace upd {
 namespace manifest {
 
+struct error_context {
+  const std::string &working_path;
+  const std::string &root_path;
+  const std::string &file_path;
+  const bool use_color;
+};
+
+struct error_header {
+  const error_context &context;
+  const json::location &location;
+};
+
+std::ostream &operator<<(std::ostream &os, const error_header &target) {
+  const auto &c = target.context;
+  os << cli::ansi_sgr(1, c.use_color)
+     << get_relative_path(c.working_path, c.file_path, c.root_path) << ":"
+     << target.location << ":" << cli::ansi_sgr({}, c.use_color) << " "
+     << cli::ansi_sgr(31, c.use_color)
+     << "error:" << cli::ansi_sgr({}, c.use_color);
+  return os;
+}
+
 manifest read_file(const std::string &root_path,
                    const std::string &working_path, bool use_color) {
   std::ifstream file;
   file.exceptions(std::ifstream::badbit);
   std::string file_path = root_path + io::UPDFILE_SUFFIX;
+  error_context ectx{working_path, root_path, file_path, use_color};
   file.open(file_path);
   if (!file.is_open()) {
     throw missing_manifest_error(root_path);
@@ -24,19 +47,11 @@ manifest read_file(const std::string &root_path,
   try {
     return parse(lexer);
   } catch (json::invalid_character_error error) {
-    es << cli::ansi_sgr(1, use_color)
-       << get_relative_path(working_path, file_path, root_path) << ":"
-       << error.location << ":" << cli::ansi_sgr({}, use_color) << " "
-       << cli::ansi_sgr(31, use_color)
-       << "error:" << cli::ansi_sgr({}, use_color) << " invalid character `"
+    es << error_header{ectx, error.location} << " invalid character `"
        << error.chr << "`" << std::endl;
   } catch (json::unexpected_punctuation_error error) {
-    es << cli::ansi_sgr(1, use_color)
-       << get_relative_path(working_path, file_path, root_path) << ":"
-       << error.location << ":" << cli::ansi_sgr({}, use_color) << " "
-       << cli::ansi_sgr(31, use_color)
-       << "error:" << cli::ansi_sgr({}, use_color)
-       << " unexpected punctuation `" << json::to_char(error.type) << "`";
+    es << error_header{ectx, error.location} << " unexpected punctuation `"
+       << json::to_char(error.type) << "`";
     switch (error.situation) {
     case json::unexpected_punctuation_situation::expression:
       es << "; expected to see an expression (ex. string, object, array, "
@@ -63,11 +78,7 @@ manifest read_file(const std::string &root_path,
     }
     es << std::endl;
   } catch (json::unexpected_number_error error) {
-    es << cli::ansi_sgr(1, use_color)
-       << get_relative_path(working_path, file_path, root_path) << ":"
-       << error.location.from << ":" << cli::ansi_sgr({}, use_color) << " "
-       << cli::ansi_sgr(31, use_color)
-       << "error:" << cli::ansi_sgr({}, use_color) << " unexpected number"
+    es << error_header{ectx, error.location.from} << " unexpected number"
        << std::endl;
   }
   throw invalid_manifest_error();
