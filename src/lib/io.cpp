@@ -1,4 +1,5 @@
 #include "io.h"
+#include "system/errno_error.h"
 #include <cstring>
 #include <libgen.h>
 #include <stdexcept>
@@ -6,6 +7,7 @@
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <vector>
 
 namespace upd {
 namespace io {
@@ -84,6 +86,18 @@ struct dirent *dir_files_reader::next() {
 void dir_files_reader::open(const std::string &path) { target_.open(path); }
 
 void dir_files_reader::close() { target_.close(); }
+
+std::string mkdtemp(const std::string &template_path) {
+  std::vector<char> tpl(template_path.size() + 1);
+  strcpy(tpl.data(), template_path.c_str());
+  if (::mkdtemp(tpl.data()) != NULL) return tpl.data();
+  throw system::errno_error(errno);
+}
+
+void mkfifo(const std::string &file_path, mode_t mode) {
+  if (::mkfifo(file_path.c_str(), mode) == 0) return;
+  throw system::errno_error(errno);
+}
 
 } // namespace io
 } // namespace upd

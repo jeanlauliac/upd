@@ -6,11 +6,6 @@
 namespace upd {
 namespace system {
 
-struct errno_error {
-  errno_error(int code_) : code(code_) {}
-  const int code;
-};
-
 /**
  * Wrapper around the `posix_spawn_file_actions_*` functions that handles
  * destroying the data structure automatically.

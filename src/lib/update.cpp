@@ -115,15 +115,8 @@ schedule_file_update(update_context &cx,
                      const std::vector<std::string> &local_src_paths,
                      const std::string &local_target_path) {
 
-  char *tpl = new char[TEMPLATE.size() + 1];
-  strcpy(tpl, TEMPLATE.c_str());
-  if (mkdtemp(tpl) == NULL) {
-    throw new std::runtime_error("mkdtemp() failed");
-  }
-  std::string depfile_path = std::string(tpl) + "/dep";
-  if (mkfifo(depfile_path.c_str(), 0700) != 0) {
-    throw new std::runtime_error("mkfifo() failed");
-  }
+  std::string depfile_path = io::mkdtemp(TEMPLATE) + "/dep";
+  io::mkfifo(depfile_path.c_str(), 0700);
 
   auto command_line = reify_command_line(
       cli_template, {depfile_path, local_src_paths, {local_target_path}},

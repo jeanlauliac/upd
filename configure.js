@@ -44,7 +44,7 @@ if (options.compilerBinary === 'clang++') {
   COMMON_CPLUSPLUS_COMPILE_FLAGS.push("-stdlib=libc++");
 }
 
-const compilerPath = searchInPATH(options.compilerBinary);
+const compilerPath = resolveBinary(options.compilerBinary);
 
 const compile_optimized_cpp_cli = manifest.cli_template(
   compilerPath,
@@ -231,7 +231,7 @@ const link_debug_cpp_cli = manifest.cli_template(compilerPath, [
 ]);
 
 manifest.rule(
-  manifest.cli_template('strip', [
+  manifest.cli_template(resolveBinary('strip'), [
     {literals: ['-o'], variables: ['output_file', 'input_files']},
   ]),
   [
@@ -258,7 +258,7 @@ manifest.rule(
 
 manifest.export(__dirname);
 
-function searchInPATH(name) {
+function resolveBinary(name) {
   const {PATH} = process.env;
   if (PATH == null) {
     throw new Error('PATH environment variable is missing');
