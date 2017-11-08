@@ -211,6 +211,8 @@ const compiled_test_files = manifest.rule(
 const commonLinkFlags = ["-Wall", "-std=c++14"];
 if (options.compilerBinary === 'clang++') {
   commonLinkFlags.push("-stdlib=libc++");
+} else {
+  commonLinkFlags.push('-static-libstdc++', '-static-libgcc');
 }
 
 const link_optimized_cpp_cli = manifest.cli_template(compilerPath, [
