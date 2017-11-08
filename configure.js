@@ -31,9 +31,9 @@ if (options.compilerBinary === 'clang++') {
 
 const manifest = new updfile.ManifestBuilder();
 
-const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", '-Wextra', '-Wshadow-all', "-MMD"];
+const COMMON_NATIVE_COMPILE_FLAGS = ["-Wall", '-Wextra', "-MMD"];
 if (options.compilerBinary === 'clang++') {
-  COMMON_NATIVE_COMPILE_FLAGS.push("-Werror", '-pedantic-errors');
+  COMMON_NATIVE_COMPILE_FLAGS.push('-Wshadow-all', "-Werror", '-pedantic-errors');
 } else {
   COMMON_NATIVE_COMPILE_FLAGS.push('-fpermissive');
 }
