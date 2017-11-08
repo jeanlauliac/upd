@@ -98,9 +98,10 @@ const compiled_tools = manifest.rule(
 
 const cppt_sources = manifest.source("(src/lib/**/*).cppt");
 const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
+const nodePath = resolveBinary('node');
 
 const test_cpp_files = manifest.rule(
-  manifest.cli_template('node', [
+  manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/compile_test.js`],
       variables: ["input_files", "output_file", "dependency_file"],
@@ -115,7 +116,7 @@ const test_cpp_files = manifest.rule(
 );
 
 const cli_parser_cpp_file = manifest.rule(
-  manifest.cli_template(`node`, [
+  manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/gen_cli_parser.js`],
       variables: ["output_file"]
@@ -159,7 +160,7 @@ const compiled_debug_c_files = manifest.rule(
 );
 
 const tests_cpp_file = manifest.rule(
-  manifest.cli_template('node', [
+  manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/index_tests.js`],
       variables: ["output_file", "dependency_file"],
@@ -175,7 +176,7 @@ const tests_cpp_file = manifest.rule(
 );
 
 const package_cpp_file = manifest.rule(
-  manifest.cli_template('node', [
+  manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/gen_package_info.js`],
       variables: ["output_file", "dependency_file", "input_files"],
