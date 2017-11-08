@@ -40,7 +40,7 @@ int spawn(const std::string binary_path, const spawn_file_actions &actions,
   pid_t pid;
   auto bin = binary_path.c_str();
   auto pa = &actions.posix();
-  int res = posix_spawnp(&pid, bin, pa, nullptr, argv, env);
+  int res = posix_spawn(&pid, bin, pa, nullptr, argv, env);
   if (res == 0) return pid;
   throw errno_error(errno);
 }

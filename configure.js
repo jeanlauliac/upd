@@ -4,6 +4,7 @@
 const BUILD_DIR = "gen";
 
 const path = require('path');
+const fs = require('fs');
 const updfile = require('./tools/lib/updfile');
 
 const options = {
@@ -43,8 +44,10 @@ if (options.compilerBinary === 'clang++') {
   COMMON_CPLUSPLUS_COMPILE_FLAGS.push("-stdlib=libc++");
 }
 
+const compilerPath = searchInPATH(options.compilerBinary);
+
 const compile_optimized_cpp_cli = manifest.cli_template(
-  options.compilerBinary,
+  compilerPath,
   updfile.makeCli(
     ["-c", "-o", "$output_file"].concat(
       COMMON_CPLUSPLUS_COMPILE_FLAGS,
@@ -54,7 +57,7 @@ const compile_optimized_cpp_cli = manifest.cli_template(
   )
 );
 
-const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
+const compile_debug_cpp_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_CPLUSPLUS_COMPILE_FLAGS.concat(['-g', "-MF"]),
@@ -63,7 +66,7 @@ const compile_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: [], variables: ["input_files"]},
 ]);
 
-const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
+const compile_optimized_c_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c"], OPTIMIZATION_FLAGS, ["-MF"]),
@@ -72,7 +75,7 @@ const compile_optimized_c_cli = manifest.cli_template(options.compilerBinary, [
   {literals: [], variables: ["input_files"]},
 ]);
 
-const compile_debug_c_cli = manifest.cli_template(options.compilerBinary, [
+const compile_debug_c_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c", "-g", "-MF"]),
@@ -209,7 +212,7 @@ if (options.compilerBinary === 'clang++') {
   commonLinkFlags.push("-stdlib=libc++");
 }
 
-const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
+const link_optimized_cpp_cli = manifest.cli_template(compilerPath, [
   {literals: ["-o"], variables: ["output_file"]},
   {
     literals: commonLinkFlags.concat(OPTIMIZATION_FLAGS),
@@ -218,7 +221,7 @@ const link_optimized_cpp_cli = manifest.cli_template(options.compilerBinary, [
   {literals: ["-lpthread"]},
 ]);
 
-const link_debug_cpp_cli = manifest.cli_template(options.compilerBinary, [
+const link_debug_cpp_cli = manifest.cli_template(compilerPath, [
   {literals: ["-o"], variables: ["output_file"]},
   {
     literals: commonLinkFlags.concat(["-g"]),
@@ -254,3 +257,18 @@ manifest.rule(
 );
 
 manifest.export(__dirname);
+
+function searchInPATH(name) {
+  const {PATH} = process.env;
+  if (PATH == null) {
+    throw new Error('PATH environment variable is missing');
+  }
+  const dirPaths = PATH.split(path.delimiter);
+  for (const dirPath of dirPaths) {
+    const filePath = path.resolve(dirPath, name);
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+  throw new Error(`could not resolve binary ${name}`);
+}

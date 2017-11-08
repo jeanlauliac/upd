@@ -42,6 +42,7 @@ manifest read_file(const std::string &root_path,
     throw missing_manifest_error(root_path);
   }
   istream_char_reader<std::ifstream> reader(file);
+
   json::lexer<istream_char_reader<std::ifstream>> lexer(reader);
   auto &es = std::cerr;
   try {
