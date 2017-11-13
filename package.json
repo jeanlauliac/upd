@@ -4,7 +4,7 @@
   "description": "Update files, fast.",
   "author": "Jean Lauliac <jean@lauliac.com>",
   "license": "MIT",
-  "bin": "dist/upd",
+  "bin": "bootstrap/upd",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jeanlauliac/upd.git"
@@ -25,6 +25,7 @@
   "scripts": {
     "test": "./test.sh",
     "prepublishOnly": "./prepublish.sh",
+    "preinstall": "./preinstall.sh",
     "format": "clang-format -i $(find src -name *.cpp -or -name *.h -or -name *.cppt)"
   },
   "files": [
