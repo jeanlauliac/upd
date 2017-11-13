@@ -28,9 +28,8 @@
     "format": "clang-format -i $(find src -name *.cpp -or -name *.h -or -name *.cppt)"
   },
   "files": [
-    "src",
-    "tools",
-    "bootstrap/gen_upd.sh"
+    "bootstrap/upd_darwin",
+    "bootstrap/upd_linux"
   ],
   "jest": {
     "roots": [
