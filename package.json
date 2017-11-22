@@ -1,10 +1,10 @@
 {
   "name": "@jeanlauliac/upd",
-  "version": "0.6.0",
+  "version": "0.6.0-delta",
   "description": "Update files, fast.",
   "author": "Jean Lauliac <jean@lauliac.com>",
   "license": "MIT",
-  "bin": "bootstrap/upd",
+  "bin": {"upd": "bootstrap/upd"},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jeanlauliac/upd.git"
@@ -29,7 +29,8 @@
   },
   "files": [
     "bootstrap/upd_darwin",
-    "bootstrap/upd_linux"
+    "bootstrap/upd_linux",
+    "preinstall.sh"
   ],
   "jest": {
     "roots": [
