@@ -1,6 +1,5 @@
 /.upd
 /.DS_Store
-/gen
 /dist
 /node_modules
 /updfile.json

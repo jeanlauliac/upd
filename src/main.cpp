@@ -1,4 +1,4 @@
-#include "../gen/src/lib/cli/parse_options.h"
+#include "../.git/__upd_gen/src/lib/cli/parse_options.h"
 #include "lib/cli/utils.h"
 #include "lib/execute_manifest.h"
 #include "lib/gen_update_map.h"

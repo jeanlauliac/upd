@@ -1,7 +1,7 @@
 #!/usr/bin/env node_modules/.bin/babel-node --plugins transform-flow-strip-types
 /* @flow */
 
-const BUILD_DIR = "gen";
+const BUILD_DIR = ".git/__upd_gen";
 
 const path = require('path');
 const fs = require('fs');
