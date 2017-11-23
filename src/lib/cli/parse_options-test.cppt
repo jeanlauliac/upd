@@ -1,4 +1,4 @@
-#include "../../../.git/__upd_gen/src/lib/cli/parse_options.h"
+#include "../../../gen/src/lib/cli/parse_options.h"
 
 upd::cli::options parse(std::vector<const char *> argv) {
   argv.push_back(nullptr);

@@ -134,7 +134,7 @@ function genCliCppParser(spec, stream, hppPath) {
         stream.write(`  { "${variant.cliName}", ${type.name}::${variant.cppName} },\n`);
       }
       stream.write(`};\n\n`);
-      stream.write(`static ${type.name} parse_${type.name}(std::string str) {\n`);
+      stream.write(`${type.name} parse_${type.name}(const std::string& str) {\n`);
       stream.write(`  auto iter = ${mapName}.find(str);
   if (iter != ${mapName}.cend()) return iter->second;
   throw invalid_${type.name}_error(str);
@@ -195,26 +195,54 @@ function genCliCppParser(spec, stream, hppPath) {
 }
 
 void output_help(const std::string& program, bool use_color, std::ostream& os) {
-  ansi_sgr(os, { 4, 34 }, use_color) << "Usage:";
-  ansi_sgr(os, { 0 }, use_color) << " " << program << " <command> [options]" << std::endl;
+  os << ansi_sgr({4, 34}, use_color) << "Usage:";
+  os << ansi_sgr({}, use_color) << " " << program << " <command> [options]" << std::endl;
   os << "${spec.description}" << std::endl << std::endl;
-  ansi_sgr(os, { 4, 34 }, use_color) << "Commands:";
-  ansi_sgr(os, { 0 }, use_color) << std::endl;
+  os << ansi_sgr({4, 34}, use_color) << "Commands:";
+  os << ansi_sgr({}, use_color) << std::endl;
 `);
   for (const command of spec.commands) {
-    stream.write(`  ansi_sgr(os << "  ", { 1 }, use_color) << "${rightPad(command.name, 12)}";\n`);
-    stream.write(`  ansi_sgr(os, {}, use_color) << "  ${command.description}" << std::endl;\n`);
+    stream.write(`  os << " " << ansi_sgr(1, use_color) << "${rightPad(command.name, 12)}";\n`);
+    stream.write(`  os << ansi_sgr({}, use_color) << "  ${command.description}" << std::endl;\n`);
   }
-  stream.write(`  ansi_sgr(os << std::endl, { 4, 34 }, use_color) << "General options:";
-  ansi_sgr(os, { 0 }, use_color) << std::endl;`);
-  for (const option of spec.options) {
-    if (option.onlyFor != null) continue;
-    stream.write(`  ansi_sgr(os << "  ", { 1 }, use_color) << "--${rightPad(option.name, 12)}";\n`);
-    stream.write(`  ansi_sgr(os, {}, use_color) << "  ${option.description}" << std::endl;\n`);
-  }
+  stream.write(`  os << std::endl << ansi_sgr({4, 34}, use_color) << "General options:";
+  ansi_sgr(os, {}, use_color) << std::endl;`);
+  genOptionsListing(stream, '    ', spec.options.filter(opt => opt.onlyFor == null));
   stream.write(`}
+
+void output_help(const std::string& program, const command& command, bool use_color, std::ostream& os) {
+  os << ansi_sgr({4, 34}, use_color) << "Usage:"
+     << ansi_sgr(0, use_color) << " " << program << " ";
+  switch (command) {
 `);
+  for (const command of spec.commands) {
+    const cmdOptions = spec.options.filter(opt => (
+      opt.onlyFor != null &&
+      opt.onlyFor.indexOf(command.name) >= 0
+    ));
+    stream.write(`  case command::${command.cppName}:\n`);
+    stream.write(`    os << "${command.name}`);
+    if (cmdOptions.length > 0) stream.write(` [options]`);
+    stream.write(`" << std::endl;\n`);
+    stream.write(`    os << "${command.description}" << std::endl`);
+    if (cmdOptions.length > 0) stream.write(` << std::endl;\n`);
+    else stream.write(`;\n`);
+    if (cmdOptions.length > 0) {
+      stream.write(`    os << ansi_sgr({4, 34}, use_color) << "Command options:";\n`);
+      stream.write(`    os << ansi_sgr({}, use_color) << std::endl;\n`);
+      genOptionsListing(stream, '    ', cmdOptions);
+    }
+    stream.write(`    break;\n`);
+  }
+  stream.write('  }\n}\n\n');
   genNamespaceClose(spec.namespace, stream);
+}
+
+function genOptionsListing(stream, indent, options) {
+  for (const option of options) {
+    stream.write(`${indent}os << ansi_sgr(1, use_color) << " --${rightPad(option.name, 12)}";\n`);
+    stream.write(`${indent}os << ansi_sgr({}, use_color) << "  ${option.description}" << std::endl;\n`);
+  }
 }
 
 function rightPad(str, size) {
@@ -242,6 +270,7 @@ ${spec.includes.map(x => `#include "${path.join(relativeSourceDirPath, x)}"`).jo
   const std::string value;
 };
 
+${type.name} parse_${type.name}(const std::string& str);
 `);
       continue;
     }
@@ -285,6 +314,7 @@ struct unavailable_option_for_command_error {};
 
 options parse_options(const char* const argv[]);
 void output_help(const std::string& program, bool use_color, std::ostream& os);
+void output_help(const std::string& program, const command& command, bool use_color, std::ostream& os);
 
 `);
   genNamespaceClose(spec.namespace, stream);

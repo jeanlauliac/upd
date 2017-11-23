@@ -41,10 +41,12 @@
     },
     {
       "name": "all",
+      "description": "Update every single target in the project.",
       "only_for": ["update", "graph", "script"]
     },
     {
       "name": "concurrency",
+      "description": "Set how many update commands can run at the same time.",
       "value_type": "size_t",
       "default": 0,
       "parse_function": "parse_concurrency",
@@ -52,6 +54,7 @@
     },
     {
       "name": "print-commands",
+      "description": "Print each command line before they are run.",
       "only_for": ["update"]
     }
   ]

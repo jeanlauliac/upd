@@ -1,4 +1,4 @@
-#include "../.git/__upd_gen/src/lib/cli/parse_options.h"
+#include "../gen/src/lib/cli/parse_options.h"
 #include "lib/cli/utils.h"
 #include "lib/execute_manifest.h"
 #include "lib/gen_update_map.h"
@@ -38,6 +38,21 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
        auto_color_diags);
   err_functor<std::ostream> err(std::cerr, color_diags);
   try {
+    if (cli_opts.command == cli::command::help) {
+      bool use_color = cli_opts.color == cli::color::always ||
+                       (cli_opts.color == cli::color::auto_ && isatty(1));
+      if (cli_opts.rest_args.empty()) {
+        cli::output_help(cli_opts.program_name, use_color, std::cout);
+        return 0;
+      }
+      if (cli_opts.rest_args.size() == 1) {
+        auto command = cli::parse_command(cli_opts.rest_args[0]);
+        cli::output_help(cli_opts.program_name, command, use_color, std::cout);
+        return 0;
+      }
+      err() << "usage: `help` accept only a single argument" << std::endl;
+      return 2;
+    }
     if (!(cli_opts.command == cli::command::update ||
           cli_opts.command == cli::command::graph ||
           cli_opts.command == cli::command::script)) {
@@ -52,12 +67,6 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
     }
     if (cli_opts.command == cli::command::version) {
       std::cout << "upd version " << package::VERSION << std::endl;
-      return 0;
-    }
-    if (cli_opts.command == cli::command::help) {
-      bool use_color = cli_opts.color == cli::color::always ||
-                       (cli_opts.color == cli::color::auto_ && isatty(1));
-      cli::output_help(cli_opts.program_name, use_color, std::cout);
       return 0;
     }
     auto working_path = io::getcwd_string();
