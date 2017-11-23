@@ -34,7 +34,7 @@
   ],
   "jest": {
     "roots": [
-      "gen"
+      "gen/tools"
     ]
   }
 }
