@@ -101,6 +101,7 @@ function genSpec(manifest: Manifest) {
       valueType,
       onlyFor: option.only_for && option.only_for.map(c => cppNameOf(c)),
       parseFunction: option.parse_function,
+      type,
     };
   }).sort((a, b) => a.cppName > b.cppName ? 1 : -1);
   return {
@@ -240,8 +241,28 @@ void output_help(const std::string& program, const command& command, bool use_co
 
 function genOptionsListing(stream, indent, options) {
   for (const option of options) {
-    stream.write(`${indent}os << ansi_sgr(1, use_color) << " --${rightPad(option.name, 12)}";\n`);
-    stream.write(`${indent}os << ansi_sgr({}, use_color) << "  ${option.description}" << std::endl;\n`);
+    stream.write(`${indent}os << ansi_sgr(1, use_color) << " --${option.name}";\n`);
+    let headerLength = option.name.length +  3;
+    stream.write(`${indent}os << ansi_sgr({}, use_color)`);
+    if (typeof option.type === 'object') {
+      stream.write(' << " ');
+      if (Array.isArray(option.type.enum_of)) {
+        const desc = option.type.enum_of.join('|');
+        headerLength += desc.length;
+        stream.write(`{${desc}}`);
+      }
+      stream.write('"');
+    } else if (option.type !== 'bool') {
+      stream.write(' << " <value>"');
+      headerLength += 8;
+    }
+    if (headerLength < 16) {
+      stream.write(` << "${' '.repeat(18 - headerLength)}"`);
+    } else {
+      stream.write(` << std::endl << "${' '.repeat(18)}"`)
+    }
+    stream.write(`;\n`);
+    stream.write(`${indent}os << ansi_sgr({}, use_color) << "${option.description}" << std::endl;\n`);
   }
 }
 
