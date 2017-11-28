@@ -9,16 +9,17 @@ const path = require('path');
 chalk.enabled = process.stderr.isTTY || false;
 
 const ERROR_PREFIX = chalk.red('error:');
-const MAIN_NAME = path.basename(process.mainModule.filename);
+const FATAL_PREFIX = chalk.red('fatal:');
+const NAME = path.basename(process.mainModule.filename);
 
 function error(format: string, ...placeholders: Array<mixed>) {
   const str = util.format(format, ...placeholders);
-  console.error('%s: %s %s', MAIN_NAME, ERROR_PREFIX, str);
+  console.error('%s: %s %s', NAME, ERROR_PREFIX, str);
 }
 
-function fatalError(exitCode: number, format: string, ...placeholders: Array<mixed>) {
-  process.exitCode = exitCode;
-  error(format, ...placeholders);
+function fatal(format: string, ...placeholders: Array<mixed>) {
+  const str = util.format(format, ...placeholders);
+  console.error('%s: %s %s', NAME, FATAL_PREFIX, str);
 }
 
-module.exports = {error, fatalError};
+module.exports = {error, fatal, NAME};

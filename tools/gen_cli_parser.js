@@ -30,8 +30,8 @@ type Manifest = {
 
 cli(function () {
   if (process.argv.length < 6) {
-    reporting.fatalError(1, 'not enough arguments');
-    return;
+    reporting.fatal('not enough arguments');
+    return 1;
   }
   const targetCppPath = process.argv[2];
   const targetHppPath = process.argv[3];
@@ -52,6 +52,7 @@ cli(function () {
   genCliHppParser(spec, relativeSourceDirPath, targetHppStream);
   targetHppStream.end();
   writeNodeDepFile(depfilePath, targetCppPath);
+  return 0;
 });
 
 function genSpec(manifest: Manifest) {

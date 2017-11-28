@@ -9,9 +9,11 @@ const path = require('path');
 const reporting = require('./lib/reporting');
 const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
+class SemanticError extends Error {}
+
 function fatalError(filePath, content, i, str) {
   const lineNumber = (content.substr(0, i).match(/\n/g) || []).length;
-  reporting.fatalError(2, '%s:%s: %s', filePath, lineNumber, str);
+  reporting.fatal('%s:%s: %s', filePath, lineNumber, str);
 }
 
 function readCppString(content, i, filePath) {
@@ -157,6 +159,7 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
   let i = 0;
   let caseCount = 0;
   const testFunctions = [];
+  let hasErrors = false;
   writeHeader(stream, targetDirPath, headerPath);
   while (i < content.length) {
     let j = i;
@@ -180,17 +183,20 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
     i = j + IT_MARKER.length;
     const cppString = readCppString(content, i, filePath);
     if (cppString == null) {
+      hasErrors = true;
       continue;
     }
     let caseName;
     [caseName, i] = cppString;
     if (content[i] !== ' ') {
       fatalError(filePath, content, i, 'expected space after @it title');
+      hasErrors = true;
       continue;
     }
     i += 1;
     const cppBlock = readCppBlock(content, i, filePath, loc);
     if (cppBlock == null) {
+      hasErrors = true;
       continue;
     }
     let blockContent;
@@ -203,6 +209,7 @@ function transform(content, stream, filePath, targetDirPath, headerPath) {
   }
   stream.write('\n');
   writeMain(stream, testFunctions, filePath);
+  return hasErrors;
 }
 
 function updateIncludes(sourceCode, sourceDirPath, targetDirPath) {
@@ -222,29 +229,27 @@ function updateIncludes(sourceCode, sourceDirPath, targetDirPath) {
 
 cli(function () {
   if (process.argv.length < 6) {
-    reporting.fatalError(1, 'not enough arguments');
-    return;
+    reporting.fatal('wrong number of arguments');
+    console.error(
+      'usage: ' + reporting.NAME +
+        ' <source> <target> <depfile> <test_header>',
+    );
+    return 1;
   }
   const sourcePath = process.argv[2];
   const targetPath = process.argv[3];
   const depfilePath = process.argv[4];
   const headerPath = process.argv[5];
-  let targetStream, targetDirPath;
-  if (targetPath === '-') {
-    targetStream = process.stdout;
-    targetDirPath = process.cwd();
-  } else {
-    targetStream = fs.createWriteStream(targetPath);
-    targetDirPath = path.dirname(targetPath);
-  }
+  const targetStream = fs.createWriteStream(targetPath);
+  const targetDirPath = path.dirname(targetPath);
   const content = updateIncludes(
     fs.readFileSync(sourcePath, 'utf8'),
     path.dirname(sourcePath),
-    targetDirPath
+    targetDirPath,
   );
-  transform(content, targetStream, sourcePath, targetDirPath, headerPath);
-  if (targetPath !== '-') {
-    targetStream.end();
-  }
+  const hasErrors = transform(content, targetStream, sourcePath, targetDirPath, headerPath);
+  targetStream.end();
+  if (hasErrors) return 2;
   writeNodeDepFile(depfilePath, targetPath);
+  return 0;
 });

@@ -11,8 +11,8 @@ const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
 cli(function () {
   if (process.argv.length < 5) {
-    reporting.fatalError(1, 'not enough arguments');
-    return;
+    reporting.fatal('not enough arguments');
+    return 1;
   }
   const targetPath = process.argv[2];
   const depfilePath = process.argv[3];
@@ -27,4 +27,5 @@ cli(function () {
   targetStream.write("}\n}\n");
   targetStream.end();
   writeNodeDepFile(depfilePath, targetPath);
+  return 0;
 });
