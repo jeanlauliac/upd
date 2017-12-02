@@ -6,13 +6,18 @@
 const cli = require('./lib/cli');
 const fs = require('fs');
 const path = require('path');
+const hashString = require('./compile_test/hashString');
 const reporting = require('./lib/reporting');
 const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
 function writeContent(stream, sourcePaths, targetDirPath, testingHeaderPath) {
   const headerPath = path.relative(targetDirPath, testingHeaderPath);
-  const entryPointNames = sourcePaths.map(sourcePath => {
-    return 'test_' + sourcePath.replace(/\//g, 'zS').replace(/\./g, 'zD').replace(/\-/g, 'zN');
+  const entryPointNames = sourcePaths.map(sourceFilePath => {
+    // FIXME: hash the file content, do not depend on any absolute paths, this
+    // make the repository non-relocatable.
+    const absPath = path.resolve(sourceFilePath);
+    const mainFuncName = `test_${hashString(absPath)}`;
+    return mainFuncName;
   });
   stream.write(`#include "${headerPath}"\n`);
   stream.write(`\n`);

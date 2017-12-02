@@ -3,231 +3,20 @@
 
 'use strict';
 
-const cli = require('./lib/cli');
+const CharIterator = require('./compile_test/CharIterator');
+const PreprocessorCharReader = require('./compile_test/PreprocessorCharReader');
+const {UnexpectedCharError, UnexpectedEndError,
+       NestedTestCaseError} = require('./compile_test/errors');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const hashString = require('./compile_test/hashString');
 const reporting = require('./lib/reporting');
 const writeNodeDepFile = require('./lib/writeNodeDepFile');
 
-class SemanticError extends Error {}
+import type {ReadChar, Write, Location, LocatedChar, ReadLocatedChar} from './compile_test/types';
 
-function fatalError(filePath, content, i, str) {
-  const lineNumber = (content.substr(0, i).match(/\n/g) || []).length;
-  reporting.fatal('%s:%s: %s', filePath, lineNumber, str);
-}
-
-function readCppString(content, i, filePath) {
-  if (content[i] !== '"') {
-    fatalError(filePath, content, i, 'expected string');
-    return null;
-  }
-  const j = content.indexOf('"', i + 1);
-  if (j === -1) {
-    fatalError(filePath, content, i, 'string lacks closing quote');
-    return null;
-  }
-  return [content.substring(i + 1, j), j + 1];
-}
-
-type Location = {line: number};
-
-function readCppBlock(content, i, filePath, loc: Location) {
-  if (content[i] !== '{') {
-    fatalError(filePath, content, i, 'expected block after @it title');
-    return null;
-  }
-  i += 1;
-  const blockStart = i;
-  let braceCount = 1;
-  while (braceCount > 0 && i < content.length) {
-    if (content[i] === '{') {
-      ++braceCount;
-    } else if (content[i] === '}') {
-      --braceCount;
-    } else if (content[i] === '\n') {
-      ++loc.line;
-    }
-    ++i;
-  }
-  if (braceCount > 0) {
-    fatalError(filePath, content, i, 'block after @it title isn\'t closed');
-    return null;
-  }
-  return [content.substring(blockStart, i - 1), i];
-}
-
-function readCppParenExpr(content, i, filePath) {
-  if (content[i] !== '(') {
-    fatalError(filePath, content, i, 'expected parenthese after @expect');
-    return null;
-  }
-  i += 1;
-  const start = i;
-  let parenCount = 1;
-  while (parenCount > 0 && i < content.length) {
-    if (content[i] === '(') {
-      ++parenCount;
-    } else if (content[i] === ')') {
-      --parenCount;
-    } else if (content[i] === '"') {
-      ++i;
-      while (i < content.length && content[i] !== '"') {
-        if (content[i] === '\\') ++i;
-        ++i;
-      }
-    }
-    ++i;
-  }
-  if (parenCount > 0) {
-    fatalError(filePath, content, i, 'unclosed parenthese for @expect');
-    return null;
-  }
-  return [content.substring(start, i - 1), i];
-}
-
-function writeTestFunction(stream, caseCount, caseName, blockContent, filePath, relFilePath: string, startLine: number) {
-  const functionName = `test_case_${caseCount}`;
-  stream.write(`static void ${functionName}() {\n`);
-  stream.write(`#line ${startLine} "${path.resolve(filePath)}"\n`);
-  let i = 0;
-  while (i < blockContent.length) {
-    let j = blockContent.indexOf('@expect', i);
-    const unchangedContent = blockContent.substring(i, j >= 0 ? j : blockContent.length);
-    stream.write(unchangedContent);
-    if (j < 0) {
-      i = blockContent.length;
-      continue;
-    }
-    i = j + 7;
-    let cppExpr = readCppParenExpr(blockContent, i, filePath);
-    if (cppExpr == null) {
-      continue;
-    }
-    let exprStr;
-    [exprStr, i] = cppExpr;
-    const strContent = exprStr.replace(/([\\"])/g, '\\$1').replace(/\n/g, '\\n');
-    // Quick-and-dirty, of course we'd want to check parentheses and stuff.
-    const dbEqualIx = exprStr.indexOf('==');
-    if (dbEqualIx >= 0) {
-      const targetExp = exprStr.substring(0, dbEqualIx);
-      const expectationExp = exprStr.substring(dbEqualIx + 2);
-      stream.write(`testing::expect_equal(${targetExp}, ${expectationExp}, "${strContent}")`);
-    } else {
-      stream.write(`testing::expect(${exprStr}, "${strContent}")`);
-    }
-  }
-  stream.write('}');
-  return functionName;
-}
-
-function writeHeader(stream, targetDirPath, testingHeaderPath) {
-  const headerPath = path.relative(targetDirPath, testingHeaderPath);
-  stream.write('#include <iostream>\n');
-  stream.write(`#include "${headerPath}"\n`);
-  stream.write(`\n`);
-}
-
-function writeMain(stream, testFunctions, filePath) {
-  // TODO: look at Flow's stategy for escaping slashes and dots
-  const entryPointName = 'test_' + filePath.replace(/\//g, 'zS').replace(/\./g, 'zD').replace(/\-/g, 'zN');
-  stream.write(`void ${entryPointName}(int& index) {\n`);
-  for (let i = 0; i < testFunctions.length; i++) {
-    const fun = testFunctions[i];
-    stream.write(`  testing::run_case(${fun.functionName}, index, "${filePath}: ${fun.name}");\n`)
-  }
-  stream.write('}\n');
-}
-
-const IT_MARKER = '@it ';
-
-function startsWith(content, marker, contentIx) {
-  let i = 0;
-  while (
-    contentIx < content.length &&
-    i < marker.length &&
-    content[contentIx] === marker[i]
-  ) {
-    ++i;
-    ++contentIx;
-  }
-  return i === marker.length;
-}
-
-function transform(content, stream, filePath, targetDirPath, headerPath) {
-  const relFilePath = path.relative(targetDirPath, filePath);
-  let loc = {line: 1};
-  let i = 0;
-  let caseCount = 0;
-  const testFunctions = [];
-  let hasErrors = false;
-  writeHeader(stream, targetDirPath, headerPath);
-  while (i < content.length) {
-    let j = i;
-    let startLine = loc.line;
-    let found = startsWith(content, IT_MARKER, j);
-    while (j < content.length && !found) {
-      if (content[j] === '\n') {
-        ++loc.line;
-      }
-      ++j;
-      found = startsWith(content, IT_MARKER, j);
-    }
-    const unchangedContent = content.substring(i, j);
-    stream.write(`\n#line ${startLine} "${path.resolve(filePath)}"\n`);
-    stream.write(unchangedContent);
-    if (j === content.length) {
-      i = content.length;
-      continue;
-    }
-    startLine = loc.line;
-    i = j + IT_MARKER.length;
-    const cppString = readCppString(content, i, filePath);
-    if (cppString == null) {
-      hasErrors = true;
-      continue;
-    }
-    let caseName;
-    [caseName, i] = cppString;
-    if (content[i] !== ' ') {
-      fatalError(filePath, content, i, 'expected space after @it title');
-      hasErrors = true;
-      continue;
-    }
-    i += 1;
-    const cppBlock = readCppBlock(content, i, filePath, loc);
-    if (cppBlock == null) {
-      hasErrors = true;
-      continue;
-    }
-    let blockContent;
-    [blockContent, i] = cppBlock;
-    ++caseCount;
-    testFunctions.push({
-      name: caseName,
-      functionName: writeTestFunction(stream, caseCount, caseName, blockContent, filePath, relFilePath, startLine)
-    });
-  }
-  stream.write('\n');
-  writeMain(stream, testFunctions, filePath);
-  return hasErrors;
-}
-
-function updateIncludes(sourceCode, sourceDirPath, targetDirPath) {
-  const lines = sourceCode.split('\n');
-  return lines.map(line => {
-    if (line.length === 0 || line[0] != '#') {
-      return line;
-    }
-    const match = line.match(/#include "([^"]+)"/);
-    if (match == null) {
-      return line;
-    }
-    const includedPath = path.resolve(sourceDirPath, match[1]);
-    return `#include "${path.relative(targetDirPath, includedPath)}"`;
-  }).join('\n');
-}
-
-cli(function () {
+function main() {
   if (process.argv.length < 6) {
     reporting.fatal('wrong number of arguments');
     console.error(
@@ -237,19 +26,213 @@ cli(function () {
     return 1;
   }
   const sourcePath = process.argv[2];
-  const targetPath = process.argv[3];
+  const targetFilePath = process.argv[3];
   const depfilePath = process.argv[4];
-  const headerPath = process.argv[5];
-  const targetStream = fs.createWriteStream(targetPath);
-  const targetDirPath = path.dirname(targetPath);
-  const content = updateIncludes(
-    fs.readFileSync(sourcePath, 'utf8'),
-    path.dirname(sourcePath),
+  const headerFilePath = process.argv[5];
+  const targetStream = fs.createWriteStream(targetFilePath);
+  const targetDirPath = path.dirname(targetFilePath);
+  const reader = new StringCharReader(fs.readFileSync(sourcePath, 'utf8'));
+  transform({
+    readChar: reader.next.bind(reader),
+    sourceFilePath: sourcePath,
+    sourceDirPath: path.dirname(sourcePath),
+    targetFilePath,
+    headerFilePath,
     targetDirPath,
-  );
-  const hasErrors = transform(content, targetStream, sourcePath, targetDirPath, headerPath);
+    write: data => void targetStream.write(data)
+  });
   targetStream.end();
-  if (hasErrors) return 2;
-  writeNodeDepFile(depfilePath, targetPath);
+  writeNodeDepFile(depfilePath, targetFilePath);
   return 0;
-});
+}
+
+class StringCharReader {
+  _str: string;
+  _ix: number;
+
+  constructor(str: string) { this._str = str; this._ix = 0;}
+  next(): ?string { return this._str[this._ix++]; }
+}
+
+type TransformOptions = {|
+  +readChar: ReadChar,
+  +sourceDirPath: string,
+  +targetDirPath: string,
+  +targetFilePath: string,
+  +sourceFilePath: string,
+  +headerFilePath: string,
+  +write: Write,
+|};
+
+function transform(options: TransformOptions): void {
+  const {sourceDirPath, targetDirPath, sourceFilePath, readChar} = options;
+  const writer = new LineTrackingWriter(options.write);
+  const write = writer.write.bind(writer);
+  const headerFilePath = path.relative(targetDirPath, options.headerFilePath);
+  write(`#include "${headerFilePath}"\n`);
+  write(`#line 1 "${sourceFilePath}"\n`);
+  let locrd = new LocationTrackingCharReader(readChar);
+  let reader = new PreprocessorCharReader({
+    readLocatedChar: locrd.next.bind(locrd),
+    write,
+    sourceDirPath,
+    targetDirPath,
+  });
+  let tests = [];
+  let testBraceStack = 0;
+  const iter = new CharIterator(reader.next.bind(reader));
+  while (iter.char != null) {
+    if (iter.char === '{' && testBraceStack > 0) {
+      ++testBraceStack;
+    }
+    if (iter.char === '}' && testBraceStack > 0) {
+      --testBraceStack;
+    }
+    // FIXME: '@' could appear in middle of strings, and comments. To properly
+    // handle it we need a lightweight lexing layer below.
+    if (iter.char !== '@') {
+      write(iter.char);
+      iter.forward();
+      continue;
+    }
+    let markerLoc = iter.location;
+    let marker = '';
+    iter.forward();
+    while (iter.char != null && /[a-z]/.test(iter.char)) {
+      marker += iter.char;
+      iter.forward();
+    }
+    if (marker == 'it') {
+      if (testBraceStack > 0)
+        throw new NestedTestCaseError(markerLoc);
+      readWhitespace(iter);
+      const title = readString(iter);
+      readWhitespace(iter);
+      if (iter.char !== '{') throw unexpectedOf(iter);
+      iter.forward();
+      const hash = hashString(title);
+      const funcName = `test_case_${hash}`;
+      write(`static void ${funcName}() {`);
+      tests.push({hash, funcName, title});
+      testBraceStack = 1;
+      continue;
+    }
+    if (marker == 'expect') {
+      readWhitespace(iter);
+      if (iter.char !== '(') throw unexpectedOf(iter);
+      iter.forward();
+      const expectExprLoc = iter.location;
+      let parenStack = 0;
+      let expectExpr = '';
+      while (iter.char != null && !(parenStack === 0 && iter.char === ')')) {
+        expectExpr += iter.char;
+        if (iter.char === '(') ++parenStack;
+        if (iter.char === ')') --parenStack;
+        iter.forward();
+      }
+      if (iter.char == null)
+        throw new UnexpectedEndError(iter.location);
+      iter.forward();
+      write('testing::expect(\n');
+      write(`#line ${expectExprLoc.line}\n`);
+      write(' '.repeat(expectExprLoc.column - 1));
+      write(expectExpr + ', ');
+      writeString(write, expectExpr);
+      write(`)`)
+      continue;
+    }
+    write('@' + marker);
+  }
+  // FIXME: hash the file content, do not depend on any absolute paths, this
+  // make the repository non-relocatable.
+  const absPath = path.resolve(sourceFilePath);
+  const mainFuncName = `test_${hashString(absPath)}`;
+  write(`#line ${writer.line() + 1} "${options.targetFilePath}"\n`);
+  write(`using namespace testing;\n`);
+  write(`void ${mainFuncName}(int& index) {\n`);
+  for (const test of tests) {
+    write(`  run_case(${test.funcName}, index, `);
+    writeString(write, test.title);
+    write(`);\n`);
+  }
+  write(`}\n`);
+}
+
+function readWhitespace(iter: CharIterator) {
+  while (iter.char != null && /[ \n]/.test(iter.char)) iter.forward();
+}
+
+function readString(iter: CharIterator) {
+  if (iter.char !== '"') throw unexpectedOf(iter);
+  iter.forward();
+  let str = '';
+  while (iter.char !== '"') {
+    if (iter.char === '\\') {
+      iter.forward();
+    }
+    if (iter.char == null)
+      throw new UnexpectedEndError(iter.location)
+    str += iter.char;
+    iter.forward();
+  }
+  iter.forward();
+  return str;
+}
+
+function writeString(write: Write, str: string) {
+  write('"');
+  for (let i = 0; i < str.length; ++i) {
+    const c = str.charAt(i);
+    if (c === '"') write('\\"');
+    else if (c === '\n') write('\\n');
+    else if (c === '\\') write('\\\\');
+    else write(c);
+  }
+  write('"');
+}
+
+function unexpectedOf(iter: CharIterator) {
+  if (iter.char != null)
+    throw new UnexpectedCharError(iter.char, iter.location);
+  throw new UnexpectedEndError(iter.location);
+}
+
+class LocationTrackingCharReader {
+  _readChar: ReadChar;
+  _nextLoc: Location;
+
+  constructor(readChar: ReadChar) {
+    this._readChar = readChar;
+    this._nextLoc = {column: 1, line: 1, index: 0};
+  }
+
+  next(): LocatedChar {
+    const c = this._readChar();
+    const {column, line, index} = this._nextLoc;
+    if (c === '\n') {
+      this._nextLoc = {column: 1, line: line + 1, index: index + 1};
+    } else {
+      this._nextLoc = {column: column + 1, line, index: index + 1};
+    }
+    return {char: c, location: {column, line, index}};
+  }
+}
+
+class LineTrackingWriter {
+  _write: Write;
+  _line: number;
+
+  constructor(write: Write) {
+    this._write = write;
+    this._line = 1;
+  }
+
+  write(content: string): void {
+    this._line += (content.match(/\n/g) || []).length;
+    this._write(content);
+  }
+
+  line() { return this._line; }
+}
+
+require('./lib/cli')(main);
