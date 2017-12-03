@@ -31,27 +31,66 @@ function main() {
   const headerFilePath = process.argv[5];
   const targetStream = fs.createWriteStream(targetFilePath);
   const targetDirPath = path.dirname(targetFilePath);
-  const reader = new StringCharReader(fs.readFileSync(sourcePath, 'utf8'));
-  transform({
-    readChar: reader.next.bind(reader),
-    sourceFilePath: sourcePath,
-    sourceDirPath: path.dirname(sourcePath),
-    targetFilePath,
-    headerFilePath,
-    targetDirPath,
-    write: data => void targetStream.write(data)
-  });
+  const fd = fs.openSync(sourcePath, 'r');
+  try {
+    const byteReader = new FdByteReader(fd);
+    const reader = new ByteToCharReader(byteReader.next.bind(byteReader));
+    transform({
+      readChar: reader.next.bind(reader),
+      sourceFilePath: sourcePath,
+      sourceDirPath: path.dirname(sourcePath),
+      targetFilePath,
+      headerFilePath,
+      targetDirPath,
+      write: data => void targetStream.write(data)
+    });
+  } finally {
+    fs.closeSync(fd);
+  }
   targetStream.end();
   writeNodeDepFile(depfilePath, targetFilePath);
   return 0;
 }
 
-class StringCharReader {
-  _str: string;
+class FdByteReader {
+  _fd: number;
+  _buf: Buffer;
+  _count: number;
   _ix: number;
 
-  constructor(str: string) { this._str = str; this._ix = 0;}
-  next(): ?string { return this._str[this._ix++]; }
+  constructor(fd: number) {
+    this._fd = fd;
+    this._buf = new Buffer(1 << 12);
+    this._count = 0
+    this._ix = 0;
+  }
+
+  next(): ?number {
+    if (this._ix >= this._count) {
+      this._count = fs.readSync(this._fd, this._buf, 0, this._buf.length, (null: $FlowFixMe));
+      if (this._count === 0) {
+        return null;
+      }
+      this._ix = 0;
+    }
+    return this._buf[this._ix++];
+  }
+}
+
+type ReadByte = () => ?number;
+
+class ByteToCharReader {
+  _readByte: ReadByte;
+
+  constructor(readByte: ReadByte) {
+    this._readByte = readByte;
+  }
+
+  next(): ?string {
+    const byte = this._readByte();
+    if (byte == null) return null;
+    return String.fromCharCode(byte);
+  }
 }
 
 type TransformOptions = {|
