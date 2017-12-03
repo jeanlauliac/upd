@@ -33,7 +33,8 @@ function main() {
   const targetDirPath = path.dirname(targetFilePath);
   const fd = fs.openSync(sourcePath, 'r');
   try {
-    const byteReader = new FdByteReader(fd);
+    const fdReader = new FdChunkReader(fd);
+    const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
     const reader = new ByteToCharReader(byteReader.next.bind(byteReader));
     transform({
       readChar: reader.next.bind(reader),
@@ -52,14 +53,28 @@ function main() {
   return 0;
 }
 
-class FdByteReader {
+class FdChunkReader {
   _fd: number;
+
+  constructor(fd: number) {
+    this._fd = fd;
+  }
+
+  read(buffer: Buffer): number {
+    return fs.readSync(this._fd, buffer, 0, buffer.length, (null: $FlowFixMe));
+  }
+}
+
+type ReadChunk = (buffer: Buffer) => number;
+
+class ChunkToByteReader {
+  _readChunk: ReadChunk;
   _buf: Buffer;
   _count: number;
   _ix: number;
 
-  constructor(fd: number) {
-    this._fd = fd;
+  constructor(readChunk: ReadChunk) {
+    this._readChunk = readChunk;
     this._buf = new Buffer(1 << 12);
     this._count = 0
     this._ix = 0;
@@ -67,7 +82,7 @@ class FdByteReader {
 
   next(): ?number {
     if (this._ix >= this._count) {
-      this._count = fs.readSync(this._fd, this._buf, 0, this._buf.length, (null: $FlowFixMe));
+      this._count = this._readChunk(this._buf);
       if (this._count === 0) {
         return null;
       }
