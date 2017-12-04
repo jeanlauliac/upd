@@ -34,10 +34,9 @@ function main() {
   const fd = fs.openSync(sourcePath, 'r');
   try {
     const fdReader = new FdChunkReader(fd);
-    const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
-    const reader = new ByteToCharReader(byteReader.next.bind(byteReader));
+    const hashReader = new HashingChunkReader(fdReader.read.bind(fdReader));
     transform({
-      readChar: reader.next.bind(reader),
+      hashReader,
       sourceFilePath: sourcePath,
       sourceDirPath: path.dirname(sourcePath),
       targetFilePath,
@@ -62,6 +61,28 @@ class FdChunkReader {
 
   read(buffer: Buffer): number {
     return fs.readSync(this._fd, buffer, 0, buffer.length, (null: $FlowFixMe));
+  }
+}
+
+class HashingChunkReader {
+  _readChunk: ReadChunk;
+  _hash: crypto$Hash;
+
+  constructor(readChunk: ReadChunk) {
+    this._readChunk = readChunk;
+    this._hash = crypto.createHash('sha256');
+  }
+
+  read(buffer: Buffer): number {
+    const count = this._readChunk(buffer);
+    const cbuf = new Buffer(count);
+    buffer.copy(cbuf);
+    this._hash.update(cbuf);
+    return count;
+  }
+
+  digest(type) {
+    return this._hash.digest(type);
   }
 }
 
@@ -109,7 +130,7 @@ class ByteToCharReader {
 }
 
 type TransformOptions = {|
-  +readChar: ReadChar,
+  +hashReader: HashingChunkReader,
   +sourceDirPath: string,
   +targetDirPath: string,
   +targetFilePath: string,
@@ -119,7 +140,11 @@ type TransformOptions = {|
 |};
 
 function transform(options: TransformOptions): void {
-  const {sourceDirPath, targetDirPath, sourceFilePath, readChar} = options;
+  const {hashReader} = options;
+  const byteReader = new ChunkToByteReader(hashReader.read.bind(hashReader));
+  const btcReader = new ByteToCharReader(byteReader.next.bind(byteReader));
+  const readChar = btcReader.next.bind(btcReader);
+  const {sourceDirPath, targetDirPath, sourceFilePath} = options;
   const writer = new LineTrackingWriter(options.write);
   const write = writer.write.bind(writer);
   const headerFilePath = path.relative(targetDirPath, options.headerFilePath);
@@ -197,10 +222,10 @@ function transform(options: TransformOptions): void {
     }
     write('@' + marker);
   }
-  // FIXME: hash the file content, do not depend on any absolute paths, this
-  // make the repository non-relocatable.
-  const absPath = path.resolve(sourceFilePath);
-  const mainFuncName = `test_${hashString(absPath)}`;
+  const relPath = path.relative(targetDirPath, options.sourceFilePath);
+  const testId = crypto.createHash('sha256').update(relPath)
+                       .digest('hex').substr(0, 10);
+  const mainFuncName = `test_${testId}`;
   write(`#line ${writer.line() + 1} "${options.targetFilePath}"\n`);
   write(`using namespace testing;\n`);
   write(`void ${mainFuncName}(int& index) {\n`);

@@ -15,8 +15,9 @@ function writeContent(stream, sourcePaths, targetDirPath, testingHeaderPath) {
   const entryPointNames = sourcePaths.map(sourceFilePath => {
     // FIXME: hash the file content, do not depend on any absolute paths, this
     // make the repository non-relocatable.
-    const absPath = path.resolve(sourceFilePath);
-    const mainFuncName = `test_${hashString(absPath)}`;
+    // const absPath = path.resolve(sourceFilePath);
+    const manifest = JSON.parse(fs.readFileSync(sourceFilePath, 'utf8'));
+    const mainFuncName = `test_${manifest.id}`;
     return mainFuncName;
   });
   stream.write(`#include "${headerPath}"\n`);

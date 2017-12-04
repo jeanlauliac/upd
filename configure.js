@@ -159,7 +159,19 @@ const compiled_debug_c_files = manifest.rule(
   `${BUILD_DIR}/debug/$1.o`
 );
 
-const tests_cpp_file = manifest.rule(
+const test_manifest_files = manifest.rule(
+  manifest.cli_template(nodePath, [
+    {
+      literals: [`${BUILD_DIR}/tools/gen_test_manifest.js`],
+      variables: ["output_file", "dependency_file", "input_files"],
+    },
+  ]),
+  [cppt_sources],
+  `${BUILD_DIR}/($1).json`,
+  [compiled_tools]
+);
+
+const test_index_cpp_file = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/index_tests.js`],
@@ -170,7 +182,7 @@ const tests_cpp_file = manifest.rule(
       variables: ["input_files"],
     },
   ]),
-  [cppt_sources],
+  [test_manifest_files],
   `${BUILD_DIR}/(tests).cpp`,
   [compiled_tools]
 );
@@ -203,7 +215,7 @@ const compiled_debug_main_files = manifest.rule(
 
 const compiled_test_files = manifest.rule(
   compile_debug_cpp_cli,
-  [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, tests_cpp_file],
+  [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, test_index_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
   [cli_parser_cpp_file]
 );
