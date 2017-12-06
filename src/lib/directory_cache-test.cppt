@@ -18,14 +18,14 @@ using namespace upd;
 @it "directory_cache works" {
   directory_cache<mock_mkdir> cache("/root");
   cache.create("foo/bar/baz");
-  @expect(created_dirs == std::vector<std::string>({
+  @assert(created_dirs == std::vector<std::string>({
                               "/root/foo",
                               "/root/foo/bar",
                               "/root/foo/bar/baz",
                           }));
   created_dirs.clear();
   cache.create("foo/glo/biz");
-  @expect(created_dirs == std::vector<std::string>({
+  @assert(created_dirs == std::vector<std::string>({
                               "/root/foo/glo",
                               "/root/foo/glo/biz",
                           }));

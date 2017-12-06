@@ -3,6 +3,6 @@
 using namespace upd;
 
 @it "inspects strings" {
-  @expect(upd::inspect("foobar") == "\"foobar\"");
-  @expect(upd::inspect("foo\nbar") == "\"foo\\nbar\"");
+  @assert(upd::inspect("foobar") == "\"foobar\"");
+  @assert(upd::inspect("foo\nbar") == "\"foo\\nbar\"");
 }

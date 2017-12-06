@@ -173,7 +173,7 @@ function transform(options: TransformOptions): void {
       testBraceStack = 1;
       continue;
     }
-    if (marker == 'expect') {
+    if (marker == 'assert') {
       readWhitespace(iter);
       if (iter.char !== '(') throw unexpectedOf(iter);
       iter.forward();
@@ -189,7 +189,7 @@ function transform(options: TransformOptions): void {
       if (iter.char == null)
         throw new UnexpectedEndError(iter.location);
       iter.forward();
-      write('testing::expect(\n');
+      write('testing::assert(\n');
       write(`#line ${expectExprLoc.line}\n`);
       write(' '.repeat(expectExprLoc.column - 1));
       write(expectExpr + ', ');

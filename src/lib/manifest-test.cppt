@@ -10,7 +10,7 @@ typedef json::lexer<string_char_reader> string_lexer;
   string_lexer lx(reader);
   auto result = manifest::parse(lx);
   manifest::manifest expected;
-  @expect(result == expected);
+  @assert(result == expected);
 }
 
 @it "parses complex manifest" {
@@ -74,5 +74,5 @@ typedef json::lexer<string_char_reader> string_lexer;
           },
       },
   };
-  @expect(result == expected);
+  @assert(result == expected);
 }

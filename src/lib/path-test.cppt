@@ -2,70 +2,70 @@
 
 @it "normalize_path() processes dot-dot" {
   auto result = upd::normalize_path("foo/../bar");
-  @expect(result == "bar");
+  @assert(result == "bar");
 }
 
 @it "normalize_path() processes dot" {
   auto result = upd::normalize_path("foo/./bar");
-  @expect(result == "foo/bar");
+  @assert(result == "foo/bar");
 }
 
 @it "normalize_path() removes double separators" {
   auto result = upd::normalize_path("foo//bar");
-  @expect(result == "foo/bar");
+  @assert(result == "foo/bar");
 }
 
 @it "normalize_path() removes end separator" {
   auto result = upd::normalize_path("foo/bar/");
-  @expect(result == "foo/bar");
+  @assert(result == "foo/bar");
 }
 
 @it "normalize_path() keeps dot-dot if necessary" {
   auto result = upd::normalize_path("foo/../../bar");
-  @expect(result == "../bar");
+  @assert(result == "../bar");
 }
 
 @it "normalize_path() processes absolute path" {
   auto result = upd::normalize_path("/foo/bar");
-  @expect(result == "/foo/bar");
+  @assert(result == "/foo/bar");
 }
 
 @it "normalize_path() processes bare absolute path" {
   auto result = upd::normalize_path("/");
-  @expect(result == "/");
+  @assert(result == "/");
 }
 
 @it "get_absolute_path() works" {
   auto result = upd::get_absolute_path("../foo/bar", "/beep/boop");
-  @expect(result == "/beep/foo/bar");
+  @assert(result == "/beep/foo/bar");
 }
 
 @it "get_root_path() works with relative path" {
   auto result =
       upd::get_local_path("/beep/foo", "../foo/bar/glo", "/beep/boop");
-  @expect(result == "bar/glo");
+  @assert(result == "bar/glo");
 }
 
 @it "get_root_path() works with absolute path" {
   auto result =
       upd::get_local_path("/beep/foo", "/beep/foo/bar/glo", "/beep/boop");
-  @expect(result == "bar/glo");
+  @assert(result == "bar/glo");
 }
 
 @it "get_relative_path() works with same directory" {
   auto result =
       upd::get_relative_path("/beep/boop/foo/bar", "foo/bar/glo", "/beep/boop");
-  @expect(result == "glo");
+  @assert(result == "glo");
 }
 
 @it "get_relative_path() works with different directory" {
   auto result =
       upd::get_relative_path("/beep/qux/tra", "foo/bar/glo", "/beep/boop");
-  @expect(result == "../../boop/foo/bar/glo");
+  @assert(result == "../../boop/foo/bar/glo");
 }
 
 @it "get_relative_path() works with parent directory" {
   auto result =
       upd::get_relative_path("/beep/boop/glo/bar", "/beep", "/beep/boop");
-  @expect(result == "../../..");
+  @assert(result == "../../..");
 }

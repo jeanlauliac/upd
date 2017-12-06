@@ -3,124 +3,124 @@
 using namespace upd::glob;
 
 @it "parse() convert strings properly" {
-  @expect(parse("") == pattern({}));
-  @expect(parse("*") == pattern({segment(placeholder::wildcard)}));
-  @expect(parse("foo") == pattern({segment("foo")}));
-  @expect(parse("foo*bar") ==
+  @assert(parse("") == pattern({}));
+  @assert(parse("*") == pattern({segment(placeholder::wildcard)}));
+  @assert(parse("foo") == pattern({segment("foo")}));
+  @assert(parse("foo*bar") ==
           pattern({segment("foo"), segment(placeholder::wildcard, "bar")}));
-  @expect(parse("foo*") ==
+  @assert(parse("foo*") ==
           pattern({segment("foo"), segment(placeholder::wildcard)}));
-  @expect(parse("*foo") == pattern({segment(placeholder::wildcard, "foo")}));
-  @expect(parse("foo\\*bar") == pattern({segment("foo*bar")}));
-  @expect(
+  @assert(parse("*foo") == pattern({segment(placeholder::wildcard, "foo")}));
+  @assert(parse("foo\\*bar") == pattern({segment("foo*bar")}));
+  @assert(
       parse("foo?bar") ==
       pattern({segment("foo"), segment(placeholder::single_wildcard, "bar")}));
 }
 
 @it "upd::glob::match() matches empty pattern" {
-  @expect(match(parse(""), ""));
+  @assert(match(parse(""), ""));
 }
 
 @it "upd::glob::match() mismatches empty pattern" {
-  @expect(!match(parse(""), "foo"));
+  @assert(!match(parse(""), "foo"));
 }
 
 @it "upd::glob::match() matches simple literal" {
-  @expect(match(parse("foo"), "foo"));
+  @assert(match(parse("foo"), "foo"));
 }
 
 @it "upd::glob::match() mismatches longer candidate" {
-  @expect(!match(parse("foo"), "foobar"));
+  @assert(!match(parse("foo"), "foobar"));
 }
 
 @it "upd::glob::match() mismatches longer literal" {
-  @expect(!match(parse("foobar"), "foo"));
+  @assert(!match(parse("foobar"), "foo"));
 }
 
 @it "upd::glob::match() mismatches empty literal" {
-  @expect(!match(parse("foo"), ""));
+  @assert(!match(parse("foo"), ""));
 }
 
 @it "upd::glob::match() mismatches non-matching characters" {
-  @expect(!match(parse("foo"), "fob"));
+  @assert(!match(parse("foo"), "fob"));
 }
 
 @it "upd::glob::match() matches final wildcard, no characters" {
-  @expect(match(parse("foo*"), "foo"));
+  @assert(match(parse("foo*"), "foo"));
 }
 
 @it "upd::glob::match() matches final wildcard, with characters" {
-  @expect(match(parse("foo*"), "foobar"));
+  @assert(match(parse("foo*"), "foobar"));
 }
 
 @it "upd::glob::match() matches wildcard, no characters" {
-  @expect(match(parse("foo*bar"), "foobar"));
+  @assert(match(parse("foo*bar"), "foobar"));
 }
 
 @it "upd::glob::match() matches wildcard, with characters" {
-  @expect(match(parse("foo*bar"), "foo_beep_bar"));
+  @assert(match(parse("foo*bar"), "foo_beep_bar"));
 }
 
 @it "upd::glob::match() mismatches wildcard" {
-  @expect(!match(parse("foo*bar"), "foo_beep_boop"));
+  @assert(!match(parse("foo*bar"), "foo_beep_boop"));
 }
 
 @it "upd::glob::match() mismatches wildcard, no characters" {
-  @expect(!match(parse("foo*bar"), "foo"));
+  @assert(!match(parse("foo*bar"), "foo"));
 }
 
 @it "upd::glob::match() matches starting wildcard, no characters" {
-  @expect(match(parse("*bar"), "bar"));
+  @assert(match(parse("*bar"), "bar"));
 }
 
 @it "upd::glob::match() matches starting wildcard, with characters" {
-  @expect(match(parse("*bar"), "foobar"));
+  @assert(match(parse("*bar"), "foobar"));
 }
 
 @it "upd::glob::match() mismatches starting wildcard" {
-  @expect(!match(parse("*bar"), "foobarglo"));
+  @assert(!match(parse("*bar"), "foobarglo"));
 }
 
 @it "upd::glob::match() matches several wildcards, no characters" {
-  @expect(match(parse("*foo*bar*glo*"), "foobarglo"));
+  @assert(match(parse("*foo*bar*glo*"), "foobarglo"));
 }
 
 @it "upd::glob::match() matches several wildcards, with characters" {
   std::vector<size_t> indices;
-  @expect(match(parse("*foo*bar*glo*"), "__foo_SMTHbar_BEEPglo_BOOP", indices));
-  @expect(indices == std::vector<size_t>({0, 5, 13, 21}));
+  @assert(match(parse("*foo*bar*glo*"), "__foo_SMTHbar_BEEPglo_BOOP", indices));
+  @assert(indices == std::vector<size_t>({0, 5, 13, 21}));
 }
 
 @it "upd::glob::match() mismatches several wildcards, with characters" {
-  @expect(!match(parse("*foo*bar*glo*"), "__foo_SMTHbar_BEEPgl_BOOP"));
+  @assert(!match(parse("*foo*bar*glo*"), "__foo_SMTHbar_BEEPgl_BOOP"));
 }
 
 @it "upd::glob::match() matches utf8 in wildcard" {
-  @expect(match(parse("*.js"), "汉语.js"));
+  @assert(match(parse("*.js"), "汉语.js"));
 }
 
 @it "upd::glob::match() matches utf8 pattern" {
-  @expect(match(parse("汉语*.汉语"), "汉语foo.汉语"));
+  @assert(match(parse("汉语*.汉语"), "汉语foo.汉语"));
 }
 
 @it "upd::glob::match() matches lone wildcard, no characters" {
-  @expect(match(parse("*"), ""));
+  @assert(match(parse("*"), ""));
 }
 
 @it "upd::glob::match() matches lone wildcard, with characters" {
-  @expect(match(parse("*"), "foobar"));
+  @assert(match(parse("*"), "foobar"));
 }
 
 @it "upd::glob::match() matches single wildcard" {
-  @expect(match(parse("???.js"), "foo.js"));
+  @assert(match(parse("???.js"), "foo.js"));
 }
 
 @it "upd::glob::match() matches single wildcards, with wildcard" {
   std::vector<size_t> indices;
-  @expect(match(parse("foo*bar?glo?baz"), "foobarbarrglo$baz", indices));
-  @expect(indices == std::vector<size_t>({0, 3, 9, 13}));
+  @assert(match(parse("foo*bar?glo?baz"), "foobarbarrglo$baz", indices));
+  @assert(indices == std::vector<size_t>({0, 3, 9, 13}));
 }
 
 @it "upd::glob::match() mismatches single wildcard, with wildcard" {
-  @expect(!match(parse("foo*bar?glo?baz"), "foobarbarrglo.baz"));
+  @assert(!match(parse("foo*bar?glo?baz"), "foobarbarrglo.baz"));
 }

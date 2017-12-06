@@ -7,43 +7,43 @@ using namespace upd;
 @it "tokenises single braces" {
   string_char_reader reader("{}\n");
   json::lexer<string_char_reader> lx(reader);
-  @expect(
+  @assert(
       lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
-  @expect(
+  @assert(
       lx.next(expect_punctuation_handler(json::punctuation_type::brace_close)));
-  @expect(lx.next(expect_end_handler()));
+  @assert(lx.next(expect_end_handler()));
 }
 
 @it "tokenises object" {
   string_char_reader reader("{\"foo\": [\n\"bar\\\"glo\",\n42\n]}\n");
   json::lexer<string_char_reader> lx(reader);
-  @expect(
+  @assert(
       lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
-  @expect(lx.next(expect_string_literal_handler("foo")));
-  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::colon)));
-  @expect(lx.next(
+  @assert(lx.next(expect_string_literal_handler("foo")));
+  @assert(lx.next(expect_punctuation_handler(json::punctuation_type::colon)));
+  @assert(lx.next(
       expect_punctuation_handler(json::punctuation_type::bracket_open)));
-  @expect(lx.next(expect_string_literal_handler("bar\"glo")));
-  @expect(lx.next(expect_punctuation_handler(json::punctuation_type::comma)));
-  @expect(lx.next(expect_number_literal_handler(42)));
-  @expect(lx.next(
+  @assert(lx.next(expect_string_literal_handler("bar\"glo")));
+  @assert(lx.next(expect_punctuation_handler(json::punctuation_type::comma)));
+  @assert(lx.next(expect_number_literal_handler(42)));
+  @assert(lx.next(
       expect_punctuation_handler(json::punctuation_type::bracket_close)));
-  @expect(
+  @assert(
       lx.next(expect_punctuation_handler(json::punctuation_type::brace_close)));
-  @expect(lx.next(expect_end_handler()));
+  @assert(lx.next(expect_end_handler()));
 }
 
 @it "throws on invalid characters" {
   string_char_reader reader("{\n  foo  }\n");
   json::lexer<string_char_reader> lx(reader);
-  @expect(
+  @assert(
       lx.next(expect_punctuation_handler(json::punctuation_type::brace_open)));
   try {
     lx.next(expect_punctuation_handler(json::punctuation_type::brace_close));
-    @expect(false);
+    @assert(false);
   } catch (json::invalid_character_error error) {
-    @expect(error.chr == 'f');
-    @expect(error.location.line == 2ul);
-    @expect(error.location.column == 3ul);
+    @assert(error.chr == 'f');
+    @assert(error.location.line == 2ul);
+    @assert(error.location.column == 3ul);
   }
 }

@@ -63,29 +63,29 @@ struct expect_object_single_field_handler {
 @it "parses empty object" {
   string_char_reader reader("{}");
   string_lexer lx(reader);
-  @expect(json::parse_expression(lx, expect_empty_object_handler()));
-  @expect(lx.next(expect_end_handler()));
+  @assert(json::parse_expression(lx, expect_empty_object_handler()));
+  @assert(lx.next(expect_end_handler()));
 }
 
 @it "parses object with a field" {
   string_char_reader reader("{\"foo\": 42}");
   string_lexer lx(reader);
   auto res = json::parse_expression(lx, expect_object_single_field_handler());
-  @expect(res ==
+  @assert(res ==
           expect_object_single_field_handler::return_type({{"foo", 42}}));
-  @expect(lx.next(expect_end_handler()));
+  @assert(lx.next(expect_end_handler()));
 }
 
 @it "parses object with several fields" {
   string_char_reader reader("{\"foo\": 42, \"bar\": 2, \"glo\": 76}");
   string_lexer lx(reader);
   auto res = json::parse_expression(lx, expect_object_single_field_handler());
-  @expect(res == expect_object_single_field_handler::return_type({
+  @assert(res == expect_object_single_field_handler::return_type({
                      {"foo", 42},
                      {"bar", 2},
                      {"glo", 76},
                  }));
-  @expect(lx.next(expect_end_handler()));
+  @assert(lx.next(expect_end_handler()));
 }
 
 struct array_of_numbers_handler {
@@ -126,14 +126,14 @@ private:
 @it "parses empty array" {
   string_char_reader reader("[]");
   string_lexer lx(reader);
-  @expect(json::parse_expression(lx, expect_number_array_handler({})));
-  @expect(lx.next(expect_end_handler()));
+  @assert(json::parse_expression(lx, expect_number_array_handler({})));
+  @assert(lx.next(expect_end_handler()));
 }
 
 @it "parses array of numbers" {
   string_char_reader reader("[3, 5, 7, 13]");
   string_lexer lx(reader);
-  @expect(
+  @assert(
       json::parse_expression(lx, expect_number_array_handler({3, 5, 7, 13})));
-  @expect(lx.next(expect_end_handler()));
+  @assert(lx.next(expect_end_handler()));
 }

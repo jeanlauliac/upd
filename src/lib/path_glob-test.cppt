@@ -81,7 +81,7 @@ private:
 };
 
 @it "pattern_string_parser works" {
-  @expect(upd::path_glob::parse("foo/**/beep/*.js") ==
+  @assert(upd::path_glob::parse("foo/**/beep/*.js") ==
           upd::path_glob::pattern(
               {{},
                {
@@ -92,7 +92,7 @@ private:
 }
 
 @it "pattern_string_parser works with capture" {
-  @expect(
+  @assert(
       upd::path_glob::parse("foo/(**/beep/*).js") ==
       upd::path_glob::pattern(
           {{{
@@ -115,7 +115,7 @@ private:
 }
 
 @it "pattern_string_parser works with single file" {
-  @expect(upd::path_glob::parse("foo.json") ==
+  @assert(upd::path_glob::parse("foo.json") ==
           upd::path_glob::pattern(
               {{},
                {
@@ -130,7 +130,7 @@ private:
   std::unordered_set<std::string> mts;
   while (mtcr.next(mt)) mts.insert(mt.local_path);
   std::unordered_set<std::string> expected = {"foo.json"};
-  @expect(mts == expected);
+  @assert(mts == expected);
 }
 
 @it "find files" {
@@ -141,7 +141,7 @@ private:
   while (mtcr.next(mt)) mts.insert(mt.local_path);
   std::unordered_set<std::string> expected = {
       "src/beep1/foo.cpp", "src/beep1/bar.cpp", "src/beep2/smth.cpp"};
-  @expect(mts == expected);
+  @assert(mts == expected);
 }
 
 @it "find files with folder wildcard" {
@@ -158,7 +158,7 @@ private:
       "src/boop/foo.cpp",
       "src/main.cpp",
   };
-  @expect(mts == expected);
+  @assert(mts == expected);
 }
 
 typedef std::vector<std::pair<size_t, size_t>> captures;
@@ -182,7 +182,7 @@ typedef std::unordered_map<std::string, captures> matches;
       {"src/boop/foo.cpp", {{4, 12}}},
       {"src/main.cpp", {{4, 8}}},
   };
-  @expect(mts == expected);
+  @assert(mts == expected);
 }
 
 @it "find and capture files, even at top-level" {
@@ -203,7 +203,7 @@ typedef std::unordered_map<std::string, captures> matches;
       {"boop/foo.cpp", {{0, 8}}},
       {"main.cpp", {{0, 4}}},
   };
-  @expect(mts == expected);
+  @assert(mts == expected);
 }
 
 @it "handle several patterns at once" {
@@ -230,5 +230,5 @@ typedef std::unordered_map<std::string, captures> matches;
           {"src/boop/foo.cpp", {{4, 16}}},
       },
   }};
-  @expect(mts == expected);
+  @assert(mts == expected);
 }

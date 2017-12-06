@@ -4,38 +4,38 @@ using namespace upd::substitution;
 
 @it "segment() is empty by default" {
   segment s;
-  @expect(s.empty());
+  @assert(s.empty());
 }
 
 @it "segment() constructs from literal" {
   segment s("foo");
-  @expect(!s.empty());
-  @expect(s.literal == "foo");
-  @expect(!s.has_placeholder);
+  @assert(!s.empty());
+  @assert(s.literal == "foo");
+  @assert(!s.has_placeholder);
 }
 
 @it "segment() constructs from literal and captured group index" {
   segment s(42, "foo");
-  @expect(!s.empty());
-  @expect(s.literal == "foo");
-  @expect(s.has_placeholder);
-  @expect(s.placeholder_ix == 42ull);
+  @assert(!s.empty());
+  @assert(s.literal == "foo");
+  @assert(s.has_placeholder);
+  @assert(s.placeholder_ix == 42ull);
 }
 
 @it "segment() is empty after clear()" {
   segment s(42, "foo");
   s.clear();
-  @expect(s.empty());
+  @assert(s.empty());
 }
 
 @it "parse() parses empty string" {
   auto result = parse("");
-  @expect(result == pattern({{}, {}}));
+  @assert(result == pattern({{}, {}}));
 }
 
 @it "parse() parses single literal" {
   auto result = parse("foobar");
-  @expect(result == pattern({{
+  @assert(result == pattern({{
                                  segment("foobar"),
                              },
                              {}}));
@@ -43,7 +43,7 @@ using namespace upd::substitution;
 
 @it "parse() parses literal with captured group indices" {
   auto result = parse("foo$1bar$2");
-  @expect(result == pattern({{
+  @assert(result == pattern({{
                                  segment("foo"),
                                  segment(0, "bar"),
                                  segment(1),
@@ -53,7 +53,7 @@ using namespace upd::substitution;
 
 @it "parse() escapes captured group character" {
   auto result = parse("foo\\$1bar");
-  @expect(result == pattern({{
+  @assert(result == pattern({{
                                  segment("foo$1bar"),
                              },
                              {}}));
@@ -61,7 +61,7 @@ using namespace upd::substitution;
 
 @it "parse() allows to capture literal" {
   auto result = parse("foo(bar)");
-  @expect(result == pattern({{
+  @assert(result == pattern({{
                                  segment("foo"),
                                  segment("bar"),
                              },
@@ -70,7 +70,7 @@ using namespace upd::substitution;
 
 @it "parse() allows to recapture captured groups" {
   auto result = parse("foo($1)bar");
-  @expect(result == pattern({{
+  @assert(result == pattern({{
                                  segment("foo"),
                                  segment(0),
                                  segment("bar"),
@@ -84,10 +84,10 @@ using namespace upd::substitution;
                                               "tadam!",
                                               {{2, 5}},
                                           });
-  @expect(result.value == "foodam");
-  @expect(result.segment_start_ids == std::vector<size_t>({0, 3}));
+  @assert(result.value == "foodam");
+  @assert(result.segment_start_ids == std::vector<size_t>({0, 3}));
   auto captured =
       capture(pattern.capture_groups, result.value, result.segment_start_ids);
-  @expect(captured.value == result.value);
-  @expect(captured.captured_groups == upd::captured_string::groups({{3, 6}}));
+  @assert(captured.value == result.value);
+  @assert(captured.captured_groups == upd::captured_string::groups({{3, 6}}));
 }

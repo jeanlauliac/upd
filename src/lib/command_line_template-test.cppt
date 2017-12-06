@@ -17,8 +17,8 @@
       {"output"},
   };
   auto result = upd::reify_command_line(tpl, parts, "/", "/");
-  @expect(result.binary_path == tpl.binary_path);
-  @expect(result.args ==
+  @assert(result.binary_path == tpl.binary_path);
+  @assert(result.args ==
           std::vector<std::string>(
               {"foo", "bar", "input1", "input2", "beep", "output"}));
 }
