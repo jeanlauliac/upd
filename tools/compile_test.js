@@ -34,9 +34,8 @@ function main() {
   const fd = fs.openSync(sourcePath, 'r');
   try {
     const fdReader = new FdChunkReader(fd);
-    const hashReader = new HashingChunkReader(fdReader.read.bind(fdReader));
     transform({
-      hashReader,
+      readChunk: fdReader.read.bind(fdReader),
       sourceFilePath: sourcePath,
       sourceDirPath: path.dirname(sourcePath),
       targetFilePath,
@@ -61,28 +60,6 @@ class FdChunkReader {
 
   read(buffer: Buffer): number {
     return fs.readSync(this._fd, buffer, 0, buffer.length, (null: $FlowFixMe));
-  }
-}
-
-class HashingChunkReader {
-  _readChunk: ReadChunk;
-  _hash: crypto$Hash;
-
-  constructor(readChunk: ReadChunk) {
-    this._readChunk = readChunk;
-    this._hash = crypto.createHash('sha256');
-  }
-
-  read(buffer: Buffer): number {
-    const count = this._readChunk(buffer);
-    const cbuf = new Buffer(count);
-    buffer.copy(cbuf);
-    this._hash.update(cbuf);
-    return count;
-  }
-
-  digest(type) {
-    return this._hash.digest(type);
   }
 }
 
@@ -130,7 +107,7 @@ class ByteToCharReader {
 }
 
 type TransformOptions = {|
-  +hashReader: HashingChunkReader,
+  +readChunk: ReadChunk,
   +sourceDirPath: string,
   +targetDirPath: string,
   +targetFilePath: string,
@@ -140,8 +117,8 @@ type TransformOptions = {|
 |};
 
 function transform(options: TransformOptions): void {
-  const {hashReader} = options;
-  const byteReader = new ChunkToByteReader(hashReader.read.bind(hashReader));
+  const {readChunk} = options;
+  const byteReader = new ChunkToByteReader(readChunk);
   const btcReader = new ByteToCharReader(byteReader.next.bind(byteReader));
   const readChar = btcReader.next.bind(btcReader);
   const {sourceDirPath, targetDirPath, sourceFilePath} = options;
