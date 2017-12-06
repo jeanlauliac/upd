@@ -134,22 +134,57 @@ function transform(options: TransformOptions): void {
     sourceDirPath,
     targetDirPath,
   });
-  let tests = [];
-  let testBraceStack = 0;
   const iter = new CharIterator(reader.next.bind(reader));
-  while (iter.char != null) {
-    if (iter.char === '{' && testBraceStack > 0) {
-      ++testBraceStack;
+  const tr = new Transformer(iter, write);
+  tr.run();
+  const relPath = path.relative(targetDirPath, options.sourceFilePath);
+  const testId = crypto.createHash('sha256').update(relPath)
+                       .digest('hex').substr(0, 10);
+  const mainFuncName = `test_${testId}`;
+  write(`#line ${writer.line() + 1} "${options.targetFilePath}"\n`);
+  write(`using namespace testing;\n`);
+  write(`void ${mainFuncName}(int& index) {\n`);
+  for (const test of tr.tests) {
+    write(`  run_case(${test.funcName}, index, `);
+    writeString(write, test.title);
+    write(`);\n`);
+  }
+  write(`}\n`);
+}
+
+class Transformer {
+  _iter: CharIterator;
+  _write: Write;
+  _testBraceStack: number;
+  tests: Array<{hash: string, funcName: string, title: string}>;
+
+  constructor(iter, write) {
+    this._iter = iter;
+    this._write = write;
+    this._testBraceStack = 0;
+    this.tests = [];
+  }
+
+  run() {
+    while (this._iter.char != null) {
+      this._processChar(this._iter.char);
     }
-    if (iter.char === '}' && testBraceStack > 0) {
-      --testBraceStack;
+  }
+
+  _processChar(c: string) {
+    const iter = this._iter;
+    if (c === '{' && this._testBraceStack > 0) {
+      ++this._testBraceStack;
+    }
+    if (c === '}' && this._testBraceStack > 0) {
+      --this._testBraceStack;
     }
     // FIXME: '@' could appear in middle of strings, and comments. To properly
     // handle it we need a lightweight lexing layer below.
-    if (iter.char !== '@') {
-      write(iter.char);
+    if (c !== '@') {
+      this._write(c);
       iter.forward();
-      continue;
+      return;
     }
     let markerLoc = iter.location;
     let marker = '';
@@ -159,59 +194,56 @@ function transform(options: TransformOptions): void {
       iter.forward();
     }
     if (marker == 'it') {
-      if (testBraceStack > 0)
-        throw new NestedTestCaseError(markerLoc);
-      readWhitespace(iter);
-      const title = readString(iter);
-      readWhitespace(iter);
-      if (iter.char !== '{') throw unexpectedOf(iter);
-      iter.forward();
-      const hash = hashString(title);
-      const funcName = `test_case_${hash}`;
-      write(`static void ${funcName}() {`);
-      tests.push({hash, funcName, title});
-      testBraceStack = 1;
-      continue;
+      this._processItMarker(markerLoc);
+      return;
     }
     if (marker == 'assert') {
-      readWhitespace(iter);
-      if (iter.char !== '(') throw unexpectedOf(iter);
-      iter.forward();
-      const expectExprLoc = iter.location;
-      let parenStack = 0;
-      let expectExpr = '';
-      while (iter.char != null && !(parenStack === 0 && iter.char === ')')) {
-        expectExpr += iter.char;
-        if (iter.char === '(') ++parenStack;
-        if (iter.char === ')') --parenStack;
-        iter.forward();
-      }
-      if (iter.char == null)
-        throw new UnexpectedEndError(iter.location);
-      iter.forward();
-      write('testing::assert(\n');
-      write(`#line ${expectExprLoc.line}\n`);
-      write(' '.repeat(expectExprLoc.column - 1));
-      write(expectExpr + ', ');
-      writeString(write, expectExpr);
-      write(`)`)
-      continue;
+      this._processAssertMarker(markerLoc);
+      return;
     }
-    write('@' + marker);
+    this._write('@' + marker);
   }
-  const relPath = path.relative(targetDirPath, options.sourceFilePath);
-  const testId = crypto.createHash('sha256').update(relPath)
-                       .digest('hex').substr(0, 10);
-  const mainFuncName = `test_${testId}`;
-  write(`#line ${writer.line() + 1} "${options.targetFilePath}"\n`);
-  write(`using namespace testing;\n`);
-  write(`void ${mainFuncName}(int& index) {\n`);
-  for (const test of tests) {
-    write(`  run_case(${test.funcName}, index, `);
-    writeString(write, test.title);
-    write(`);\n`);
+
+  _processItMarker(markerLoc: Location) {
+    const iter = this._iter;
+    if (this._testBraceStack > 0)
+      throw new NestedTestCaseError(markerLoc);
+    readWhitespace(iter);
+    const title = readString(iter);
+    readWhitespace(iter);
+    if (iter.char !== '{') throw unexpectedOf(iter);
+    iter.forward();
+    const hash = hashString(title);
+    const funcName = `test_case_${hash}`;
+    this._write(`static void ${funcName}() {`);
+    this.tests.push({hash, funcName, title});
+    this._testBraceStack = 1;
   }
-  write(`}\n`);
+
+  _processAssertMarker(markerLoc: Location) {
+    const iter = this._iter;
+    readWhitespace(iter);
+    if (iter.char !== '(') throw unexpectedOf(iter);
+    iter.forward();
+    const expectExprLoc = iter.location;
+    let parenStack = 0;
+    let expectExpr = '';
+    while (iter.char != null && !(parenStack === 0 && iter.char === ')')) {
+      expectExpr += iter.char;
+      if (iter.char === '(') ++parenStack;
+      if (iter.char === ')') --parenStack;
+      iter.forward();
+    }
+    if (iter.char == null)
+      throw new UnexpectedEndError(iter.location);
+    iter.forward();
+    this._write('testing::assert(\n');
+    this._write(`#line ${expectExprLoc.line}\n`);
+    this._write(' '.repeat(expectExprLoc.column - 1));
+    this._write(expectExpr + ', ');
+    writeString(this._write, expectExpr);
+    this._write(`)`);
+  }
 }
 
 function readWhitespace(iter: CharIterator) {
