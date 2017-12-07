@@ -38,4 +38,9 @@ function locationToString(location: Location) {
   return `${location.line}:${location.column}`;
 }
 
-module.exports = {UnexpectedEndError, UnexpectedCharError, NestedTestCaseError};
+module.exports = {
+  UnexpectedEndError,
+  UnexpectedCharError,
+  NestedTestCaseError,
+  locationToString,
+};

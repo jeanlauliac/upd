@@ -6,7 +6,7 @@
 const CharIterator = require('./compile_test/CharIterator');
 const PreprocessorCharReader = require('./compile_test/PreprocessorCharReader');
 const {UnexpectedCharError, UnexpectedEndError,
-       NestedTestCaseError} = require('./compile_test/errors');
+       NestedTestCaseError, locationToString} = require('./compile_test/errors');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -32,10 +32,16 @@ function main() {
   const targetStream = fs.createWriteStream(targetFilePath);
   const targetDirPath = path.dirname(targetFilePath);
   const fd = fs.openSync(sourcePath, 'r');
+  const fdReader = new FdChunkReader(fd);
+  const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
+  const btcReader = new ByteToCharReader(byteReader.next.bind(byteReader));
+  const readChar = btcReader.next.bind(btcReader);
+  const locrd = new LocationTrackingCharReader(readChar);
+  const ctcr = new ContextTrackingCharReader(locrd);
+  const rpe = reportError.bind(null, sourcePath, ctcr);
   try {
-    const fdReader = new FdChunkReader(fd);
     transform({
-      readChunk: fdReader.read.bind(fdReader),
+      readChar: ctcr.next.bind(ctcr),
       sourceFilePath: sourcePath,
       sourceDirPath: path.dirname(sourcePath),
       targetFilePath,
@@ -43,12 +49,36 @@ function main() {
       targetDirPath,
       write: data => void targetStream.write(data)
     });
+  } catch (error) {
+    if (error instanceof UnexpectedEndError) {
+      rpe(error.location, 'unexpected end of file');
+    } else if (error instanceof UnexpectedCharError) {
+      rpe(error.location, `unexpected character \`${error.char}\``);
+    } else {
+      throw error;
+    }
+    return 2;
   } finally {
     fs.closeSync(fd);
+    targetStream.end();
   }
-  targetStream.end();
   writeNodeDepFile(depfilePath, targetFilePath);
   return 0;
+}
+
+function reportError(
+  sourcePath: string,
+  ctcr: ContextTrackingCharReader,
+  location: Location,
+  message: string,
+) {
+  process.stderr.write(`${sourcePath}:${locationToString(location)}: ` +
+    `${reporting.ERROR_PREFIX} ${reporting.chalk.bold(message)}\n`);
+  const ls = ctcr.getLineString();
+  if (ls === '') return;
+  const lstr = location.line.toString() + ':  ';
+  process.stderr.write(lstr + ls);
+  process.stderr.write(' '.repeat(location.column + lstr.length - 1) + '^\n');
 }
 
 class FdChunkReader {
@@ -107,7 +137,7 @@ class ByteToCharReader {
 }
 
 type TransformOptions = {|
-  +readChunk: ReadChunk,
+  +readChar: ReadLocatedChar,
   +sourceDirPath: string,
   +targetDirPath: string,
   +targetFilePath: string,
@@ -117,19 +147,14 @@ type TransformOptions = {|
 |};
 
 function transform(options: TransformOptions): void {
-  const {readChunk} = options;
-  const byteReader = new ChunkToByteReader(readChunk);
-  const btcReader = new ByteToCharReader(byteReader.next.bind(byteReader));
-  const readChar = btcReader.next.bind(btcReader);
   const {sourceDirPath, targetDirPath, sourceFilePath} = options;
   const writer = new LineTrackingWriter(options.write);
   const write = writer.write.bind(writer);
   const headerFilePath = path.relative(targetDirPath, options.headerFilePath);
   write(`#include "${headerFilePath}"\n`);
   write(`#line 1 "${sourceFilePath}"\n`);
-  let locrd = new LocationTrackingCharReader(readChar);
   let reader = new PreprocessorCharReader({
-    readLocatedChar: locrd.next.bind(locrd),
+    readLocatedChar: options.readChar,
     write,
     sourceDirPath,
     targetDirPath,
@@ -179,6 +204,22 @@ class Transformer {
     if (c === '}' && this._testBraceStack > 0) {
       --this._testBraceStack;
     }
+    if (c === '"') {
+      this._skipString();
+      return;
+    }
+    if (c === '/') {
+      this._write('/');
+      iter.forward();
+      if (iter.char === '*') {
+        this._write('*');
+        this._skipComment();
+      } else if (iter.char === '/') {
+        this._write('/');
+        this._skipLineComment();
+      }
+      return;
+    }
     // FIXME: '@' could appear in middle of strings, and comments. To properly
     // handle it we need a lightweight lexing layer below.
     if (c !== '@') {
@@ -202,6 +243,56 @@ class Transformer {
       return;
     }
     this._write('@' + marker);
+  }
+
+  _skipString() {
+    const iter = this._iter;
+    this._write('"');
+    iter.forward();
+    while (iter.char != null && iter.char !== '"') {
+      if (iter.char === '\\') {
+        this._write(iter.char);
+        iter.forward();
+      }
+      if (iter.char == null)
+        throw new UnexpectedEndError(iter.location);
+      this._write(iter.char);
+      iter.forward();
+    }
+    if (iter.char == null)
+      throw new UnexpectedEndError(iter.location);
+    this._write(iter.char);
+    iter.forward();
+  }
+
+  _skipComment() {
+    const iter = this._iter;
+    iter.forward();
+    let stage = 0;
+    while (iter.char != null && stage < 2) {
+      switch (stage) {
+        case 0:
+          if (iter.char === '*') stage = 1;
+          break;
+        case 1:
+          if (iter.char === '/') stage = 2;
+          else stage = 0;
+          break;
+      }
+      this._write(iter.char);
+      iter.forward();
+    }
+    if (iter.char == null)
+      throw new UnexpectedEndError(iter.location);
+  }
+
+  _skipLineComment() {
+    const iter = this._iter;
+    iter.forward();
+    while (iter.char != null && iter.char !== '\n') {
+      this._write(iter.char);
+      iter.forward();
+    }
   }
 
   _processItMarker(markerLoc: Location) {
@@ -303,6 +394,45 @@ class LocationTrackingCharReader {
       this._nextLoc = {column: column + 1, line, index: index + 1};
     }
     return {char: c, location: {column, line, index}};
+  }
+}
+
+class ContextTrackingCharReader {
+  _ltcr: LocationTrackingCharReader;
+  _line: Array<LocatedChar>;
+  _ix: 0;
+  _next: LocatedChar;
+
+  constructor(ltcr: LocationTrackingCharReader) {
+    this._ltcr = ltcr;
+    this._line = [];
+    this._ix = 0;
+    this._next = ltcr.next();
+  }
+
+  next(): LocatedChar {
+    if (this._ix >= this._line.length) {
+      this._readLine();
+    }
+    return this._line[this._ix++];
+  }
+
+  getLineString(): string {
+    return this._line.map(x => x.char || '').join('');
+  }
+
+  _readLine() {
+    this._ix = 0;
+    this._line = [this._next];
+    if (this._next.char == null) {
+      return;
+    }
+    let lc = this._ltcr.next();
+    while (lc.char != null && lc.location.line === this._next.location.line) {
+      this._line.push(lc);
+      lc = this._ltcr.next();
+    }
+    this._next = lc;
   }
 }
 

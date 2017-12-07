@@ -8,8 +8,8 @@ const path = require('path');
 
 chalk.enabled = process.stderr.isTTY || false;
 
-const ERROR_PREFIX = chalk.red('error:');
-const FATAL_PREFIX = chalk.red('fatal:');
+const ERROR_PREFIX = chalk.red('error') + ':';
+const FATAL_PREFIX = chalk.red('fatal') + ':';
 const NAME = path.basename(process.mainModule.filename);
 
 function error(format: string, ...placeholders: Array<mixed>) {
@@ -22,4 +22,4 @@ function fatal(format: string, ...placeholders: Array<mixed>) {
   console.error('%s: %s %s', NAME, FATAL_PREFIX, str);
 }
 
-module.exports = {error, fatal, NAME};
+module.exports = {error, fatal, NAME, ERROR_PREFIX, chalk};
