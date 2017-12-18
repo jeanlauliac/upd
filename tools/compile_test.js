@@ -4,7 +4,6 @@
 'use strict';
 
 const CharIterator = require('./compile_test/CharIterator');
-const PreprocessorCharReader = require('./compile_test/PreprocessorCharReader');
 const {UnexpectedCharError, UnexpectedEndError,
        NestedTestCaseError, locationToString} = require('./compile_test/errors');
 const crypto = require('crypto');
@@ -153,14 +152,8 @@ function transform(options: TransformOptions): void {
   const headerFilePath = path.relative(targetDirPath, options.headerFilePath);
   write(`#include "${headerFilePath}"\n`);
   write(`#line 1 "${sourceFilePath}"\n`);
-  let reader = new PreprocessorCharReader({
-    readLocatedChar: options.readChar,
-    write,
-    sourceDirPath,
-    targetDirPath,
-  });
-  const iter = new CharIterator(reader.next.bind(reader));
-  const tr = new Transformer(iter, write);
+  const iter = new CharIterator(options.readChar);
+  const tr = new Transformer(iter, write, {sourceDirPath, targetDirPath});
   tr.run();
   const relPath = path.relative(targetDirPath, options.sourceFilePath);
   const testId = crypto.createHash('sha256').update(relPath)
@@ -177,17 +170,26 @@ function transform(options: TransformOptions): void {
   write(`}\n`);
 }
 
+type Options = {|
+  +targetDirPath: string,
+  +sourceDirPath: string,
+|};
+
 class Transformer {
   _iter: CharIterator;
   _write: Write;
+  _opts: Options;
   _testBraceStack: number;
+  _beginLine: boolean;
   tests: Array<{hash: string, funcName: string, title: string}>;
 
-  constructor(iter, write) {
+  constructor(iter, write, options) {
     this._iter = iter;
     this._write = write;
     this._testBraceStack = 0;
+    this._opts = options;
     this.tests = [];
+    this._beginLine = true;
   }
 
   run() {
@@ -198,6 +200,11 @@ class Transformer {
 
   _processChar(c: string) {
     const iter = this._iter;
+    if (c === '#' && this._beginLine) {
+      this._processInclude();
+      return;
+    }
+    this._beginLine = (c === '\n');
     if (c === '{' && this._testBraceStack > 0) {
       ++this._testBraceStack;
     }
@@ -220,8 +227,6 @@ class Transformer {
       }
       return;
     }
-    // FIXME: '@' could appear in middle of strings, and comments. To properly
-    // handle it we need a lightweight lexing layer below.
     if (c !== '@') {
       this._write(c);
       iter.forward();
@@ -295,6 +300,59 @@ class Transformer {
     }
   }
 
+  _processInclude() {
+    const iter = this._iter;
+    this._write('#');
+    iter.forward();
+    this._skipSpaces();
+    let instruction = '';
+    while (iter.char != null && /[a-z]/.test(iter.char)) {
+      instruction += iter.char;
+      this._write(iter.char);
+      iter.forward();
+    }
+    if (instruction !== 'include') {
+      this._skipUntilNewline();
+      return;
+    }
+    this._skipSpaces();
+    if (iter.char !== '"') {
+      this._skipUntilNewline();
+      return;
+    }
+    let filePath = '';
+    iter.forward();
+    while (iter.char != null && iter.char !== '\n' && iter.char !== '"') {
+      filePath += iter.char;
+      iter.forward();
+    }
+    if (iter.char !== '"') return;
+    iter.forward();
+    this._write(`"${this._translateInclude(filePath)}"\n`);
+    this._skipUntilNewline();
+  }
+
+  _skipSpaces() {
+    const iter = this._iter;
+    while (iter.char != null && /[ \t]/.test(iter.char)) {
+      this._write(iter.char);
+      iter.forward();
+    }
+  }
+
+  _skipUntilNewline() {
+    const iter = this._iter;
+    while (iter.char != null && iter.char !== '\n') {
+      this._write(iter.char);
+      iter.forward();
+    }
+  }
+
+  _translateInclude(incPath: string): string {
+    const fullPath = path.resolve(this._opts.sourceDirPath, incPath);
+    return path.relative(this._opts.targetDirPath, fullPath);
+  }
+
   _processItMarker(markerLoc: Location) {
     const iter = this._iter;
     if (this._testBraceStack > 0)
@@ -338,7 +396,7 @@ class Transformer {
 }
 
 function readWhitespace(iter: CharIterator) {
-  while (iter.char != null && /[ \n]/.test(iter.char)) iter.forward();
+  while (iter.char != null && /[ \t\n]/.test(iter.char)) iter.forward();
 }
 
 function readString(iter: CharIterator) {
