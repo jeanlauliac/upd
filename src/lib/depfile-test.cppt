@@ -13,34 +13,34 @@ using namespace upd;
   string_char_reader reader("target.o: target.cpp target.h other.h\n");
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
-  @assert(result->target_path == "target.o");
+  @expect(result->target_path).to_equal("target.o");
   std::vector<std::string> expected = {"target.cpp", "target.h", "other.h"};
-  @assert(result->dependency_paths == expected);
+  @expect(result->dependency_paths).to_equal(expected);
 }
 
 @it "parse() skips escaped newlines" {
   string_char_reader reader("target.o: \\\n  target.cpp \\\n  target.h\n");
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
-  @assert(result->target_path == "target.o");
+  @expect(result->target_path).to_equal("target.o");
   std::vector<std::string> expected = {"target.cpp", "target.h"};
-  @assert(result->dependency_paths == expected);
+  @expect(result->dependency_paths).to_equal(expected);
 }
 
 @it "parse() reads paths with spaces" {
   string_char_reader reader("spaces\\\\ target.o: spaces\\\\ target.cpp\n");
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
-  @assert(result->target_path == "spaces target.o");
+  @expect(result->target_path).to_equal("spaces target.o");
   std::vector<std::string> expected = {"spaces target.cpp"};
-  @assert(result->dependency_paths == expected);
+  @expect(result->dependency_paths).to_equal(expected);
 }
 
 @it "parse() supports UTF-8" {
   string_char_reader reader(u8"汉语.o: 汉语.cpp\n");
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
-  @assert(result->target_path == u8"汉语.o");
+  @expect(result->target_path).to_equal(u8"汉语.o");
   std::vector<std::string> expected = {u8"汉语.cpp"};
-  @assert(result->dependency_paths == expected);
+  @expect(result->dependency_paths).to_equal(expected);
 }

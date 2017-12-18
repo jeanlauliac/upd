@@ -42,8 +42,8 @@ using namespace upd;
     lx.next(expect_punctuation_handler(json::punctuation_type::brace_close));
     @assert(false);
   } catch (json::invalid_character_error error) {
-    @assert(error.chr == 'f');
-    @assert(error.location.line == 2ul);
-    @assert(error.location.column == 3ul);
+    @expect(error.chr).to_equal('f');
+    @expect(error.location.line).to_equal(2ul);
+    @expect(error.location.column).to_equal(3ul);
   }
 }

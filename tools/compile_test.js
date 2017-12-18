@@ -232,22 +232,7 @@ class Transformer {
       iter.forward();
       return;
     }
-    let markerLoc = iter.location;
-    let marker = '';
-    iter.forward();
-    while (iter.char != null && /[a-z]/.test(iter.char)) {
-      marker += iter.char;
-      iter.forward();
-    }
-    if (marker == 'it') {
-      this._processItMarker(markerLoc);
-      return;
-    }
-    if (marker == 'assert') {
-      this._processAssertMarker(markerLoc);
-      return;
-    }
-    this._write('@' + marker);
+    this._processMarker();
   }
 
   _skipString() {
@@ -353,6 +338,23 @@ class Transformer {
     return path.relative(this._opts.targetDirPath, fullPath);
   }
 
+  _processMarker() {
+    const iter = this._iter;
+    let markerLoc = iter.location;
+    let marker = '';
+    iter.forward();
+    while (iter.char != null && /[a-z]/.test(iter.char)) {
+      marker += iter.char;
+      iter.forward();
+    }
+    switch (marker) {
+    case 'it': return this._processItMarker(markerLoc);
+    case 'assert': return this._processAssertMarker(markerLoc);
+    case 'expect': return this._processExpectMarker(markerLoc);
+    }
+    this._write('@' + marker);
+  }
+
   _processItMarker(markerLoc: Location) {
     const iter = this._iter;
     if (this._testBraceStack > 0)
@@ -372,26 +374,61 @@ class Transformer {
   _processAssertMarker(markerLoc: Location) {
     const iter = this._iter;
     readWhitespace(iter);
+    const {expr, loc} = this._readParenExpression();
+    this._write('testing::assert(\n');
+    this._write(`#line ${loc.line}\n`);
+    this._write(' '.repeat(loc.column - 1));
+    this._write(expr + ', ');
+    writeString(this._write, expr);
+    this._write(`)`);
+  }
+
+  _processExpectMarker(markerLoc: Location) {
+    const iter = this._iter;
+    readWhitespace(iter);
+    const actualValue = this._readParenExpression();
+    readWhitespace(iter);
+    if (iter.char !== '.') throw unexpectedOf(iter);
+    iter.forward();
+    readWhitespace(iter);
+    let operator = '';
+    while (iter.char != null && /[a-z_]/.test(iter.char)) {
+      operator += iter.char;
+      iter.forward();
+    }
+    if (operator != 'to_equal')
+      throw new Error(`unknown @expect operator \`${operator}\``);
+    const expectedValue = this._readParenExpression();
+    this._write('testing::expect_equal(\n');
+    this._write(`#line ${actualValue.loc.line}\n`);
+    this._write(' '.repeat(actualValue.loc.column - 1));
+    this._write(actualValue.expr + ',\n');
+    this._write(`#line ${expectedValue.loc.line}\n`);
+    this._write(' '.repeat(expectedValue.loc.column - 1));
+    this._write(expectedValue.expr + ', ');
+    writeString(this._write, actualValue.expr);
+    this._write(', ');
+    writeString(this._write, expectedValue.expr);
+    this._write(`)`);
+  }
+
+  // FIXME: ignore parens inside comments or strings.
+  _readParenExpression() {
+    const iter = this._iter;
     if (iter.char !== '(') throw unexpectedOf(iter);
     iter.forward();
-    const expectExprLoc = iter.location;
+    const loc = iter.location;
     let parenStack = 0;
-    let expectExpr = '';
+    let expr = '';
     while (iter.char != null && !(parenStack === 0 && iter.char === ')')) {
-      expectExpr += iter.char;
+      expr += iter.char;
       if (iter.char === '(') ++parenStack;
       if (iter.char === ')') --parenStack;
       iter.forward();
     }
-    if (iter.char == null)
-      throw new UnexpectedEndError(iter.location);
+    if (iter.char == null) throw new UnexpectedEndError(iter.location);
     iter.forward();
-    this._write('testing::assert(\n');
-    this._write(`#line ${expectExprLoc.line}\n`);
-    this._write(' '.repeat(expectExprLoc.column - 1));
-    this._write(expectExpr + ', ');
-    writeString(this._write, expectExpr);
-    this._write(`)`);
+    return {expr, loc};
   }
 }
 

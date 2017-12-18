@@ -3,15 +3,16 @@
 using namespace upd::glob;
 
 @it "parse() convert strings properly" {
-  @assert(parse("") == pattern({}));
-  @assert(parse("*") == pattern({segment(placeholder::wildcard)}));
-  @assert(parse("foo") == pattern({segment("foo")}));
+  @expect(parse("")).to_equal(pattern({}));
+  @expect(parse("*")).to_equal(pattern({segment(placeholder::wildcard)}));
+  @expect(parse("foo")).to_equal(pattern({segment("foo")}));
   @assert(parse("foo*bar") ==
           pattern({segment("foo"), segment(placeholder::wildcard, "bar")}));
   @assert(parse("foo*") ==
           pattern({segment("foo"), segment(placeholder::wildcard)}));
-  @assert(parse("*foo") == pattern({segment(placeholder::wildcard, "foo")}));
-  @assert(parse("foo\\*bar") == pattern({segment("foo*bar")}));
+  @expect(parse("*foo"))
+      .to_equal(pattern({segment(placeholder::wildcard, "foo")}));
+  @expect(parse("foo\\*bar")).to_equal(pattern({segment("foo*bar")}));
   @assert(
       parse("foo?bar") ==
       pattern({segment("foo"), segment(placeholder::single_wildcard, "bar")}));
@@ -88,7 +89,7 @@ using namespace upd::glob;
 @it "upd::glob::match() matches several wildcards, with characters" {
   std::vector<size_t> indices;
   @assert(match(parse("*foo*bar*glo*"), "__foo_SMTHbar_BEEPglo_BOOP", indices));
-  @assert(indices == std::vector<size_t>({0, 5, 13, 21}));
+  @expect(indices).to_equal(std::vector<size_t>({0, 5, 13, 21}));
 }
 
 @it "upd::glob::match() mismatches several wildcards, with characters" {
@@ -118,7 +119,7 @@ using namespace upd::glob;
 @it "upd::glob::match() matches single wildcards, with wildcard" {
   std::vector<size_t> indices;
   @assert(match(parse("foo*bar?glo?baz"), "foobarbarrglo$baz", indices));
-  @assert(indices == std::vector<size_t>({0, 3, 9, 13}));
+  @expect(indices).to_equal(std::vector<size_t>({0, 3, 9, 13}));
 }
 
 @it "upd::glob::match() mismatches single wildcard, with wildcard" {

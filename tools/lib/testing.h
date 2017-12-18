@@ -14,21 +14,27 @@ public:
 
 struct equality_expectation_failed_error {
   equality_expectation_failed_error(
-    const std::string& target_,
+    const std::string& actual_,
     const std::string& expectation_,
-    const std::string& expr_string_
-  ): target(target_), expectation(expectation_), expr_string(expr_string_) {};
-  const std::string target;
+    const std::string& actual_expr_,
+    const std::string& expectation_expr_
+  ): actual(actual_), expectation(expectation_), actual_expr(actual_expr_),
+     expectation_expr(expectation_expr_) {};
+  const std::string actual;
   const std::string expectation;
-  const std::string expr_string;
+  const std::string actual_expr;
+  const std::string expectation_expr;
 };
 
 void assert(bool result, const std::string& expr_string);
 
-template <typename TTarget, typename TExpectation>
-void expect_equal(const TTarget& target, const TExpectation& expectation, const std::string& expr_string) {
-  if (target == expectation) return;
-  throw equality_expectation_failed_error(upd::inspect(target), upd::inspect(expectation), expr_string);
+template <typename TActual, typename TExpectation>
+void expect_equal(const TActual& actual, const TExpectation& expectation,
+                  const std::string& actual_expr,
+                  const std::string& expectation_expr) {
+  if (actual == expectation) return;
+  throw equality_expectation_failed_error(upd::inspect(actual),
+    upd::inspect(expectation), actual_expr, expectation_expr);
 }
 
 enum class test_case_result { ok, not_ok };
@@ -56,9 +62,10 @@ void run_case(TCase test_case, int& index, const std::string& desc) {
     std::cout << "  ---" << std::endl;
     std::cout
       << "  message: |" << std::endl
-      << "    failed: `" << error.expr_string << "`" << std::endl
+      << "    failed: `" << error.actual_expr << "` to equal `"
+      << error.expectation_expr << "`" << std::endl
       << "    expected:" << std::endl
-      << indent_string(error.target, 6) << std::endl
+      << indent_string(error.actual, 6) << std::endl
       << "    to equal:" << std::endl
       << indent_string(error.expectation, 6) << std::endl;
     std::cout << "  severity: fail" << std::endl;

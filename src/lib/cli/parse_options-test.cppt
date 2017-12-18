@@ -7,12 +7,12 @@ upd::cli::options parse(std::vector<const char *> argv) {
 
 @it "parse_options() parses the command `update`" {
   auto opts = parse({"upd", "update", nullptr});
-  @assert(opts.command == upd::cli::command::update);
+  @expect(opts.command).to_equal(upd::cli::command::update);
 }
 
 @it "parse_options() parses the command `help`" {
   auto opts = parse({"upd", "help", nullptr});
-  @assert(opts.command == upd::cli::command::help);
+  @expect(opts.command).to_equal(upd::cli::command::help);
 }
 
 @it "parse_options() throws on invalid command" {
@@ -44,14 +44,14 @@ upd::cli::options parse(std::vector<const char *> argv) {
 @it "parse_options() parses --color-diagnostics" {
   const char *argv[] = {"upd", "update", nullptr};
   auto opts = upd::cli::parse_options(argv);
-  @assert(opts.color_diagnostics == upd::cli::color_diagnostics::auto_);
+  @expect(opts.color_diagnostics).to_equal(upd::cli::color_diagnostics::auto_);
 }
 
 @it "parse_options() parses --color-diagnostics always" {
   const char *argv[] = {"upd", "update", "--color-diagnostics", "always",
                         nullptr};
   auto opts = upd::cli::parse_options(argv);
-  @assert(opts.color_diagnostics == upd::cli::color_diagnostics::always);
+  @expect(opts.color_diagnostics).to_equal(upd::cli::color_diagnostics::always);
 }
 
 @it "parse_options() thrown on invalid --color-diagnostics" {
@@ -61,16 +61,16 @@ upd::cli::options parse(std::vector<const char *> argv) {
     auto opts = upd::cli::parse_options(argv);
     @assert(false);
   } catch (upd::cli::invalid_color_diagnostics_error error) {
-    @assert(error.value == "foobar");
+    @expect(error.value).to_equal("foobar");
   }
 }
 
 @it "parse_options() parses --concurrency auto" {
   auto opts = parse({"upd", "update", "--concurrency", "auto"});
-  @assert(opts.concurrency == 0ul);
+  @expect(opts.concurrency).to_equal(0ul);
 }
 
 @it "parse_options() parses --concurrency <number>" {
   auto opts = parse({"upd", "update", "--concurrency", "42"});
-  @assert(opts.concurrency == 42ul);
+  @expect(opts.concurrency).to_equal(42ul);
 }
