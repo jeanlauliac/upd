@@ -1,5 +1,6 @@
 #pragma once
 
+#include "inspect.h"
 #include <string>
 #include <vector>
 
@@ -15,6 +16,11 @@ enum class command_line_template_variable {
   output_files,
   dependency_file
 };
+
+inline std::string inspect(command_line_template_variable value,
+                           const inspect_options &options) {
+  return inspect(static_cast<size_t>(value), options);
+}
 
 /**
  * Describe a subsequence of a command line's arguments. It starts with a
@@ -35,6 +41,14 @@ inline bool operator==(const command_line_template_part &left,
                        const command_line_template_part &right) {
   return left.literal_args == right.literal_args &&
          left.variable_args == right.variable_args;
+}
+
+inline std::string inspect(const command_line_template_part &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::command_line_template_part", options);
+  insp.push_back("literal_args", value.literal_args);
+  insp.push_back("variable_args", value.variable_args);
+  return insp.result();
 }
 
 /**
@@ -60,6 +74,14 @@ struct command_line_template {
 inline bool operator==(const command_line_template &left,
                        const command_line_template &right) {
   return left.binary_path == right.binary_path && left.parts == right.parts;
+}
+
+inline std::string inspect(const command_line_template &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::command_line_template", options);
+  insp.push_back("binary_path", value.binary_path);
+  insp.push_back("parts", value.parts);
+  return insp.result();
 }
 
 /**

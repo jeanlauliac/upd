@@ -1,5 +1,19 @@
 #include "../../../gen/src/lib/cli/parse_options.h"
 
+namespace upd {
+namespace cli {
+
+std::string inspect(color_diagnostics value, const inspect_options &options) {
+  return inspect(static_cast<size_t>(value), options);
+}
+
+std::string inspect(command value, const inspect_options &options) {
+  return inspect(static_cast<size_t>(value), options);
+}
+
+} // namespace cli
+} // namespace upd
+
 upd::cli::options parse(std::vector<const char *> argv) {
   argv.push_back(nullptr);
   return upd::cli::parse_options(argv.data());

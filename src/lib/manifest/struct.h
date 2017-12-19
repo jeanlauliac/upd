@@ -31,6 +31,21 @@ inline bool operator==(const update_rule_input &left,
   return left.type == right.type && left.input_ix == right.input_ix;
 }
 
+inline std::string inspect(enum update_rule_input::type value,
+                           const inspect_options &options) {
+  return inspect(static_cast<size_t>(value), options);
+}
+
+inline std::string inspect(const update_rule_input &value,
+                           const inspect_options &options) {
+  std::ostringstream os;
+  inspect_options inner_options({options.global, options.depth + 1});
+  os << "upd::manifest::update_rule_input(";
+  os << inspect(value.type, inner_options) << ", "
+     << inspect(value.input_ix, inner_options) << ')';
+  return os.str();
+}
+
 struct update_rule {
   size_t command_line_ix;
   std::vector<update_rule_input> inputs;
@@ -44,6 +59,16 @@ inline bool operator==(const update_rule &left, const update_rule &right) {
          left.dependencies == right.dependencies && left.output == right.output;
 }
 
+inline std::string inspect(const update_rule &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::manifest::update_rule", options);
+  insp.push_back("command_line_ix", value.command_line_ix);
+  insp.push_back("inputs", value.inputs);
+  insp.push_back("dependencies", value.dependencies);
+  insp.push_back("output", value.output);
+  return insp.result();
+}
+
 struct manifest {
   std::vector<command_line_template> command_line_templates;
   std::vector<path_glob::pattern> source_patterns;
@@ -54,6 +79,15 @@ inline bool operator==(const manifest &left, const manifest &right) {
   return left.command_line_templates == right.command_line_templates &&
          left.source_patterns == right.source_patterns &&
          left.rules == right.rules;
+}
+
+inline std::string inspect(const manifest &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::manifest::manifest", options);
+  insp.push_back("command_line_templates", value.command_line_templates);
+  insp.push_back("source_patterns", value.source_patterns);
+  insp.push_back("rules", value.rules);
+  return insp.result();
 }
 
 } // namespace manifest

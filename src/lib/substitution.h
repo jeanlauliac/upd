@@ -1,6 +1,7 @@
 #pragma once
 
 #include "captured_string.h"
+#include "inspect.h"
 #include <string>
 #include <vector>
 
@@ -72,6 +73,21 @@ inline bool operator==(const segment &left, const segment &right) {
          (!left.has_placeholder || left.placeholder_ix == right.placeholder_ix);
 }
 
+inline std::string inspect(const segment &value,
+                           const inspect_options &options) {
+  std::ostringstream os;
+  inspect_options inner_options({options.global, options.depth + 1});
+  os << "upd::substitution::segment(";
+  if (value.has_placeholder) {
+    os << inspect(value.placeholder_ix, inner_options) << ", "
+       << inspect(value.literal, inner_options);
+  } else {
+    os << inspect(value.literal, inner_options);
+  }
+  os << ')';
+  return os.str();
+}
+
 /**
  * Represent a substitution pattern after parsing. Take, for example,
  * "src/$1/($2.cpp)". For arguments "foo" and "bar" (in that order), this
@@ -95,6 +111,14 @@ struct pattern {
 inline bool operator==(const pattern &left, const pattern &right) {
   return left.segments == right.segments &&
          left.capture_groups == right.capture_groups;
+}
+
+inline std::string inspect(const pattern &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::substitution::pattern", options);
+  insp.push_back("segments", value.segments);
+  insp.push_back("capture_groups", value.capture_groups);
+  return insp.result();
 }
 
 /**

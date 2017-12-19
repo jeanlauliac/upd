@@ -8,7 +8,19 @@ std::string inspect(size_t value, const inspect_options &) {
   return stream.str();
 }
 
+std::string inspect(unsigned long long value, const inspect_options &) {
+  return std::to_string(value);
+}
+
 std::string inspect(float value, const inspect_options &) {
+  return std::to_string(value);
+}
+
+std::string inspect(bool value, const inspect_options &) {
+  return std::to_string(value);
+}
+
+std::string inspect(char value, const inspect_options &) {
   return std::to_string(value);
 }
 

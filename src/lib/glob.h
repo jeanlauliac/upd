@@ -1,5 +1,6 @@
 #pragma once
 
+#include "inspect.h"
 #include "io.h"
 #include <iostream>
 #include <memory>
@@ -38,6 +39,14 @@ struct segment {
 
 inline bool operator==(const segment &left, const segment &right) {
   return left.prefix == right.prefix && left.literal == right.literal;
+}
+
+inline std::string inspect(const segment &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::path_glob::segment", options);
+  insp.push_back("prefix", value.prefix);
+  insp.push_back("literal", value.literal);
+  return insp.result();
 }
 
 /**

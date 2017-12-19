@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glob.h"
+#include "inspect.h"
 #include "io.h"
 #include <iostream>
 #include <memory>
@@ -12,6 +13,11 @@ namespace upd {
 namespace path_glob {
 
 enum class capture_point_type { wildcard, ent_name };
+
+inline std::string inspect(capture_point_type value,
+                           const inspect_options &options) {
+  return inspect(static_cast<size_t>(value), options);
+}
 
 /**
  * A "capture point" describe the location in a path pattern where a particular
@@ -69,6 +75,15 @@ inline bool operator==(const capture_point &left, const capture_point &right) {
           left.ent_name_segment_ix == right.ent_name_segment_ix);
 }
 
+inline std::string inspect(const capture_point &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::path_glob::capture_group", options);
+  insp.push_back("segment_ix", value.segment_ix);
+  insp.push_back("type", value.type);
+  insp.push_back("ent_name_segment_ix", value.ent_name_segment_ix);
+  return insp.result();
+}
+
 /**
  * A capture group describes where a capture should start end end within a path
  * pattern. For example, in `src/(** / *).cpp` there is a single capture group
@@ -82,6 +97,14 @@ struct capture_group {
 
 inline bool operator==(const capture_group &left, const capture_group &right) {
   return left.from == right.from && left.to == right.to;
+}
+
+inline std::string inspect(const capture_group &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::path_glob::capture_group", options);
+  insp.push_back("from", value.from);
+  insp.push_back("to", value.to);
+  return insp.result();
 }
 
 /**
@@ -121,6 +144,14 @@ inline bool operator==(const segment &left, const segment &right) {
          left.ent_name == right.ent_name;
 }
 
+inline std::string inspect(const segment &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::path_glob::segment", options);
+  insp.push_back("ent_name", value.ent_name);
+  insp.push_back("has_wildcard", value.has_wildcard);
+  return insp.result();
+}
+
 /**
  * A pattern describes how a complete file path should look like, along with
  * sub-sequences we'd like to keep note of, called "capture groups". A pattern
@@ -136,6 +167,14 @@ struct pattern {
 inline bool operator==(const pattern &left, const pattern &right) {
   return left.segments == right.segments &&
          left.capture_groups == right.capture_groups;
+}
+
+inline std::string inspect(const pattern &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::path_glob::pattern", options);
+  insp.push_back("capture_groups", value.capture_groups);
+  insp.push_back("segments", value.segments);
+  return insp.result();
 }
 
 enum class invalid_pattern_string_reason {

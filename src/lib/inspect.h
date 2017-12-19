@@ -22,8 +22,12 @@ struct inspect_options {
   unsigned int depth;
 };
 
-std::string inspect(size_t value, const inspect_options &options);
-std::string inspect(float value, const inspect_options &options);
+std::string inspect(size_t value, const inspect_options &);
+std::string inspect(unsigned long long value, const inspect_options &);
+std::string inspect(float value, const inspect_options &);
+std::string inspect(bool value, const inspect_options &);
+std::string inspect(char value, const inspect_options &);
+
 std::string inspect(const std::string &value, const inspect_options &options);
 std::string inspect(const char *value, const inspect_options &options);
 
@@ -49,6 +53,15 @@ struct collection_inspector {
   template <typename T> void push_back(const T &value) {
     if (!begin_) os_ << ',';
     os_ << std::endl << indent_spaces_ << inspect(value, inner_options_);
+    begin_ = false;
+  }
+
+  template <typename T>
+  void push_back(const std::string &name, const T &value) {
+    if (!begin_) os_ << ',';
+    os_ << std::endl
+        << indent_spaces_ << inspect(value, inner_options_) << "/*" << name
+        << "*/";
     begin_ = false;
   }
 
@@ -151,12 +164,12 @@ std::string inspect(const std::unordered_map<TKey, TValue> &collection,
   return insp.result();
 }
 
-template <typename TAny>
-std::string inspect(const TAny &any, const inspect_options &options) {
-  (void)any;
-  (void)options;
-  return "<unknown-object>";
-}
+// template <typename TAny>
+// std::string inspect(const TAny &any, const inspect_options &options) {
+//   (void)any;
+//   (void)options;
+//   return "<unknown-object>";
+// }
 
 template <typename T> std::string inspect(const T &value) {
   global_inspect_options global = {2, 60};
