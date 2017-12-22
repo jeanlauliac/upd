@@ -26,7 +26,7 @@ struct equality_expectation_failed_error {
   const std::string expectation_expr;
 };
 
-void assert(bool result, const std::string& expr_string);
+void expect_to_be_true(bool result, const std::string& expr_string);
 
 template <typename TActual, typename TExpectation>
 void expect_equal(const TActual& actual, const TExpectation& expectation,

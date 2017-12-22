@@ -362,7 +362,7 @@ class Transformer {
     const iter = this._iter;
     readWhitespace(iter);
     const {expr, loc} = this._readParenExpression();
-    this._write('testing::assert(\n');
+    this._write('testing::expect_to_be_true(\n');
     this._write(`#line ${loc.line}\n`);
     this._write(' '.repeat(loc.column - 1));
     this._write(expr + ', ');

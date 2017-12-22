@@ -2,7 +2,7 @@
 
 namespace testing {
 
-void assert(bool result, const std::string& expr_string) {
+void expect_to_be_true(bool result, const std::string& expr_string) {
   if (!result) {
     throw expectation_failed_error(expr_string);
   }
