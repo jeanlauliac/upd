@@ -121,6 +121,11 @@ class ChunkToByteReader {
 
 type ReadByte = () => ?number;
 
+/**
+ * We read one proper character at a time that allows us to have the correct
+ * column number. If we were iterating a JavaScript string instead, we would
+ * not get proper column numbers as strings are stored with UTF16 encoding.
+ */
 class UTF8Reader {
   _readByte: ReadByte;
   _buf: Buffer;
