@@ -4,6 +4,7 @@
 'use strict';
 
 const CharIterator = require('./compile_test/CharIterator');
+const Utf8CharReader = require('./compile_test/Utf8CharReader')
 const {UnexpectedCharError, UnexpectedEndError,
        NestedTestCaseError, locationToString} = require('./compile_test/errors');
 const crypto = require('crypto');
@@ -31,32 +32,34 @@ function main() {
   const targetStream = fs.createWriteStream(targetFilePath);
   const targetDirPath = path.dirname(targetFilePath);
   const fd = fs.openSync(sourcePath, 'r');
-  const fdReader = new FdChunkReader(fd);
-  const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
-  const btcReader = new UTF8Reader(byteReader.next.bind(byteReader));
-  const readChar = btcReader.next.bind(btcReader);
-  const locrd = new LocationTrackingCharReader(readChar);
-  const ctcr = new ContextTrackingCharReader(locrd);
-  const rpe = reportError.bind(null, sourcePath, ctcr);
   try {
-    transform({
-      readChar: ctcr.next.bind(ctcr),
-      sourceFilePath: sourcePath,
-      sourceDirPath: path.dirname(sourcePath),
-      targetFilePath,
-      headerFilePath,
-      targetDirPath,
-      write: data => void targetStream.write(data)
-    });
-  } catch (error) {
-    if (error instanceof UnexpectedEndError) {
-      rpe(error.location, 'unexpected end of file');
-    } else if (error instanceof UnexpectedCharError) {
-      rpe(error.location, `unexpected character \`${error.char}\``);
-    } else {
-      throw error;
+    const fdReader = new FdChunkReader(fd);
+    const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
+    const btcReader = new Utf8CharReader(byteReader.next.bind(byteReader));
+    const readChar = btcReader.next.bind(btcReader);
+    const locrd = new LocationTrackingCharReader(readChar);
+    const ctcr = new ContextTrackingCharReader(locrd);
+    const rpe = reportError.bind(null, sourcePath, ctcr);
+    try {
+      transform({
+        readChar: ctcr.next.bind(ctcr),
+        sourceFilePath: sourcePath,
+        sourceDirPath: path.dirname(sourcePath),
+        targetFilePath,
+        headerFilePath,
+        targetDirPath,
+        write: data => void targetStream.write(data)
+      });
+    } catch (error) {
+      if (error instanceof UnexpectedEndError) {
+        rpe(error.location, 'unexpected end of file');
+      } else if (error instanceof UnexpectedCharError) {
+        rpe(error.location, `unexpected character \`${error.char}\``);
+      } else {
+        throw error;
+      }
+      return 2;
     }
-    return 2;
   } finally {
     fs.closeSync(fd);
     targetStream.end();
@@ -117,43 +120,6 @@ class ChunkToByteReader {
     }
     return this._buf[this._ix++];
   }
-}
-
-type ReadByte = () => ?number;
-
-/**
- * We read one proper character at a time that allows us to have the correct
- * column number. If we were iterating a JavaScript string instead, we would
- * not get proper column numbers as strings are stored with UTF16 encoding.
- */
-class UTF8Reader {
-  _readByte: ReadByte;
-  _buf: Buffer;
-
-  constructor(readByte: ReadByte) {
-    this._readByte = readByte;
-    this._buf = new Buffer(4);
-  }
-
-  next(): ?string {
-    const byte = this._readByte();
-    if (byte == null) return null;
-    if ((byte & 0b10000000) === 0) return String.fromCodePoint(byte);
-    if ((byte & 0b01000000) === 0) {
-      throw new Error('invalid byte sequence when reading utf8');
-    }
-    this._buf[0] = byte;
-    this._buf[1] = this._readByte();
-    if ((byte & 0b00100000) === 0) return this._buf.toString('utf8', 0, 2);
-    this._buf[2] = this._readByte();
-    if ((byte & 0b00010000) === 0) return this._buf.toString('utf8', 0, 3);
-    this._buf[3] = this._readByte();
-    return this._buf.toString('utf8', 0, 4);
-  }
-}
-
-function utf8e(byte) {
-  return byte & 0b00111111;
 }
 
 type TransformOptions = {|
