@@ -33,7 +33,7 @@ function main() {
   const fd = fs.openSync(sourcePath, 'r');
   const fdReader = new FdChunkReader(fd);
   const byteReader = new ChunkToByteReader(fdReader.read.bind(fdReader));
-  const btcReader = new ByteToCharReader(byteReader.next.bind(byteReader));
+  const btcReader = new UTF8Reader(byteReader.next.bind(byteReader));
   const readChar = btcReader.next.bind(btcReader);
   const locrd = new LocationTrackingCharReader(readChar);
   const ctcr = new ContextTrackingCharReader(locrd);
@@ -121,18 +121,34 @@ class ChunkToByteReader {
 
 type ReadByte = () => ?number;
 
-class ByteToCharReader {
+class UTF8Reader {
   _readByte: ReadByte;
+  _buf: Buffer;
 
   constructor(readByte: ReadByte) {
     this._readByte = readByte;
+    this._buf = new Buffer(4);
   }
 
   next(): ?string {
     const byte = this._readByte();
     if (byte == null) return null;
-    return String.fromCharCode(byte);
+    if ((byte & 0b10000000) === 0) return String.fromCodePoint(byte);
+    if ((byte & 0b01000000) === 0) {
+      throw new Error('invalid byte sequence when reading utf8');
+    }
+    this._buf[0] = byte;
+    this._buf[1] = this._readByte();
+    if ((byte & 0b00100000) === 0) return this._buf.toString('utf8', 0, 2);
+    this._buf[2] = this._readByte();
+    if ((byte & 0b00010000) === 0) return this._buf.toString('utf8', 0, 3);
+    this._buf[3] = this._readByte();
+    return this._buf.toString('utf8', 0, 4);
   }
+}
+
+function utf8e(byte) {
+  return byte & 0b00111111;
 }
 
 type TransformOptions = {|
@@ -313,7 +329,7 @@ class Transformer {
     }
     if (iter.char !== '"') return;
     iter.forward();
-    this._write(`"${this._translateInclude(filePath)}"\n`);
+    this._write(`"${this._translateInclude(filePath)}"`);
     this._skipUntilNewline();
   }
 
