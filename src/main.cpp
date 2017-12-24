@@ -3,6 +3,7 @@
 #include "lib/execute_manifest.h"
 #include "lib/gen_update_map.h"
 #include "lib/inspect.h"
+#include "lib/manifest/read_from_file.h"
 #include "lib/path.h"
 #include "package.h"
 

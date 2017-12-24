@@ -1,9 +1,9 @@
-#include "manifest.h"
+#include "read_from_file.h"
 
-#include "cli/utils.h"
-#include "io.h"
-#include "istream_char_reader.h"
-#include "path.h"
+#include "../cli/utils.h"
+#include "../io.h"
+#include "../istream_char_reader.h"
+#include "../path.h"
 #include <fstream>
 
 namespace upd {
@@ -31,8 +31,8 @@ std::ostream &operator<<(std::ostream &os, const error_header &target) {
   return os;
 }
 
-manifest read_file(const std::string &root_path,
-                   const std::string &working_path, bool use_color) {
+manifest read_from_file(const std::string &root_path,
+                        const std::string &working_path, bool use_color) {
   std::ifstream file;
   file.exceptions(std::ifstream::badbit);
   std::string file_path = root_path + io::UPDFILE_SUFFIX;

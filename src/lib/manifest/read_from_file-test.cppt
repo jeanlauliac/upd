@@ -1,5 +1,5 @@
-#include "manifest.h"
-#include "string_char_reader.h"
+#include "../string_char_reader.h"
+#include "read_from_file.h"
 
 using namespace upd;
 

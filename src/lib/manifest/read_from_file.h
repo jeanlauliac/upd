@@ -1,10 +1,10 @@
 #pragma once
 
-#include "command_line_template.h"
-#include "manifest/struct.h"
-#include "path_glob.h"
-#include "substitution.h"
-#include "json/parser.h"
+#include "../command_line_template.h"
+#include "../json/parser.h"
+#include "../path_glob.h"
+#include "../substitution.h"
+#include "manifest.h"
 
 namespace upd {
 namespace manifest {
@@ -261,8 +261,8 @@ struct missing_manifest_error {
 
 struct invalid_manifest_error {};
 
-manifest read_file(const std::string &root_path,
-                   const std::string &working_path, bool use_color);
+manifest read_from_file(const std::string &root_path,
+                        const std::string &working_path, bool use_color);
 
 } // namespace manifest
 } // namespace upd

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "manifest.h"
+#include "manifest/manifest.h"
 #include "update.h"
 #include <string>
 
