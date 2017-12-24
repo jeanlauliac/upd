@@ -76,8 +76,9 @@ command_line_result run_command_line(const command_line &target,
   auto read_stderr =
       std::async(std::launch::async, &read_fd_to_string, stderr_read_fd, true);
 
+  char *env{nullptr};
   pid_t child_pid =
-      system::spawn(target.binary_path, actions, argv.data(), environ);
+      system::spawn(target.binary_path, actions, argv.data(), &env);
   actions.destroy();
 
   if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");

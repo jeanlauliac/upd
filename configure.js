@@ -84,10 +84,13 @@ const compile_debug_c_cli = manifest.cli_template(compilerPath, [
   {literals: [], variables: ["input_files"]},
 ]);
 
+const nodePath = resolveBinary('node');
+
 const compiled_tools = manifest.rule(
   manifest.cli_template(
-    'node_modules/.bin/babel',
+    nodePath,
     updfile.makeCli([
+      'node_modules/.bin/babel',
       "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
       "-o", "$output_file", "$input_files"
     ]),
@@ -98,7 +101,6 @@ const compiled_tools = manifest.rule(
 
 const cppt_sources = manifest.source("(src/lib/**/*).cppt");
 const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
-const nodePath = resolveBinary('node');
 
 const test_cpp_files = manifest.rule(
   manifest.cli_template(nodePath, [

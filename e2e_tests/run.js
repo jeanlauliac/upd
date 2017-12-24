@@ -45,12 +45,14 @@ function runTestSuite() {
   }
   fs.writeFileSync(UPDFILE, JSON.stringify({}));
   runUpd(['update', '--all']);
+  const nodePath = resolveBinary('node');
   fs.writeFileSync(UPDFILE, JSON.stringify({
     "command_line_templates": [
       {
-        "binary_path": "../mock_update.js",
+        "binary_path": nodePath,
         "arguments": [
           {
+            "literals": ["../mock_update.js"],
             "variables": ["output_file", "dependency_file", "input_files"]
           }
         ]
@@ -80,6 +82,21 @@ function runTestSuite() {
   fs.writeFileSync(path.join(srcDir, 'foo.h'), 'Foo header, modified.\n');
   runUpd(['update', 'dist/result.out']);
   expectToMatchSnapshot('header_modified_result', path.join(ROOT_PATH, 'dist/result.out'));
+}
+
+function resolveBinary(name) {
+  const {PATH} = process.env;
+  if (PATH == null) {
+    throw new Error('PATH environment variable is missing');
+  }
+  const dirPaths = PATH.split(path.delimiter);
+  for (const dirPath of dirPaths) {
+    const filePath = path.resolve(dirPath, name);
+    if (fs.existsSync(filePath)) {
+      return filePath;
+    }
+  }
+  throw new Error(`could not resolve binary ${name}`);
 }
 
 (function main() {
