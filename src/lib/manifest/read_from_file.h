@@ -259,10 +259,12 @@ struct missing_manifest_error {
   const std::string root_path;
 };
 
-struct invalid_manifest_error {};
+template <typename Reason> struct invalid_manifest_error {
+  std::string file_path;
+  Reason reason;
+};
 
-manifest read_from_file(const std::string &root_path,
-                        const std::string &working_path, bool use_color);
+manifest read_from_file(const std::string &root_path);
 
 } // namespace manifest
 } // namespace upd

@@ -32,12 +32,30 @@ size_t get_concurrency(size_t opt_concurrency) {
   return cr;
 }
 
+struct error_header {
+  const std::string &working_path;
+  const std::string &file_path;
+  const json::location &location;
+  const bool use_color;
+};
+
+std::ostream &operator<<(std::ostream &os, const error_header &t) {
+  os << cli::ansi_sgr(1, t.use_color)
+     << get_relative_path(t.working_path, t.file_path, t.working_path) << ":"
+     << t.location << ":" << cli::ansi_sgr({}, t.use_color) << " "
+     << cli::ansi_sgr(31, t.use_color)
+     << "fatal:" << cli::ansi_sgr({}, t.use_color);
+  return os;
+}
+
 int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
   bool color_diags =
       cli_opts.color_diagnostics == cli::color_diagnostics::always ||
       (cli_opts.color_diagnostics == cli::color_diagnostics::auto_ &&
        auto_color_diags);
-  err_functor<std::ostream> err(std::cerr, color_diags);
+  auto &es = std::cerr;
+  err_functor<std::ostream> err(es, color_diags);
+  auto working_path = io::getcwd_string();
   try {
     if (cli_opts.command == cli::command::help) {
       bool use_color = cli_opts.color == cli::color::always ||
@@ -70,7 +88,6 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
       std::cout << "upd version " << package::VERSION << std::endl;
       return 0;
     }
-    auto working_path = io::getcwd_string();
     if (cli_opts.command == cli::command::init) {
       create_root(working_path);
       return 0;
@@ -84,12 +101,10 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
                      cli_opts.command == cli::command::graph, cli_opts.all,
                      cli_opts.rest_args, cli_opts.print_commands,
                      cli_opts.command == cli::command::script,
-                     get_concurrency(cli_opts.concurrency), color_diags);
+                     get_concurrency(cli_opts.concurrency));
     return 0;
   } catch (update_failed_error error) {
     err() << "one or more files failed to update" << std::endl;
-  } catch (manifest::invalid_manifest_error error) {
-    err() << "invalid manifest file; correct the error(s) above" << std::endl;
   } catch (io::cannot_find_root_error) {
     err() << "cannot find a `.updroot' file in the current directory or "
           << "in any of the parent directories" << std::endl
@@ -126,6 +141,47 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
           << error.local_dependency_path << "'; it must be specified "
           << "explicitly in the \"dependencies\" section of the rule"
           << std::endl;
+  } catch (
+      manifest::invalid_manifest_error<json::invalid_character_error> error) {
+    es << error_header{working_path, error.file_path, error.reason.location,
+                       color_diags}
+       << " invalid character `" << error.reason.chr << "`" << std::endl;
+  } catch (manifest::invalid_manifest_error<json::unexpected_punctuation_error>
+               error) {
+    es << error_header{working_path, error.file_path, error.reason.location,
+                       color_diags}
+       << " unexpected punctuation `" << json::to_char(error.reason.type)
+       << "`";
+    switch (error.reason.situation) {
+    case json::unexpected_punctuation_situation::expression:
+      es << "; expected to see an expression (ex. string, object, array, "
+            "number)";
+      break;
+    case json::unexpected_punctuation_situation::field_colon:
+      es << "; expected `:` followed by the field's value";
+      break;
+    case json::unexpected_punctuation_situation::field_name:
+      es << "; expected the name of the object's next field";
+      break;
+    case json::unexpected_punctuation_situation::first_field_name:
+      es << "; expected a field name, or an empty object";
+      break;
+    case json::unexpected_punctuation_situation::first_item:
+      es << "; expected an array item, or an empty array";
+      break;
+    case json::unexpected_punctuation_situation::post_field:
+      es << "; expected a comma, or the object's end";
+      break;
+    case json::unexpected_punctuation_situation::post_item:
+      es << "; expected a comma, or the array's end";
+      break;
+    }
+    es << std::endl;
+  } catch (
+      manifest::invalid_manifest_error<json::unexpected_number_error> error) {
+    es << error_header{working_path, error.file_path,
+                       error.reason.location.from, color_diags}
+       << " unexpected number" << std::endl;
   }
   return 2;
 }
