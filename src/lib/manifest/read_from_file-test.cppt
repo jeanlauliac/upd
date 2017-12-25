@@ -3,11 +3,9 @@
 
 using namespace upd;
 
-typedef json::lexer<string_char_reader> string_lexer;
-
 @it "parses empty manifest" {
   string_char_reader reader("{}");
-  string_lexer lx(reader);
+  upd::manifest::string_lexer lx(reader);
   auto result = manifest::parse(lx);
   manifest::manifest expected;
   @expect(result).to_equal(expected);
@@ -39,7 +37,7 @@ typedef json::lexer<string_char_reader> string_lexer;
     ]
   }
 )JSON");
-  string_lexer lx(reader);
+  upd::manifest::string_lexer lx(reader);
   auto result = manifest::parse(lx);
   manifest::manifest expected = {
       {
