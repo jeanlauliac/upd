@@ -35,47 +35,47 @@ using namespace upd::substitution;
 
 @it "parse() parses single literal" {
   auto result = parse("foobar");
-  @assert(result == pattern({{
-                                 segment("foobar"),
-                             },
-                             {}}));
+  @expect(result).to_equal(pattern({{
+                                        segment("foobar"),
+                                    },
+                                    {}}));
 }
 
 @it "parse() parses literal with captured group indices" {
   auto result = parse("foo$1bar$2");
-  @assert(result == pattern({{
-                                 segment("foo"),
-                                 segment(0, "bar"),
-                                 segment(1),
-                             },
-                             {}}));
+  @expect(result).to_equal(pattern({{
+                                        segment("foo"),
+                                        segment(0, "bar"),
+                                        segment(1),
+                                    },
+                                    {}}));
 }
 
 @it "parse() escapes captured group character" {
   auto result = parse("foo\\$1bar");
-  @assert(result == pattern({{
-                                 segment("foo$1bar"),
-                             },
-                             {}}));
+  @expect(result).to_equal(pattern({{
+                                        segment("foo$1bar"),
+                                    },
+                                    {}}));
 }
 
 @it "parse() allows to capture literal" {
   auto result = parse("foo(bar)");
-  @assert(result == pattern({{
-                                 segment("foo"),
-                                 segment("bar"),
-                             },
-                             {{1, 2}}}));
+  @expect(result).to_equal(pattern({{
+                                        segment("foo"),
+                                        segment("bar"),
+                                    },
+                                    {{1, 2}}}));
 }
 
 @it "parse() allows to recapture captured groups" {
   auto result = parse("foo($1)bar");
-  @assert(result == pattern({{
-                                 segment("foo"),
-                                 segment(0),
-                                 segment("bar"),
-                             },
-                             {{1, 2}}}));
+  @expect(result).to_equal(pattern({{
+                                        segment("foo"),
+                                        segment(0),
+                                        segment("bar"),
+                                    },
+                                    {{1, 2}}}));
 }
 
 @it "resolve() and capture() have correct results" {
