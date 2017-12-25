@@ -1,5 +1,6 @@
-#include "depfile.h"
-#include "fd_char_reader.h"
+#include "read.h"
+#include "../fd_char_reader.h"
+#include "../file_descriptor.h"
 #include <fcntl.h>
 #include <stdexcept>
 #include <sys/stat.h>

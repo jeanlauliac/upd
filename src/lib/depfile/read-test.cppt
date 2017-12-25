@@ -1,5 +1,5 @@
-#include "depfile.h"
-#include "string_char_reader.h"
+#include "../string_char_reader.h"
+#include "read.h"
 
 using namespace upd;
 

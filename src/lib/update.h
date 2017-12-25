@@ -1,7 +1,8 @@
 #pragma once
 
-#include "depfile.h"
+#include "depfile/read.h"
 #include "directory_cache.h"
+#include "file_descriptor.h"
 #include "update_log.h"
 #include "update_worker.h"
 #include "xxhash64.h"
