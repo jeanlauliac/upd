@@ -76,9 +76,13 @@ command_line_result run_command_line(const command_line &target,
   auto read_stderr =
       std::async(std::launch::async, &read_fd_to_string, stderr_read_fd, true);
 
-  char *env{nullptr};
+  std::vector<char *> env;
+  std::string term = "TERM=xterm-color";
+  env.push_back(const_cast<char *>(term.c_str()));
+  env.push_back(nullptr);
+
   pid_t child_pid =
-      system::spawn(target.binary_path, actions, argv.data(), &env);
+      system::spawn(target.binary_path, actions, argv.data(), env.data());
   actions.destroy();
 
   if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");
