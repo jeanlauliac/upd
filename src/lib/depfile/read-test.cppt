@@ -14,7 +14,7 @@ using namespace upd;
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
   @expect(result->target_path).to_equal("target.o");
-  std::vector<std::string> expected = {"target.cpp", "target.h", "other.h"};
+  std::vector<std::string> expected{"target.cpp", "target.h", "other.h"};
   @expect(result->dependency_paths).to_equal(expected);
 }
 
@@ -23,7 +23,7 @@ using namespace upd;
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
   @expect(result->target_path).to_equal("target.o");
-  std::vector<std::string> expected = {"target.cpp", "target.h"};
+  std::vector<std::string> expected{"target.cpp", "target.h"};
   @expect(result->dependency_paths).to_equal(expected);
 }
 
@@ -32,7 +32,7 @@ using namespace upd;
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
   @expect(result->target_path).to_equal("spaces target.o");
-  std::vector<std::string> expected = {"spaces target.cpp"};
+  std::vector<std::string> expected{"spaces target.cpp"};
   @expect(result->dependency_paths).to_equal(expected);
 }
 
@@ -41,6 +41,6 @@ using namespace upd;
   auto result = upd::depfile::parse(reader);
   @assert(!!result);
   @expect(result->target_path).to_equal(u8"汉语.o");
-  std::vector<std::string> expected = {u8"汉语.cpp"};
+  std::vector<std::string> expected{u8"汉语.cpp"};
   @expect(result->dependency_paths).to_equal(expected);
 }
