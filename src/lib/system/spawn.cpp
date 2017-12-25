@@ -35,7 +35,7 @@ void spawn_file_actions::destroy() {
   throw errno_error(errno);
 }
 
-string_vector::string_vector(): v_({nullptr}) {}
+string_vector::string_vector() : v_({nullptr}) {}
 
 string_vector::~string_vector() {
   for (auto str : v_) {
@@ -43,16 +43,14 @@ string_vector::~string_vector() {
   }
 }
 
-void string_vector::push_back(const std::string& value) {
-  char* str = new char[value.size() + 1];
+void string_vector::push_back(const std::string &value) {
+  char *str = new char[value.size() + 1];
   strcpy(str, value.c_str());
   v_[v_.size() - 1] = str;
   v_.push_back(nullptr);
 }
 
-char** string_vector::data() {
-  return v_.data();
-}
+char **string_vector::data() { return v_.data(); }
 
 int spawn(const std::string binary_path, const spawn_file_actions &actions,
           string_vector &argv, string_vector &env) {

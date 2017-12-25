@@ -78,8 +78,7 @@ command_line_result run_command_line(const command_line &target,
   system::string_vector env;
   env.push_back("TERM=xterm-color");
 
-  pid_t child_pid =
-      system::spawn(target.binary_path, actions, argv, env);
+  pid_t child_pid = system::spawn(target.binary_path, actions, argv, env);
   actions.destroy();
 
   if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");

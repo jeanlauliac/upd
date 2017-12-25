@@ -34,11 +34,11 @@ private:
 struct string_vector {
   string_vector();
   ~string_vector();
-  string_vector(string_vector&) = delete;
-  string_vector(string_vector&&) = delete;
+  string_vector(string_vector &) = delete;
+  string_vector(string_vector &&) = delete;
 
-  void push_back(const std::string& value);
-  char** data();
+  void push_back(const std::string &value);
+  char **data();
 
 private:
   std::vector<char *> v_;
