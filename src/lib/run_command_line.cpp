@@ -47,12 +47,11 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
 command_line_result run_command_line(const command_line &target,
                                      int stderr_read_fd,
                                      const std::string &stderr_pts) {
-  std::vector<char *> argv;
-  argv.push_back(const_cast<char *>(target.binary_path.c_str()));
+  system::string_vector argv;
+  argv.push_back(target.binary_path);
   for (auto const &arg : target.args) {
-    argv.push_back(const_cast<char *>(arg.c_str()));
+    argv.push_back(arg);
   }
-  argv.push_back(nullptr);
 
   int stdout[2];
   if (pipe(stdout) != 0) throw std::runtime_error("pipe() failed");
@@ -76,13 +75,11 @@ command_line_result run_command_line(const command_line &target,
   auto read_stderr =
       std::async(std::launch::async, &read_fd_to_string, stderr_read_fd, true);
 
-  std::vector<char *> env;
-  std::string term = "TERM=xterm-color";
-  env.push_back(const_cast<char *>(term.c_str()));
-  env.push_back(nullptr);
+  system::string_vector env;
+  env.push_back("TERM=xterm-color");
 
   pid_t child_pid =
-      system::spawn(target.binary_path, actions, argv.data(), env.data());
+      system::spawn(target.binary_path, actions, argv, env);
   actions.destroy();
 
   if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");

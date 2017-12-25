@@ -35,12 +35,31 @@ void spawn_file_actions::destroy() {
   throw errno_error(errno);
 }
 
+string_vector::string_vector(): v_({nullptr}) {}
+
+string_vector::~string_vector() {
+  for (auto str : v_) {
+    delete[] str;
+  }
+}
+
+void string_vector::push_back(const std::string& value) {
+  char* str = new char[value.size() + 1];
+  strcpy(str, value.c_str());
+  v_[v_.size() - 1] = str;
+  v_.push_back(nullptr);
+}
+
+char** string_vector::data() {
+  return v_.data();
+}
+
 int spawn(const std::string binary_path, const spawn_file_actions &actions,
-          char *const *argv, char *const *env) {
+          string_vector &argv, string_vector &env) {
   pid_t pid;
   auto bin = binary_path.c_str();
   auto pa = &actions.posix();
-  int res = posix_spawn(&pid, bin, pa, nullptr, argv, env);
+  int res = posix_spawn(&pid, bin, pa, nullptr, argv.data(), env.data());
   if (res == 0) return pid;
   throw errno_error(errno);
 }

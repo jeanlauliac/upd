@@ -2,6 +2,7 @@
 
 #include <spawn.h>
 #include <string>
+#include <vector>
 
 namespace upd {
 namespace system {
@@ -27,10 +28,27 @@ private:
 };
 
 /**
+ * Custom string vector for passing as argument to spawn(). This has the
+ * benefit of having a `data()` function that directly returns a `char**`.
+ */
+struct string_vector {
+  string_vector();
+  ~string_vector();
+  string_vector(string_vector&) = delete;
+  string_vector(string_vector&&) = delete;
+
+  void push_back(const std::string& value);
+  char** data();
+
+private:
+  std::vector<char *> v_;
+};
+
+/**
  * Wrapper around `posix_spawn` that throws in case of error.
  */
 int spawn(const std::string binary_path, const spawn_file_actions &actions,
-          char *const *argv, char *const *env);
+          string_vector &argv, string_vector &env);
 
 } // namespace system
 } // namespace upd
