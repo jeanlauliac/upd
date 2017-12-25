@@ -60,8 +60,8 @@ struct collection_inspector {
   void push_back(const std::string &name, const T &value) {
     if (!begin_) os_ << ',';
     os_ << std::endl
-        << indent_spaces_ << "/* ." << name
-        << " = */ " << inspect(value, inner_options_);
+        << indent_spaces_ << "/* ." << name << " = */ "
+        << inspect(value, inner_options_);
     begin_ = false;
   }
 

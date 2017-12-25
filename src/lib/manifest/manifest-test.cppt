@@ -1,5 +1,5 @@
-#include "manifest.h"
 #include "../inspect.h"
+#include "manifest.h"
 
 using namespace upd::manifest;
 
@@ -12,10 +12,10 @@ using namespace upd::manifest;
 
 @it "can inspect() update_rule" {
   update_rule in = update_rule{
-    3,
-    {update_rule_input::from_source(4)},
-    {update_rule_input::from_rule(5)},
-    upd::substitution::parse("foo/$1.o"),
+      3,
+      {update_rule_input::from_source(4)},
+      {update_rule_input::from_rule(5)},
+      upd::substitution::parse("foo/$1.o"),
   };
   @expect(upd::inspect(in)).to_equal(R"CPP(upd::manifest::update_rule({
   /* .command_line_ix = */ 3,
