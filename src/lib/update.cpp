@@ -75,12 +75,6 @@ bool is_file_up_to_date(update_log::cache &log_cache,
   return new_hash == record.hash;
 }
 
-std::string get_fd_path(int fd) {
-  std::ostringstream oss;
-  oss << "/dev/fd/" << fd;
-  return oss.str();
-}
-
 scheduled_file_update::scheduled_file_update() {}
 
 scheduled_file_update::scheduled_file_update(
