@@ -56,7 +56,7 @@ struct update_context {
 struct output_file {
   size_t command_line_ix;
   std::vector<std::string> local_input_file_paths;
-  std::unordered_set<std::string> local_dependency_file_paths;
+  std::unordered_set<std::string> order_only_dependency_file_paths;
 };
 
 typedef std::unordered_map<std::string, output_file> output_files_by_path_t;

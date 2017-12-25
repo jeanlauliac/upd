@@ -57,8 +57,8 @@ update_map gen_update_map(const std::string &root_path,
         datum.second = local_output.segment_start_ids;
       }
     }
-    std::unordered_set<std::string> all_dependencies;
-    for (const auto &dependency : rule.dependencies) {
+    std::unordered_set<std::string> order_only_dependencies;
+    for (const auto &dependency : rule.order_only_dependencies) {
       if (dependency.type == manifest::update_rule_input::type::rule) {
         if (dependency.input_ix >= i) {
           throw cannot_refer_to_later_rule_error();
@@ -69,7 +69,7 @@ update_map gen_update_map(const std::string &root_path,
               ? matches[dependency.input_ix]
               : rule_captured_paths[dependency.input_ix];
       for (const auto &input_capture : input_captures) {
-        all_dependencies.insert(input_capture.value);
+        order_only_dependencies.insert(input_capture.value);
       }
     }
     auto &captured_paths = rule_captured_paths[i];
@@ -83,7 +83,7 @@ update_map gen_update_map(const std::string &root_path,
         };
       }
       result.output_files_by_path[datum.first] = {
-          rule.command_line_ix, datum.second.first, all_dependencies};
+          rule.command_line_ix, datum.second.first, order_only_dependencies};
       rule_ids_by_output_path[datum.first] = i;
       captured_paths[k] = substitution::capture(
           rule.output.capture_groups, datum.first, datum.second.second);

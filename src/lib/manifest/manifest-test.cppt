@@ -21,7 +21,7 @@ using namespace upd::manifest;
   /* .command_line_ix = */ 3,
   /* .inputs = */ std::vector({
     upd::manifest::update_rule_input(0, 4) }),
-  /* .dependencies = */ std::vector({
+  /* .order_only_dependencies = */ std::vector({
     upd::manifest::update_rule_input(1, 5) }),
   /* .output = */ upd::substitution::pattern({
     /* .segments = */ std::vector({

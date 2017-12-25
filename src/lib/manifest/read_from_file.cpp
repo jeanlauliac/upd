@@ -137,8 +137,10 @@ struct update_rule_handler
         reader.next_value(handler);
         continue;
       }
-      if (field_name == "dependencies") {
-        vector_handler<rule_input_handler> handler(rule.dependencies);
+      if (field_name == "dependencies" ||
+          field_name == "order_only_dependencies") {
+        vector_handler<rule_input_handler> handler(
+            rule.order_only_dependencies);
         reader.next_value(handler);
         continue;
       }

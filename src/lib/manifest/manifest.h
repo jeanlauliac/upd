@@ -49,14 +49,15 @@ inline std::string inspect(const update_rule_input &value,
 struct update_rule {
   size_t command_line_ix;
   std::vector<update_rule_input> inputs;
-  std::vector<update_rule_input> dependencies;
+  std::vector<update_rule_input> order_only_dependencies;
   substitution::pattern output;
 };
 
 inline bool operator==(const update_rule &left, const update_rule &right) {
   return left.command_line_ix == right.command_line_ix &&
          left.inputs == right.inputs &&
-         left.dependencies == right.dependencies && left.output == right.output;
+         left.order_only_dependencies == right.order_only_dependencies &&
+         left.output == right.output;
 }
 
 inline std::string inspect(const update_rule &value,
@@ -64,7 +65,7 @@ inline std::string inspect(const update_rule &value,
   collection_inspector insp("upd::manifest::update_rule", options);
   insp.push_back("command_line_ix", value.command_line_ix);
   insp.push_back("inputs", value.inputs);
-  insp.push_back("dependencies", value.dependencies);
+  insp.push_back("order_only_dependencies", value.order_only_dependencies);
   insp.push_back("output", value.output);
   return insp.result();
 }

@@ -32,7 +32,7 @@ using namespace upd;
         "command_line_ix": 13,
         "output": "dist/($1).o",
         "inputs": [{"source_ix": 1}, {"rule_ix": 2}],
-        "dependencies": [{"rule_ix": 3}]
+        "order_only_dependencies": [{"rule_ix": 3}]
       }
     ]
   }

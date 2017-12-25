@@ -32,7 +32,7 @@ void build_update_plan(
     }
   }
   for (auto const &local_dependency_path :
-       target_descriptor.second.local_dependency_file_paths) {
+       target_descriptor.second.order_only_dependency_file_paths) {
     if (build_update_plan_for_path(plan, output_files_by_path,
                                    local_target_path, local_dependency_path)) {
       input_count++;
@@ -48,7 +48,7 @@ void build_update_plan(
 struct worker_state {
   worker_state(std::mutex &mutex, std::condition_variable &cv)
       : status(worker_status::idle), cli_template(nullptr),
-        local_src_paths(nullptr), local_dep_file_paths(nullptr),
+        local_src_paths(nullptr), order_only_dep_file_paths(nullptr),
         worker(status, result, sfu.job, mutex, cv) {}
   worker_state(worker_state &) = delete;
   worker_state(worker_state &&other) = delete;
@@ -59,7 +59,7 @@ struct worker_state {
   std::string local_target_path;
   const command_line_template *cli_template;
   const std::vector<std::string> *local_src_paths;
-  const std::unordered_set<std::string> *local_dep_file_paths;
+  const std::unordered_set<std::string> *order_only_dep_file_paths;
   update_worker worker;
 };
 
@@ -106,7 +106,8 @@ void execute_update_plan(
       st.cli_template = &command_line_tpl;
       st.local_src_paths = &local_src_paths;
       st.local_target_path = std::move(local_target_path);
-      st.local_dep_file_paths = &target_file.local_dependency_file_paths;
+      st.order_only_dep_file_paths =
+          &target_file.order_only_dependency_file_paths;
       st.status = worker_status::in_progress;
       st.worker.notify();
     }
@@ -162,7 +163,7 @@ void execute_update_plan(
 
         finalize_scheduled_update(cx, st.sfu, *st.cli_template,
                                   *st.local_src_paths, st.local_target_path,
-                                  updm, *st.local_dep_file_paths);
+                                  updm, *st.order_only_dep_file_paths);
         plan.erase(st.local_target_path);
       }
     } while (has_errors && has_in_progress);

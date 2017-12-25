@@ -146,7 +146,7 @@ void finalize_scheduled_update(
     const command_line_template &cli_template,
     const std::vector<std::string> &local_src_paths,
     const std::string &local_target_path, const update_map &updm,
-    const std::unordered_set<std::string> &local_dependency_file_paths) {
+    const std::unordered_set<std::string> &order_only_dependency_file_paths) {
 
   sfu.depfile_dummy_fd.close();
   std::unique_ptr<depfile::depfile_data> depfile_data =
@@ -171,7 +171,7 @@ void finalize_scheduled_update(
       }
       if (updm.output_files_by_path.find(dep_path) !=
               updm.output_files_by_path.end() &&
-          local_dependency_file_paths.count(dep_path) == 0) {
+          order_only_dependency_file_paths.count(dep_path) == 0) {
         throw undeclared_rule_dependency_error({local_target_path, dep_path});
       }
       dep_local_paths.push_back(dep_path);
