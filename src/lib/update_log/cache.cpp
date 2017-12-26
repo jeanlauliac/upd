@@ -1,5 +1,5 @@
-#include "update_log.h"
-#include "io.h"
+#include "cache.h"
+#include "../io.h"
 #include <iomanip>
 #include <sstream>
 #include <utility>
@@ -16,7 +16,7 @@ recorder::recorder(const std::string &file_path, record_mode mode) {
 
 void recorder::record(const std::string &local_file_path,
                       const file_record &record) {
-  upd::io::stream_string_joiner<std::ofstream> joiner(log_file_, " ");
+  io::stream_string_joiner<std::ofstream> joiner(log_file_, " ");
   joiner.push(record.hash).push(record.imprint).push(local_file_path);
   for (auto path : record.dependency_local_paths) joiner.push(path);
   log_file_ << std::endl;
