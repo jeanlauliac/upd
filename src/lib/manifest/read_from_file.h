@@ -1,5 +1,4 @@
 #pragma once
-
 #include "../command_line_template.h"
 #include "../json/parser.h"
 #include "../path_glob.h"
