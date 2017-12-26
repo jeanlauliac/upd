@@ -37,5 +37,5 @@ struct file_record {
   std::vector<std::string> dependency_local_paths;
 };
 
-}
-}
+} // namespace update_log
+} // namespace upd

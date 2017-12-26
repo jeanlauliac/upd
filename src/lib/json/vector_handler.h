@@ -48,5 +48,13 @@ private:
   ElementHandler handler_;
 };
 
+template <typename ElementHandler, typename ObjectReader>
+void read_vector_field_value(
+    ObjectReader &object_reader,
+    typename json::vector_handler<ElementHandler>::vector_type &result) {
+  json::vector_handler<ElementHandler> handler(result);
+  object_reader.next_value(handler);
 }
-}
+
+} // namespace json
+} // namespace upd

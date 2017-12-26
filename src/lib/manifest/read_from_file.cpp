@@ -3,20 +3,12 @@
 #include "../cli/utils.h"
 #include "../io.h"
 #include "../istream_char_reader.h"
-#include "../path.h"
 #include "../json/vector_handler.h"
+#include "../path.h"
 #include <fstream>
 
 namespace upd {
 namespace manifest {
-
-template <typename ObjectReader, typename ElementHandler>
-void read_vector_field_value(
-    ObjectReader &object_reader,
-    typename json::vector_handler<ElementHandler>::vector_type &result) {
-  json::vector_handler<ElementHandler> handler(result);
-  object_reader.next_value(handler);
-}
 
 struct source_pattern_handler
     : public json::all_unexpected_elements_handler<path_glob::pattern> {
@@ -27,7 +19,8 @@ struct source_pattern_handler
 
 struct expected_integer_number_error {};
 
-struct read_size_t_handler : public json::all_unexpected_elements_handler<size_t> {
+struct read_size_t_handler
+    : public json::all_unexpected_elements_handler<size_t> {
   size_t number_literal(float number) const {
     size_t result = static_cast<size_t>(number);
     if (static_cast<float>(result) != number) {
@@ -89,14 +82,13 @@ struct update_rule_handler
         continue;
       }
       if (field_name == "inputs") {
-        read_vector_field_value<ObjectReader, rule_input_handler>(reader, rule.inputs);
+        json::read_vector_field_value<rule_input_handler>(reader, rule.inputs);
         continue;
       }
       if (field_name == "dependencies" ||
           field_name == "order_only_dependencies") {
-        json::vector_handler<rule_input_handler> handler(
-            rule.order_only_dependencies);
-        reader.next_value(handler);
+        json::read_vector_field_value<rule_input_handler>(
+            reader, rule.order_only_dependencies);
         continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -105,12 +97,14 @@ struct update_rule_handler
   }
 };
 
-struct string_handler : public json::all_unexpected_elements_handler<std::string> {
+struct string_handler
+    : public json::all_unexpected_elements_handler<std::string> {
   std::string string_literal(const std::string &value) const { return value; }
 };
 
 struct command_line_template_variable_handler
-    : public json::all_unexpected_elements_handler<command_line_template_variable> {
+    : public json::all_unexpected_elements_handler<
+          command_line_template_variable> {
   command_line_template_variable string_literal(const std::string &value) {
     if (value == "input_files") {
       return command_line_template_variable::input_files;
@@ -133,14 +127,12 @@ struct command_line_template_part_handler
     std::string field_name;
     while (reader.next(field_name)) {
       if (field_name == "literals") {
-        json::vector_handler<string_handler> handler(part.literal_args);
-        reader.next_value(handler);
+        json::read_vector_field_value<string_handler>(reader, part.literal_args);
         continue;
       }
       if (field_name == "variables") {
-        json::vector_handler<command_line_template_variable_handler> handler(
-            part.variable_args);
-        reader.next_value(handler);
+        json::read_vector_field_value<command_line_template_variable_handler>(
+            reader, part.variable_args);
         continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -161,8 +153,8 @@ struct command_line_template_handler
         continue;
       }
       if (field_name == "arguments") {
-        json::vector_handler<command_line_template_part_handler> handler(tpl.parts);
-        reader.next_value(handler);
+        json::read_vector_field_value<command_line_template_part_handler>(reader,
+                                                                    tpl.parts);
         continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -180,19 +172,17 @@ struct manifest_expression_handler
     std::string field_name;
     while (reader.next(field_name)) {
       if (field_name == "source_patterns") {
-        json::vector_handler<source_pattern_handler> handler(result.source_patterns);
-        reader.next_value(handler);
+        json::read_vector_field_value<source_pattern_handler>(reader,
+                                                        result.source_patterns);
         continue;
       }
       if (field_name == "rules") {
-        json::vector_handler<update_rule_handler> handler(result.rules);
-        reader.next_value(handler);
+        json::read_vector_field_value<update_rule_handler>(reader, result.rules);
         continue;
       }
       if (field_name == "command_line_templates") {
-        json::vector_handler<command_line_template_handler> handler(
-            result.command_line_templates);
-        reader.next_value(handler);
+        json::read_vector_field_value<command_line_template_handler>(
+            reader, result.command_line_templates);
         continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
