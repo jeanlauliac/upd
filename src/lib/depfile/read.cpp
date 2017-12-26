@@ -9,6 +9,23 @@
 namespace upd {
 namespace depfile {
 
+/**
+ * State machine that updates the depfile data for each type of token.
+ */
+struct parse_token_handler {
+  parse_token_handler(std::unique_ptr<depfile_data> &data)
+      : data_(data), state_(state_t::read_target) {}
+  bool end();
+  bool colon();
+  bool string(const std::string &file_path);
+  bool new_line();
+
+private:
+  enum class state_t { read_target, read_colon, read_dep, done };
+  std::unique_ptr<depfile_data> &data_;
+  state_t state_;
+};
+
 bool parse_token_handler::end() {
   if (!(state_ == state_t::read_target || state_ == state_t::read_dep ||
         state_ == state_t::done)) {
@@ -50,6 +67,18 @@ bool parse_token_handler::new_line() {
   state_ = state_t::done;
   return true;
 }
+
+template <typename CharReader>
+std::unique_ptr<depfile_data> parse(CharReader &char_reader) {
+  std::unique_ptr<depfile_data> data;
+  tokenizer<CharReader> tokens(char_reader);
+  parse_token_handler handler(data);
+  while (tokens.template next<parse_token_handler, bool>(handler))
+    ;
+  return data;
+}
+
+template std::unique_ptr<depfile_data> parse(string_char_reader &);
 
 std::unique_ptr<depfile_data> read(const std::string &file_path) {
   int fd = open(file_path.c_str(), O_RDONLY);
