@@ -43,57 +43,63 @@ struct read_rule_output_handler
   }
 };
 
-struct rule_input_handler
-    : public json::all_unexpected_elements_handler<update_rule_input> {
+template <typename ReturnValue,
+          template <typename ObjectReader> class FieldReader>
+struct object_handler
+    : public json::all_unexpected_elements_handler<ReturnValue> {
   template <typename ObjectReader>
-  update_rule_input object(ObjectReader &reader) const {
-    update_rule_input input;
+  ReturnValue object(ObjectReader &reader) const {
+    ReturnValue value;
     std::string field_name;
     while (reader.next(field_name)) {
-      if (field_name == "source_ix") {
-        input.input_ix = reader.next_value(read_size_t_handler());
-        input.type = update_rule_input::type::source;
-        continue;
-      }
-      if (field_name == "rule_ix") {
-        input.input_ix = reader.next_value(read_size_t_handler());
-        input.type = update_rule_input::type::rule;
-        continue;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
+      FieldReader<ObjectReader &>::read(reader, field_name, value);
     }
-    return input;
+    return value;
   }
 };
 
-struct update_rule_handler
-    : public json::all_unexpected_elements_handler<update_rule> {
-  template <typename ObjectReader>
-  update_rule object(ObjectReader &reader) const {
-    update_rule rule;
-    std::string field_name;
-    while (reader.next(field_name)) {
-      if (field_name == "command_line_ix") {
-        rule.command_line_ix = reader.next_value(read_size_t_handler());
-        continue;
-      }
-      if (field_name == "output") {
-        rule.output = reader.next_value(read_rule_output_handler());
-        continue;
-      }
-      if (field_name == "inputs") {
-        json::read_vector_field_value<rule_input_handler>(reader, rule.inputs);
-        continue;
-      }
-      if (field_name == "dependencies" ||
-          field_name == "order_only_dependencies") {
-        json::read_vector_field_value<rule_input_handler>(
-            reader, rule.order_only_dependencies);
-        continue;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
+template <typename ObjectReader> struct read_rule_input_field {
+  static void read(ObjectReader reader, const std::string &field_name,
+                   update_rule_input &value) {
+    if (field_name == "source_ix") {
+      value.input_ix = reader.next_value(read_size_t_handler());
+      value.type = update_rule_input::type::source;
+      return;
     }
-    return rule;
+    if (field_name == "rule_ix") {
+      value.input_ix = reader.next_value(read_size_t_handler());
+      value.type = update_rule_input::type::rule;
+      return;
+    }
+    throw std::runtime_error("doesn't know field `" + field_name + "`");
+  }
+};
+
+template <typename ObjectReader> struct read_rule_field {
+  static void read(ObjectReader reader, const std::string &field_name,
+                   update_rule &value) {
+    if (field_name == "command_line_ix") {
+      value.command_line_ix = reader.next_value(read_size_t_handler());
+      return;
+    }
+    if (field_name == "output") {
+      value.output = reader.next_value(read_rule_output_handler());
+      return;
+    }
+    if (field_name == "inputs") {
+      json::read_vector_field_value<
+          object_handler<update_rule_input, read_rule_input_field>>(
+          reader, value.inputs);
+      return;
+    }
+    if (field_name == "dependencies" ||
+        field_name == "order_only_dependencies") {
+      json::read_vector_field_value<
+          object_handler<update_rule_input, read_rule_input_field>>(
+          reader, value.order_only_dependencies);
+      return;
+    }
+    throw std::runtime_error("doesn't know field `" + field_name + "`");
   }
 };
 
@@ -119,25 +125,19 @@ struct command_line_template_variable_handler
   }
 };
 
-struct command_line_template_part_handler
-    : public json::all_unexpected_elements_handler<command_line_template_part> {
-  template <typename ObjectReader>
-  command_line_template_part object(ObjectReader &reader) const {
-    command_line_template_part part;
-    std::string field_name;
-    while (reader.next(field_name)) {
-      if (field_name == "literals") {
-        json::read_vector_field_value<string_handler>(reader, part.literal_args);
-        continue;
-      }
-      if (field_name == "variables") {
-        json::read_vector_field_value<command_line_template_variable_handler>(
-            reader, part.variable_args);
-        continue;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
+template <typename ObjectReader> struct read_command_line_template_part_field {
+  static void read(ObjectReader reader, const std::string &field_name,
+                   command_line_template_part &value) {
+    if (field_name == "literals") {
+      json::read_vector_field_value<string_handler>(reader, value.literal_args);
+      return;
     }
-    return part;
+    if (field_name == "variables") {
+      json::read_vector_field_value<command_line_template_variable_handler>(
+          reader, value.variable_args);
+      return;
+    }
+    throw std::runtime_error("doesn't know field `" + field_name + "`");
   }
 };
 
@@ -153,8 +153,9 @@ struct command_line_template_handler
         continue;
       }
       if (field_name == "arguments") {
-        json::read_vector_field_value<command_line_template_part_handler>(reader,
-                                                                    tpl.parts);
+        json::read_vector_field_value<object_handler<
+            command_line_template_part, read_command_line_template_part_field>>(
+            reader, tpl.parts);
         continue;
       }
       throw std::runtime_error("doesn't know field `" + field_name + "`");
@@ -172,12 +173,13 @@ struct manifest_expression_handler
     std::string field_name;
     while (reader.next(field_name)) {
       if (field_name == "source_patterns") {
-        json::read_vector_field_value<source_pattern_handler>(reader,
-                                                        result.source_patterns);
+        json::read_vector_field_value<source_pattern_handler>(
+            reader, result.source_patterns);
         continue;
       }
       if (field_name == "rules") {
-        json::read_vector_field_value<update_rule_handler>(reader, result.rules);
+        json::read_vector_field_value<
+            object_handler<update_rule, read_rule_field>>(reader, result.rules);
         continue;
       }
       if (field_name == "command_line_templates") {

@@ -24,7 +24,7 @@ for (let i = 2; i < argv.length; ++i) {
   }
 }
 
-const OPTIMIZATION_FLAGS = ['-Ofast'];
+const OPTIMIZATION_FLAGS = ['-Os'];
 if (options.compilerBinary === 'clang++') {
   OPTIMIZATION_FLAGS.push('-fno-rtti');
 }
