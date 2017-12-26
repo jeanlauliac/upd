@@ -1,6 +1,7 @@
 #include "read.h"
 #include "../fd_char_reader.h"
 #include "../file_descriptor.h"
+#include "../io.h"
 #include <fcntl.h>
 #include <stdexcept>
 #include <sys/stat.h>
@@ -81,10 +82,7 @@ std::unique_ptr<depfile_data> parse(CharReader &char_reader) {
 template std::unique_ptr<depfile_data> parse(string_char_reader &);
 
 std::unique_ptr<depfile_data> read(const std::string &file_path) {
-  int fd = open(file_path.c_str(), O_RDONLY);
-  if (fd < 0) {
-    throw new std::runtime_error("open() failed");
-  }
+  int fd = io::open(file_path, O_RDONLY);
   file_descriptor input_fd(fd);
   fd_char_reader char_reader(fd);
   return parse(char_reader);

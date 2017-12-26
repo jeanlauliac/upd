@@ -114,7 +114,7 @@ schedule_file_update(update_context &cx,
 
   auto command_line = reify_command_line(
       cli_template, {depfile_path, local_src_paths, {local_target_path}},
-      cx.root_path, io::getcwd_string());
+      cx.root_path, io::getcwd());
   std::cout << "updating: " << local_target_path << std::endl;
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
@@ -159,7 +159,7 @@ void finalize_scheduled_update(
                                                      local_src_paths.end());
   if (depfile_data) {
     for (auto dep_path : depfile_data->dependency_paths) {
-      dep_path = get_relative_path(cx.root_path, dep_path, io::getcwd_string());
+      dep_path = get_relative_path(cx.root_path, dep_path, io::getcwd());
       if (local_src_path_set.find(dep_path) != local_src_path_set.end()) {
         continue;
       }

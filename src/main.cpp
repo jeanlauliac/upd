@@ -55,7 +55,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
        auto_color_diags);
   auto &es = std::cerr;
   err_functor<std::ostream> err(es, color_diags);
-  auto working_path = io::getcwd_string();
+  auto working_path = io::getcwd();
   try {
     if (cli_opts.command == cli::command::help) {
       bool use_color = cli_opts.color == cli::color::always ||

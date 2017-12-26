@@ -11,10 +11,9 @@ extern const char *ROOTFILE_SUFFIX;
 extern const char *UPDFILE_SUFFIX;
 
 /**
- * Get the current working directory but
- * as a `std::string`, easier to deal with.
+ * Get the current working directory.
  */
-std::string getcwd_string();
+std::string getcwd();
 
 /**
  * Same as `dirname`, but with `std::string`.
@@ -105,6 +104,11 @@ std::string mkdtemp(const std::string &template_path);
  * Creates a FIFO (named pipe) with the specified name.
  */
 void mkfifo(const std::string &file_path, mode_t mode);
+
+/**
+ * Open a file. Returned number is a valid file descriptor.
+ */
+int open(const std::string &file_path, int flags);
 
 } // namespace io
 } // namespace upd

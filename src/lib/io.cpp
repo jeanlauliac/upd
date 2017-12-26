@@ -1,11 +1,13 @@
 #include "io.h"
 #include "system/errno_error.h"
 #include <cstring>
+#include <fcntl.h>
 #include <libgen.h>
 #include <stdexcept>
 #include <stdlib.h>
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
 
@@ -15,10 +17,10 @@ namespace io {
 const char *ROOTFILE_SUFFIX = "/.updroot";
 const char *UPDFILE_SUFFIX = "/updfile.json";
 
-std::string getcwd_string() {
+std::string getcwd() {
   char temp[MAXPATHLEN];
-  if (getcwd(temp, MAXPATHLEN) == nullptr) {
-    throw std::runtime_error("unable to get current working directory");
+  if (::getcwd(temp, MAXPATHLEN) == nullptr) {
+    throw system::errno_error(errno);
   }
   return temp;
 }
@@ -97,6 +99,14 @@ std::string mkdtemp(const std::string &template_path) {
 void mkfifo(const std::string &file_path, mode_t mode) {
   if (::mkfifo(file_path.c_str(), mode) == 0) return;
   throw system::errno_error(errno);
+}
+
+int open(const std::string &file_path, int flags) {
+  int fd = ::open(file_path.c_str(), flags);
+  if (fd < 0) {
+    throw system::errno_error(errno);
+  }
+  return fd;
 }
 
 } // namespace io

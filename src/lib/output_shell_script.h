@@ -31,7 +31,7 @@ void output_shell_script(
     auto command_line = reify_command_line(
         command_line_tpl,
         {"/dev/null", target_file.local_input_file_paths, {local_target_path}},
-        root_path, io::getcwd_string());
+        root_path, io::getcwd());
     os << command_line << std::endl;
     plan.erase(local_target_path);
   }
