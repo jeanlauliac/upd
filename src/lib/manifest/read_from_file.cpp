@@ -141,26 +141,20 @@ template <typename ObjectReader> struct read_command_line_template_part_field {
   }
 };
 
-struct command_line_template_handler
-    : public json::all_unexpected_elements_handler<command_line_template> {
-  template <typename ObjectReader>
-  command_line_template object(ObjectReader &reader) {
-    command_line_template tpl;
-    std::string field_name;
-    while (reader.next(field_name)) {
-      if (field_name == "binary_path") {
-        tpl.binary_path = reader.next_value(read_string_handler());
-        continue;
-      }
-      if (field_name == "arguments") {
-        json::read_vector_field_value<object_handler<
-            command_line_template_part, read_command_line_template_part_field>>(
-            reader, tpl.parts);
-        continue;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
+template <typename ObjectReader> struct read_command_line_template_field {
+  static void read(ObjectReader reader, const std::string &field_name,
+                   command_line_template &value) {
+    if (field_name == "binary_path") {
+      value.binary_path = reader.next_value(read_string_handler());
+      return;
     }
-    return tpl;
+    if (field_name == "arguments") {
+      json::read_vector_field_value<object_handler<
+          command_line_template_part, read_command_line_template_part_field>>(
+          reader, value.parts);
+      return;
+    }
+    throw std::runtime_error("doesn't know field `" + field_name + "`");
   }
 };
 
@@ -178,7 +172,8 @@ template <typename ObjectReader> struct read_manifest_field {
       return;
     }
     if (field_name == "command_line_templates") {
-      json::read_vector_field_value<command_line_template_handler>(
+      json::read_vector_field_value<object_handler<
+          command_line_template, read_command_line_template_field>>(
           reader, value.command_line_templates);
       return;
     }
