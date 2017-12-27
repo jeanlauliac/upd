@@ -164,38 +164,31 @@ struct command_line_template_handler
   }
 };
 
-struct manifest_expression_handler
-    : public json::all_unexpected_elements_handler<manifest> {
-  typedef manifest return_type;
-
-  template <typename ObjectReader> manifest object(ObjectReader &reader) const {
-    manifest result;
-    std::string field_name;
-    while (reader.next(field_name)) {
-      if (field_name == "source_patterns") {
-        json::read_vector_field_value<source_pattern_handler>(
-            reader, result.source_patterns);
-        continue;
-      }
-      if (field_name == "rules") {
-        json::read_vector_field_value<
-            object_handler<update_rule, read_rule_field>>(reader, result.rules);
-        continue;
-      }
-      if (field_name == "command_line_templates") {
-        json::read_vector_field_value<command_line_template_handler>(
-            reader, result.command_line_templates);
-        continue;
-      }
-      throw std::runtime_error("doesn't know field `" + field_name + "`");
+template <typename ObjectReader> struct read_manifest_field {
+  static void read(ObjectReader reader, const std::string &field_name,
+                   manifest &value) {
+    if (field_name == "source_patterns") {
+      json::read_vector_field_value<source_pattern_handler>(
+          reader, value.source_patterns);
+      return;
     }
-    return result;
+    if (field_name == "rules") {
+      json::read_vector_field_value<
+          object_handler<update_rule, read_rule_field>>(reader, value.rules);
+      return;
+    }
+    if (field_name == "command_line_templates") {
+      json::read_vector_field_value<command_line_template_handler>(
+          reader, value.command_line_templates);
+      return;
+    }
+    throw std::runtime_error("doesn't know field `" + field_name + "`");
   }
 };
 
 template <typename Lexer> manifest parse(Lexer &lexer) {
-  return json::parse_expression<Lexer, const manifest_expression_handler>(
-      lexer, manifest_expression_handler());
+  object_handler<manifest, read_manifest_field> handler;
+  return json::parse_expression<Lexer, decltype(handler)>(lexer, handler);
 }
 
 template manifest parse(string_lexer &);
