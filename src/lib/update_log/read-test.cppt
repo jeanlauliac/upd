@@ -1,0 +1,16 @@
+#include "read.h"
+
+using namespace upd::update_log;
+
+@it "can read records" {
+  std::string data = std::string{
+      17, 0, 0, 0, 0, 0, 0,   0,   42,  0, 0, 0,
+      0,  0, 0, 0, 3, 0, 'f', 'o', 'o', 0, 0,
+  };
+  upd::string_char_reader reader(data);
+  records_by_file result;
+  read(reader, result);
+  @assert(result == records_by_file{
+                        {"foo", {17, 42, {}}},
+                    });
+}

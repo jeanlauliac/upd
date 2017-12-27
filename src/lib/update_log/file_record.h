@@ -37,5 +37,10 @@ struct file_record {
   std::vector<std::string> dependency_local_paths;
 };
 
+inline bool operator==(const file_record &left, const file_record &right) {
+  return left.imprint == right.imprint && left.hash == right.hash &&
+         left.dependency_local_paths == right.dependency_local_paths;
+}
+
 } // namespace update_log
 } // namespace upd
