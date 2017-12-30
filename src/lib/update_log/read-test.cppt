@@ -4,13 +4,13 @@ using namespace upd::update_log;
 
 @it "can read records" {
   std::string data = std::string{
-      17, 0, 0, 0, 0, 0, 0,   0,   42,  0, 0, 0,
-      0,  0, 0, 0, 3, 0, 'f', 'o', 'o', 0, 0,
+      17, 0,   0,   0,   0, 0, 0, 0, 42,  0,   0,   0,   0, 0, 0,   0,   3,
+      0,  'f', 'o', 'o', 2, 0, 4, 0, 'b', 'l', 'a', 'h', 3, 0, 'b', 'a', 'z',
   };
   upd::string_char_reader reader(data);
   records_by_file result;
   read(reader, result);
   @assert(result == records_by_file{
-                        {"foo", {17, 42, {}}},
+                        {"foo", {17, 42, {"blah", "baz"}}},
                     });
 }
