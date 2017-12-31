@@ -1,5 +1,7 @@
 #pragma once
 
+#include "io.h"
+
 namespace upd {
 
 struct file_descriptor {
@@ -15,8 +17,9 @@ struct file_descriptor {
     return *this;
   }
   int fd() const { return fd_; }
+  operator int() const { return fd_; }
   void close() {
-    if (fd_ >= 0) ::close(fd_);
+    if (fd_ >= 0) io::close(fd_);
     fd_ = -1;
   };
 

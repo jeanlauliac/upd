@@ -43,15 +43,18 @@ bool read_record(Reader &reader, std::string &file_name, file_record &record) {
   return true;
 }
 
-template <typename Reader> void read(Reader &reader, records_by_file &result) {
+template <typename Reader> records_by_file read(Reader &reader) {
+  records_by_file result;
   file_record record;
   std::string file_path;
   while (read_record(reader, file_path, record)) {
     result[file_path] = record;
   }
+  return result;
 }
 
-template void read(string_char_reader &, records_by_file &);
+template records_by_file read(string_char_reader &);
+template records_by_file read(fd_char_reader &);
 
 } // namespace update_log
 } // namespace upd

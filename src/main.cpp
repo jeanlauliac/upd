@@ -5,6 +5,8 @@
 #include "lib/inspect.h"
 #include "lib/manifest/read_from_file.h"
 #include "lib/path.h"
+#include "lib/system/errno_error.h"
+#include "lib/update_log/read.h"
 #include "package.h"
 
 namespace upd {
@@ -117,7 +119,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
           << std::endl;
   } catch (io::ifstream_failed_error error) {
     err() << "failed to read file `" << error.file_path << "`" << std::endl;
-  } catch (update_log::corruption_error) {
+  } catch (update_log::unexpected_end_of_file_error) {
     err() << "update log is corrupted; delete or revert the `.upd/log` file"
           << std::endl;
   } catch (unknown_target_error error) {
@@ -182,6 +184,9 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
     es << error_header{working_path, error.file_path,
                        error.reason.location.from, color_diags}
        << " unexpected number" << std::endl;
+  } catch (const system::errno_error &error) {
+    std::cerr << "*** UNEXPECTED I/O ERROR " << error.code << ": "
+              << strerror(error.code) << std::endl;
   }
   return 2;
 }

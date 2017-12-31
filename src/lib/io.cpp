@@ -101,12 +101,26 @@ void mkfifo(const std::string &file_path, mode_t mode) {
   throw system::errno_error(errno);
 }
 
-int open(const std::string &file_path, int flags) {
-  int fd = ::open(file_path.c_str(), flags);
+int open(const std::string &file_path, int flags, mode_t mode) {
+  int fd = ::open(file_path.c_str(), flags, mode);
   if (fd < 0) {
     throw system::errno_error(errno);
   }
   return fd;
+}
+
+size_t write(int fd, const void *buf, size_t count) {
+  ssize_t bytes_written = ::write(fd, buf, count);
+  if (bytes_written < 0) {
+    throw system::errno_error(errno);
+  }
+  return bytes_written;
+}
+
+void close(int fd) {
+  if (::close(fd) != 0) {
+    throw system::errno_error(errno);
+  }
 }
 
 } // namespace io

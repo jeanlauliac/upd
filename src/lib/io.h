@@ -108,7 +108,11 @@ void mkfifo(const std::string &file_path, mode_t mode);
 /**
  * Open a file. Returned number is a valid file descriptor.
  */
-int open(const std::string &file_path, int flags);
+int open(const std::string &file_path, int flags, mode_t mode);
+
+size_t write(int fd, const void *buf, size_t count);
+
+void close(int fd);
 
 } // namespace io
 } // namespace upd

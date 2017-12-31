@@ -1,28 +1,53 @@
 #include "cache.h"
+#include "../fd_char_reader.h"
 #include "../io.h"
+#include "../system/errno_error.h"
+#include "read.h"
+#include <fcntl.h>
 #include <iomanip>
 #include <sstream>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <utility>
 
 namespace upd {
 namespace update_log {
 
-recorder::recorder(const std::string &file_path, record_mode mode) {
-  log_file_.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-  log_file_.open(file_path,
-                 mode == record_mode::append ? std::ios::app : std::ios::trunc);
-  log_file_ << std::setfill('0') << std::setw(16) << std::hex;
+template <typename Scalar>
+void write_scalar(std::vector<char> &buffer, const Scalar &value) {
+  auto size = buffer.size();
+  buffer.resize(size + sizeof(value));
+  std::memcpy(&buffer[size], &value, sizeof(value));
 }
+
+static void write_string(std::vector<char> &buffer, const std::string &value) {
+  write_scalar(buffer, static_cast<uint16_t>(value.size()));
+  auto size = buffer.size();
+  buffer.resize(size + value.size());
+  std::memcpy(&buffer[size], &value[0], value.size());
+}
+
+recorder::recorder(const std::string &file_path, record_mode mode)
+    : fd_(io::open(file_path,
+                   (mode == record_mode::append ? 0 : O_TRUNC) | O_WRONLY |
+                       O_APPEND | O_CREAT | O_SYNC,
+                   S_IRUSR | S_IWUSR)) {}
 
 void recorder::record(const std::string &local_file_path,
                       const file_record &record) {
-  io::stream_string_joiner<std::ofstream> joiner(log_file_, " ");
-  joiner.push(record.hash).push(record.imprint).push(local_file_path);
-  for (auto path : record.dependency_local_paths) joiner.push(path);
-  log_file_ << std::endl;
+  std::vector<char> buf;
+  write_scalar(buf, record.imprint);
+  write_scalar(buf, record.hash);
+  write_string(buf, local_file_path);
+  write_scalar(buf,
+               static_cast<uint16_t>(record.dependency_local_paths.size()));
+  for (const auto &dep_path : record.dependency_local_paths) {
+    write_string(buf, dep_path);
+  }
+  io::write(fd_, buf.data(), buf.size());
 }
 
-void recorder::close() { log_file_.close(); }
+void recorder::close() { fd_.close(); }
 
 records_by_file::iterator cache::find(const std::string &local_file_path) {
   return cached_records_.find(local_file_path);
@@ -36,34 +61,16 @@ void cache::record(const std::string &local_file_path,
   cached_records_[local_file_path] = record;
 }
 
-records_by_file cache::records_from_log_file(const std::string &log_file_path) {
-  records_by_file records;
-  std::ifstream log_file;
-  log_file.exceptions(std::ifstream::badbit);
-  log_file.open(log_file_path);
-  std::string line, local_file_path, dep_file_path;
-  std::istringstream iss;
-  file_record record_being_read;
-  while (std::getline(log_file, line)) {
-    record_being_read.dependency_local_paths.clear();
-    iss.str(line);
-    iss.clear();
-    iss >> std::hex >> record_being_read.hash >> record_being_read.imprint >>
-        local_file_path;
-    while (iss.good()) {
-      iss >> dep_file_path;
-      record_being_read.dependency_local_paths.push_back(dep_file_path);
-    }
-    if (iss.fail()) {
-      throw corruption_error();
-    }
-    records[local_file_path] = record_being_read;
-  }
-  return records;
-}
-
 cache cache::from_log_file(const std::string &log_file_path) {
-  return cache(log_file_path, records_from_log_file(log_file_path));
+  file_descriptor fd;
+  try {
+    fd = io::open(log_file_path, O_RDONLY, 0);
+  } catch (const system::errno_error &error) {
+    if (error.code != ENOENT) throw;
+    return cache(log_file_path, records_by_file());
+  }
+  fd_char_reader reader(fd);
+  return cache(log_file_path, read(reader));
 }
 
 void rewrite_file(const std::string &file_path,

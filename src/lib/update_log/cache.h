@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../file_descriptor.h"
 #include "file_record.h"
 #include <fstream>
 #include <iostream>
@@ -8,11 +9,6 @@
 
 namespace upd {
 namespace update_log {
-
-/**
- * It means the update log has been corrupted.
- */
-struct corruption_error {};
 
 enum class record_mode { append, truncate };
 
@@ -29,7 +25,7 @@ struct recorder {
   void close();
 
 private:
-  std::ofstream log_file_;
+  file_descriptor fd_;
 };
 
 typedef std::unordered_map<std::string, file_record> records_by_file;
