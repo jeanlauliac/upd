@@ -31,12 +31,8 @@ void read_string(Reader &reader, std::string &value) {
 }
 
 template <typename Reader>
-bool read_record(Reader &reader, std::string &file_name, file_record &record) {
-  record_type type;
-  if (!try_read_scalar(reader, type)) return false;
-  if (type != record_type::file_update) {
-    throw std::runtime_error("wrong record type");
-  }
+bool read_update_record(Reader &reader, std::string &file_name,
+                        file_record &record) {
   read_scalar(reader, record.imprint);
   read_scalar(reader, record.hash);
   read_string(reader, file_name);
@@ -50,10 +46,19 @@ bool read_record(Reader &reader, std::string &file_name, file_record &record) {
 
 template <typename Reader> records_by_file read(Reader &reader) {
   records_by_file result;
-  file_record record;
-  std::string file_path;
-  while (read_record(reader, file_path, record)) {
-    result[file_path] = record;
+  record_type type;
+  while (try_read_scalar(reader, type)) {
+    if (type == record_type::file_update) {
+      file_record record;
+      std::string file_path;
+      read_update_record(reader, file_path, record);
+      result[file_path] = record;
+      continue;
+    }
+    if (type == record_type::entity) {
+      continue;
+    }
+    throw std::runtime_error("wrong record type");
   }
   return result;
 }
