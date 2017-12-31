@@ -2,12 +2,15 @@
 
 using namespace upd::update_log;
 
+constexpr char file_update = static_cast<char>(record_type::file_update);
+
 @it "can read records" {
   std::string data = std::string{
-      17,  0, 0, 0,   0,   0,   0,   0, 42, 0, 0,   0,   0,   0,
-      0,   0, 3, 0,   'f', 'o', 'o', 2, 0,  4, 0,   'b', 'l', 'a',
-      'h', 3, 0, 'b', 'a', 'z', 0,   1, 0,  0, 0,   0,   0,   0,
-      0,   2, 0, 0,   0,   0,   0,   0, 2,  0, 'a', 'z', 0,   0,
+      file_update, 17, 0,   0,   0,   0,   0,   0,   0,   42,  0,   0,
+      0,           0,  0,   0,   0,   3,   0,   'f', 'o', 'o', 2,   0,
+      4,           0,  'b', 'l', 'a', 'h', 3,   0,   'b', 'a', 'z', file_update,
+      0,           1,  0,   0,   0,   0,   0,   0,   0,   2,   0,   0,
+      0,           0,  0,   0,   2,   0,   'a', 'z', 0,   0,
   };
   upd::string_char_reader reader(data);
   auto result = read(reader);

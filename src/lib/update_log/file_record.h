@@ -42,5 +42,7 @@ inline bool operator==(const file_record &left, const file_record &right) {
          left.dependency_local_paths == right.dependency_local_paths;
 }
 
+enum class record_type : char { entity, file_update };
+
 } // namespace update_log
 } // namespace upd

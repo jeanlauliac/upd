@@ -36,6 +36,7 @@ recorder::recorder(const std::string &file_path, record_mode mode)
 void recorder::record(const std::string &local_file_path,
                       const file_record &record) {
   std::vector<char> buf;
+  write_scalar(buf, record_type::file_update);
   write_scalar(buf, record.imprint);
   write_scalar(buf, record.hash);
   write_string(buf, local_file_path);

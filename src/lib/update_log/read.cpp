@@ -32,7 +32,12 @@ void read_string(Reader &reader, std::string &value) {
 
 template <typename Reader>
 bool read_record(Reader &reader, std::string &file_name, file_record &record) {
-  if (!try_read_scalar(reader, record.imprint)) return false;
+  record_type type;
+  if (!try_read_scalar(reader, type)) return false;
+  if (type != record_type::file_update) {
+    throw std::runtime_error("wrong record type");
+  }
+  read_scalar(reader, record.imprint);
   read_scalar(reader, record.hash);
   read_string(reader, file_name);
   uint16_t dep_count;
