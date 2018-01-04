@@ -25,7 +25,11 @@ struct recorder {
   void close();
 
 private:
+  uint16_t get_path_id_(const std::string &file_path);
+  void record_ent_name_(uint16_t parent_ent_id, const std::string &name);
+
   file_descriptor fd_;
+  std::unordered_map<std::string, uint16_t> ent_ids_by_path_;
 };
 
 typedef std::unordered_map<std::string, file_record> records_by_file;
@@ -35,9 +39,7 @@ typedef std::unordered_map<std::string, file_record> records_by_file;
  * cache are persisted right away (see `recorder`).
  */
 struct cache {
-  cache(const std::string &file_path, const records_by_file &cached_records)
-      : recorder_(file_path, record_mode::append),
-        cached_records_(cached_records) {}
+  cache(const std::string &file_path, const records_by_file &cached_records);
   records_by_file::iterator find(const std::string &local_file_path);
   records_by_file::iterator end();
   void record(const std::string &local_file_path, const file_record &record);

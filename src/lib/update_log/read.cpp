@@ -44,8 +44,17 @@ bool read_update_record(Reader &reader, std::string &file_name,
   return true;
 }
 
+template <typename Reader>
+std::pair<uint16_t, std::string> read_entity_name_record(Reader &reader) {
+  std::pair<uint16_t, std::string> record;
+  read_scalar(reader, record.first);
+  read_string(reader, record.second);
+  return record;
+}
+
 template <typename Reader> records_by_file read(Reader &reader) {
   records_by_file result;
+  std::vector<std::string> ent_paths;
   record_type type;
   while (try_read_scalar(reader, type)) {
     if (type == record_type::file_update) {
@@ -55,7 +64,12 @@ template <typename Reader> records_by_file read(Reader &reader) {
       result[file_path] = record;
       continue;
     }
-    if (type == record_type::entity) {
+    if (type == record_type::entity_name) {
+      auto record = read_entity_name_record(reader);
+      auto parent_path = record.first != static_cast<uint16_t>(-1)
+                             ? ent_paths.at(record.first)
+                             : "";
+      ent_paths.push_back(parent_path + '/' + record.second);
       continue;
     }
     throw std::runtime_error("wrong record type");

@@ -39,16 +39,54 @@ void recorder::record(const std::string &local_file_path,
   write_scalar(buf, record_type::file_update);
   write_scalar(buf, record.imprint);
   write_scalar(buf, record.hash);
+  get_path_id_(local_file_path);
   write_string(buf, local_file_path);
   write_scalar(buf,
                static_cast<uint16_t>(record.dependency_local_paths.size()));
   for (const auto &dep_path : record.dependency_local_paths) {
+    get_path_id_(dep_path);
     write_string(buf, dep_path);
   }
   io::write(fd_, buf.data(), buf.size());
 }
 
+uint16_t recorder::get_path_id_(const std::string &file_path) {
+  auto ix = file_path.find('/');
+  uint16_t parent_ent_id = -1;
+  size_t parent_ix = std::string::npos;
+  do {
+    auto path_part = file_path.substr(0, ix);
+    auto idit = ent_ids_by_path_.find(path_part);
+    if (idit != ent_ids_by_path_.end()) {
+      parent_ent_id = idit->second;
+    } else {
+      auto ent_id = static_cast<uint16_t>(ent_ids_by_path_.size());
+      ent_ids_by_path_.emplace(path_part, ent_id);
+      auto ent_name = file_path.substr(parent_ix + 1, ix - parent_ix - 1);
+      record_ent_name_(parent_ent_id, ent_name);
+      parent_ent_id = ent_id;
+    }
+    parent_ix = ix;
+    ix = file_path.find('/', ix + 1);
+  } while (parent_ix != std::string::npos);
+  return parent_ent_id;
+}
+
+void recorder::record_ent_name_(uint16_t parent_ent_id,
+                                const std::string &name) {
+  std::vector<char> buf;
+  write_scalar(buf, record_type::entity_name);
+  write_scalar(buf, parent_ent_id);
+  write_string(buf, name);
+  io::write(fd_, buf.data(), buf.size());
+}
+
 void recorder::close() { fd_.close(); }
+
+cache::cache(const std::string &file_path,
+             const records_by_file &cached_records)
+    : recorder_(file_path, record_mode::append),
+      cached_records_(cached_records) {}
 
 records_by_file::iterator cache::find(const std::string &local_file_path) {
   return cached_records_.find(local_file_path);
