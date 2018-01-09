@@ -10,6 +10,11 @@ namespace upd {
 namespace update_log {
 
 /**
+ * The log was written with another version of the tool.
+ */
+struct version_mismatch_error {};
+
+/**
  * It means the update log has been corrupted.
  */
 struct unexpected_end_of_file_error {};

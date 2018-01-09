@@ -9,7 +9,7 @@
 namespace upd {
 namespace update_log {
 
-constexpr char VERSION = 1;
+constexpr char VERSION = 2;
 
 typedef std::unordered_map<std::string, uint16_t> ent_ids_by_path;
 typedef std::vector<std::string> string_vector;

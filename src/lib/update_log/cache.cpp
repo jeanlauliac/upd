@@ -41,7 +41,11 @@ cache cache::from_log_file(const std::string &log_file_path) {
     return cache(log_file_path);
   }
   fd_char_reader reader(fd);
-  return cache(log_file_path, read(reader));
+  try {
+    return cache(log_file_path, read(reader));
+  } catch (const version_mismatch_error &) {
+    return cache(log_file_path);
+  }
 }
 
 void rewrite_file(const std::string &file_path,

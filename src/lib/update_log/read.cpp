@@ -31,16 +31,24 @@ void read_string(Reader &reader, std::string &value) {
 }
 
 template <typename Reader>
-bool read_update_record(Reader &reader, std::string &file_name,
-                        file_record &record) {
+void read_ent_path(const string_vector ent_paths, Reader &reader,
+                   std::string &value) {
+  uint16_t ent_id;
+  read_scalar(reader, ent_id);
+  value = ent_paths.at(ent_id);
+}
+
+template <typename Reader>
+bool read_update_record(const string_vector ent_paths, Reader &reader,
+                        std::string &file_name, file_record &record) {
   read_scalar(reader, record.imprint);
   read_scalar(reader, record.hash);
-  read_string(reader, file_name);
+  read_ent_path(ent_paths, reader, file_name);
   uint16_t dep_count;
   read_scalar(reader, dep_count);
   record.dependency_local_paths.resize(dep_count);
   for (size_t i = 0; i < dep_count; ++i)
-    read_string(reader, record.dependency_local_paths[i]);
+    read_ent_path(ent_paths, reader, record.dependency_local_paths[i]);
   return true;
 }
 
@@ -57,21 +65,21 @@ template <typename Reader> cache_file_data read(Reader &reader) {
   record_type type;
   char version;
   read_scalar(reader, version);
-  if (version != VERSION) return rs;
+  if (version != VERSION) throw version_mismatch_error();
   while (try_read_scalar(reader, type)) {
     if (type == record_type::file_update) {
       file_record record;
       std::string file_path;
-      read_update_record(reader, file_path, record);
+      read_update_record(rs.ent_paths, reader, file_path, record);
       rs.records[file_path] = record;
       continue;
     }
     if (type == record_type::entity_name) {
       auto record = read_entity_name_record(reader);
       auto parent_path = record.first != static_cast<uint16_t>(-1)
-                             ? rs.ent_paths.at(record.first)
+                             ? rs.ent_paths.at(record.first) + "/"
                              : "";
-      rs.ent_paths.push_back(parent_path + '/' + record.second);
+      rs.ent_paths.push_back(parent_path + record.second);
       continue;
     }
     throw std::runtime_error("wrong record type");
