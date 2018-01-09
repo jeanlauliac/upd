@@ -70,23 +70,10 @@ void execute_update_plan(
   std::unique_lock<std::mutex> lock(state_mutex);
   std::condition_variable global_cv;
   std::vector<std::unique_ptr<worker_state>> worker_states;
-  for (size_t i = 0; i < cx.concurrency; ++i) {
-    auto wr = std::make_unique<worker_state>(state_mutex, global_cv);
-    worker_states.push_back(std::move(wr));
-  }
 
   while (!plan.pending_output_file_paths.empty()) {
     while (!plan.queued_output_file_paths.empty()) {
-      size_t i = 0;
-      while (i < worker_states.size() &&
-             worker_states[i]->status != worker_status::idle)
-        ++i;
-      if (i == worker_states.size()) {
-        break;
-      }
-
       auto local_target_path = plan.queued_output_file_paths.front();
-      plan.queued_output_file_paths.pop();
       auto &target_descriptor =
           *updm.output_files_by_path.find(local_target_path);
       auto const &target_file = target_descriptor.second;
@@ -96,9 +83,21 @@ void execute_update_plan(
       if (is_file_up_to_date(cx.log_cache, cx.hash_cache, cx.root_path,
                              local_target_path, local_src_paths,
                              command_line_tpl)) {
+        plan.queued_output_file_paths.pop();
         plan.erase(local_target_path);
         continue;
       }
+
+      size_t i = 0;
+      while (i < worker_states.size() &&
+             worker_states[i]->status != worker_status::idle)
+        ++i;
+      if (i == worker_states.size()) {
+        if (i >= cx.concurrency) break;
+        auto wr = std::make_unique<worker_state>(state_mutex, global_cv);
+        worker_states.push_back(std::move(wr));
+      }
+      plan.queued_output_file_paths.pop();
 
       auto &st = *worker_states[i];
       st.sfu = schedule_file_update(cx, command_line_tpl, local_src_paths,
