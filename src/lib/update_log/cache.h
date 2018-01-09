@@ -10,7 +10,8 @@
 namespace upd {
 namespace update_log {
 
-enum class record_mode { append, truncate };
+typedef std::unordered_map<std::string, uint16_t> ent_ids_by_path;
+typedef std::vector<std::string> string_vector;
 
 /**
  * Allow us to write to the update log as we go (normally ".upd/log"). We append
@@ -20,7 +21,8 @@ enum class record_mode { append, truncate };
  * throws an exception, we already persisted the information about A.
  */
 struct recorder {
-  recorder(const std::string &file_path, record_mode mode);
+  recorder(const std::string &file_path);
+  recorder(const std::string &file_path, const string_vector &ent_names);
   void record(const std::string &local_file_path, const file_record &record);
   void close();
 
@@ -29,17 +31,22 @@ private:
   void record_ent_name_(uint16_t parent_ent_id, const std::string &name);
 
   file_descriptor fd_;
-  std::unordered_map<std::string, uint16_t> ent_ids_by_path_;
+  ent_ids_by_path ent_ids_by_path_;
 };
 
 typedef std::unordered_map<std::string, file_record> records_by_file;
+struct cache_file_data {
+  records_by_file records;
+  string_vector ent_names;
+};
 
 /**
  * We keep of copy of the update log in memory. New elements added to the
  * cache are persisted right away (see `recorder`).
  */
 struct cache {
-  cache(const std::string &file_path, const records_by_file &cached_records);
+  cache(const std::string &file_path, const cache_file_data &data);
+  cache(const std::string &file_path);
   records_by_file::iterator find(const std::string &local_file_path);
   records_by_file::iterator end();
   void record(const std::string &local_file_path, const file_record &record);

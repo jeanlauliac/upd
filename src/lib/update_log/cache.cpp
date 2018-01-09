@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <utility>
 
+#include "../inspect.h"
+
 namespace upd {
 namespace update_log {
 
@@ -27,11 +29,31 @@ static void write_string(std::vector<char> &buffer, const std::string &value) {
   std::memcpy(&buffer[size], &value[0], value.size());
 }
 
-recorder::recorder(const std::string &file_path, record_mode mode)
-    : fd_(io::open(file_path,
-                   (mode == record_mode::append ? 0 : O_TRUNC) | O_WRONLY |
-                       O_APPEND | O_CREAT | O_SYNC,
-                   S_IRUSR | S_IWUSR)) {}
+static constexpr int WRITE_FLAGS =
+    /* no reads are done when recording */
+    O_WRONLY |
+    /* before each write we ensure we're at the end of the file */
+    O_APPEND |
+    /* ensure each write is flushed before we continue so as to
+       be crash-resilient */
+    O_SYNC;
+
+static constexpr int MODE = S_IRUSR | S_IWUSR;
+
+recorder::recorder(const std::string &file_path)
+    : fd_(io::open(file_path, O_CREAT | O_TRUNC | WRITE_FLAGS, MODE)) {}
+
+static ent_ids_by_path build_ent_index(const string_vector &ent_names) {
+  ent_ids_by_path index;
+  for (size_t i = 0; i < ent_names.size(); ++i) {
+    index[ent_names[i]] = i;
+  }
+  return index;
+}
+
+recorder::recorder(const std::string &file_path, const string_vector &ent_names)
+    : fd_(io::open(file_path, WRITE_FLAGS, MODE)),
+      ent_ids_by_path_(build_ent_index(ent_names)) {}
 
 void recorder::record(const std::string &local_file_path,
                       const file_record &record) {
@@ -83,10 +105,10 @@ void recorder::record_ent_name_(uint16_t parent_ent_id,
 
 void recorder::close() { fd_.close(); }
 
-cache::cache(const std::string &file_path,
-             const records_by_file &cached_records)
-    : recorder_(file_path, record_mode::append),
-      cached_records_(cached_records) {}
+cache::cache(const std::string &file_path, const cache_file_data &data)
+    : recorder_(file_path, data.ent_names), cached_records_(data.records) {}
+
+cache::cache(const std::string &file_path) : recorder_(file_path) {}
 
 records_by_file::iterator cache::find(const std::string &local_file_path) {
   return cached_records_.find(local_file_path);
@@ -106,7 +128,7 @@ cache cache::from_log_file(const std::string &log_file_path) {
     fd = io::open(log_file_path, O_RDONLY, 0);
   } catch (const system::errno_error &error) {
     if (error.code != ENOENT) throw;
-    return cache(log_file_path, records_by_file());
+    return cache(log_file_path);
   }
   fd_char_reader reader(fd);
   return cache(log_file_path, read(reader));
@@ -115,7 +137,7 @@ cache cache::from_log_file(const std::string &log_file_path) {
 void rewrite_file(const std::string &file_path,
                   const std::string &temporary_file_path,
                   const records_by_file &records) {
-  recorder fresh_recorder(temporary_file_path, record_mode::truncate);
+  recorder fresh_recorder(temporary_file_path);
   for (auto record_entry : records) {
     fresh_recorder.record(record_entry.first, record_entry.second);
   }

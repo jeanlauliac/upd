@@ -52,16 +52,16 @@ std::pair<uint16_t, std::string> read_entity_name_record(Reader &reader) {
   return record;
 }
 
-template <typename Reader> records_by_file read(Reader &reader) {
-  records_by_file result;
-  std::vector<std::string> ent_paths;
+template <typename Reader> cache_file_data read(Reader &reader) {
+  records_by_file records;
+  string_vector ent_paths;
   record_type type;
   while (try_read_scalar(reader, type)) {
     if (type == record_type::file_update) {
       file_record record;
       std::string file_path;
       read_update_record(reader, file_path, record);
-      result[file_path] = record;
+      records[file_path] = record;
       continue;
     }
     if (type == record_type::entity_name) {
@@ -74,11 +74,11 @@ template <typename Reader> records_by_file read(Reader &reader) {
     }
     throw std::runtime_error("wrong record type");
   }
-  return result;
+  return {records, ent_paths};
 }
 
-template records_by_file read(string_char_reader &);
-template records_by_file read(fd_char_reader &);
+template cache_file_data read(string_char_reader &);
+template cache_file_data read(fd_char_reader &);
 
 } // namespace update_log
 } // namespace upd

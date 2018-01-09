@@ -14,9 +14,9 @@ namespace update_log {
  */
 struct unexpected_end_of_file_error {};
 
-template <typename Reader> records_by_file read(Reader &);
-extern template records_by_file read(string_char_reader &);
-extern template records_by_file read(fd_char_reader &);
+template <typename Reader> cache_file_data read(Reader &);
+extern template cache_file_data read(string_char_reader &);
+extern template cache_file_data read(fd_char_reader &);
 
 } // namespace update_log
 } // namespace upd

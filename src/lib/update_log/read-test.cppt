@@ -14,8 +14,8 @@ constexpr char file_update = static_cast<char>(record_type::file_update);
   };
   upd::string_char_reader reader(data);
   auto result = read(reader);
-  @assert(result == records_by_file{
-                        {"foo", {17, 42, {"blah", "baz"}}},
-                        {"az", {256, 512, {}}},
-                    });
+  @assert(result.records == records_by_file{
+                                {"foo", {17, 42, {"blah", "baz"}}},
+                                {"az", {256, 512, {}}},
+                            });
 }

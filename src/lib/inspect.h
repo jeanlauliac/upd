@@ -24,6 +24,7 @@ struct inspect_options {
 
 std::string inspect(size_t value, const inspect_options &);
 std::string inspect(unsigned long long value, const inspect_options &);
+std::string inspect(unsigned short value, const inspect_options &);
 std::string inspect(float value, const inspect_options &);
 std::string inspect(bool value, const inspect_options &);
 std::string inspect(char value, const inspect_options &);
