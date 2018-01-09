@@ -16,7 +16,7 @@ namespace upd {
 namespace update_log {
 
 cache::cache(const std::string &file_path, const cache_file_data &data)
-    : recorder_(file_path, data.ent_names), cached_records_(data.records) {}
+    : recorder_(file_path, data.ent_paths), cached_records_(data.records) {}
 
 cache::cache(const std::string &file_path) : recorder_(file_path) {}
 

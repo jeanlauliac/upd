@@ -53,28 +53,30 @@ std::pair<uint16_t, std::string> read_entity_name_record(Reader &reader) {
 }
 
 template <typename Reader> cache_file_data read(Reader &reader) {
-  records_by_file records;
-  string_vector ent_paths;
+  cache_file_data rs;
   record_type type;
+  char version;
+  read_scalar(reader, version);
+  if (version != VERSION) return rs;
   while (try_read_scalar(reader, type)) {
     if (type == record_type::file_update) {
       file_record record;
       std::string file_path;
       read_update_record(reader, file_path, record);
-      records[file_path] = record;
+      rs.records[file_path] = record;
       continue;
     }
     if (type == record_type::entity_name) {
       auto record = read_entity_name_record(reader);
       auto parent_path = record.first != static_cast<uint16_t>(-1)
-                             ? ent_paths.at(record.first)
+                             ? rs.ent_paths.at(record.first)
                              : "";
-      ent_paths.push_back(parent_path + '/' + record.second);
+      rs.ent_paths.push_back(parent_path + '/' + record.second);
       continue;
     }
     throw std::runtime_error("wrong record type");
   }
-  return {records, ent_paths};
+  return rs;
 }
 
 template cache_file_data read(string_char_reader &);

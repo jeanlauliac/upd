@@ -14,7 +14,7 @@ namespace update_log {
 typedef std::unordered_map<std::string, file_record> records_by_file;
 struct cache_file_data {
   records_by_file records;
-  string_vector ent_names;
+  string_vector ent_paths;
 };
 
 /**

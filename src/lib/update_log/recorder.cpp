@@ -36,19 +36,21 @@ static void write_string(std::vector<char> &buffer, const std::string &value) {
 }
 
 recorder::recorder(const std::string &file_path)
-    : fd_(io::open(file_path, O_CREAT | O_TRUNC | WRITE_FLAGS, MODE)) {}
+    : fd_(io::open(file_path, O_CREAT | O_TRUNC | WRITE_FLAGS, MODE)) {
+  io::write(fd_, &VERSION, 1);
+}
 
-static ent_ids_by_path build_ent_index(const string_vector &ent_names) {
+static ent_ids_by_path build_ent_index(const string_vector &ent_paths) {
   ent_ids_by_path index;
-  for (size_t i = 0; i < ent_names.size(); ++i) {
-    index[ent_names[i]] = i;
+  for (size_t i = 0; i < ent_paths.size(); ++i) {
+    index[ent_paths[i]] = i;
   }
   return index;
 }
 
-recorder::recorder(const std::string &file_path, const string_vector &ent_names)
+recorder::recorder(const std::string &file_path, const string_vector &ent_paths)
     : fd_(io::open(file_path, WRITE_FLAGS, MODE)),
-      ent_ids_by_path_(build_ent_index(ent_names)) {}
+      ent_ids_by_path_(build_ent_index(ent_paths)) {}
 
 void recorder::record(const std::string &local_file_path,
                       const file_record &record) {
