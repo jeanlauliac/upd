@@ -149,15 +149,17 @@ const compiled_debug_cpp_files = manifest.rule(
   [cli_parser_cpp_file]
 );
 
+const c_files = manifest.source("(src/lib/**/*).c");
+
 const compiled_optimized_c_files = manifest.rule(
   compile_optimized_c_cli,
-  [manifest.source("(src/lib/**/*).c")],
+  [c_files],
   `${BUILD_DIR}/optimized/$1.o`
 );
 
 const compiled_debug_c_files = manifest.rule(
   compile_debug_c_cli,
-  [manifest.source("(src/lib/**/*).c")],
+  [c_files],
   `${BUILD_DIR}/debug/$1.o`
 );
 
@@ -201,16 +203,18 @@ const package_cpp_file = manifest.rule(
   [compiled_tools]
 );
 
+const main_cpp = manifest.source("(src/main).cpp");
+
 const compiled_optimized_main_files = manifest.rule(
   compile_optimized_cpp_cli,
-  [manifest.source("(src/main).cpp"), package_cpp_file],
+  [main_cpp, package_cpp_file],
   `${BUILD_DIR}/optimized/$1.o`,
   [cli_parser_cpp_file]
 );
 
 const compiled_debug_main_files = manifest.rule(
   compile_debug_cpp_cli,
-  [manifest.source("(src/main).cpp"), package_cpp_file],
+  [main_cpp, package_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
   [cli_parser_cpp_file]
 );
