@@ -33,6 +33,7 @@ static std::unordered_map<std::string, std::vector<mock_ent>>
         {"/root/src/boop",
          {
              {"foo.cpp", DT_REG},
+             {"tadam.glo", DT_REG},
          }},
         {"/root/src/beep2",
          {
@@ -206,7 +207,7 @@ typedef std::unordered_map<std::string, captures> matches;
   @expect(mts).to_equal(expected);
 }
 
-@it "handle several patterns at once" {
+@it "matches several patterns in given order, without duplicates" {
   auto pattern1 = upd::path_glob::parse("src/(**/f*).cpp");
   auto pattern2 = upd::path_glob::parse("src/(**/sm*).cpp");
   auto pattern3 = upd::path_glob::parse("src/(boop/*.*)");
@@ -227,7 +228,9 @@ typedef std::unordered_map<std::string, captures> matches;
           {"src/beep2/smth.cpp", {{4, 14}}},
       },
       matches{
-          {"src/boop/foo.cpp", {{4, 16}}},
+          // "src/boop/foo.cpp" doesn't appear because it was already matched
+          // by the first pattern.
+          {"src/boop/tadam.glo", {{4, 18}}},
       },
   }};
   @expect(mts).to_equal(expected);

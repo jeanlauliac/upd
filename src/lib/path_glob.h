@@ -237,7 +237,7 @@ public:
   matcher(const std::string &root_path, const std::vector<pattern> &patterns)
       : root_path_(root_path), patterns_(patterns),
         pending_dirs_(generate_initial_pending_dirs_(patterns)),
-        bookmark_ix_(0), ent_(nullptr) {}
+        bookmark_ix_(0), ent_(nullptr), ent_had_final_match_(false) {}
 
   matcher(const std::string &root_path, const pattern &single_pattern)
       : matcher(root_path, std::vector<pattern>({single_pattern})) {}
@@ -259,6 +259,7 @@ public:
           segment_ix + 1 < segments.size()) {
         push_ent_name_match_(name, bookmark, indices);
       }
+      if (ent_had_final_match_) continue;
       if (get_type_() == ent_type::regular &&
           segment_ix == segments.size() - 1) {
         finalize_match_(next_match, name, bookmark, indices);
@@ -322,6 +323,7 @@ private:
   void finalize_match_(match &next_match, const std::string &name,
                        const bookmark &target,
                        const std::vector<size_t> match_indices) {
+    ent_had_final_match_ = true;
     auto captured_from_ids = target.captured_from_ids;
     auto captured_to_ids = target.captured_to_ids;
     update_captures_for_ent_name_(target, match_indices, name.size(),
@@ -374,6 +376,7 @@ private:
   }
 
   bool next_ent_() {
+    ent_had_final_match_ = false;
     if (!dir_reader_.is_open()) {
       if (!next_dir_()) return false;
     }
@@ -422,6 +425,7 @@ private:
   size_t bookmark_ix_;
   dirent *ent_;
   ent_type ent_type_;
+  bool ent_had_final_match_;
 };
 
 } // namespace path_glob
