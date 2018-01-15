@@ -8,6 +8,7 @@
 #include "lib/system/errno_error.h"
 #include "lib/update_log/read.h"
 #include "package.h"
+#include <cstring>
 
 namespace upd {
 
@@ -186,7 +187,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
        << " unexpected number" << std::endl;
   } catch (const system::errno_error &error) {
     std::cerr << "*** UNEXPECTED I/O ERROR " << error.code << ": "
-              << strerror(error.code) << std::endl;
+              << std::strerror(error.code) << std::endl;
   }
   return 2;
 }

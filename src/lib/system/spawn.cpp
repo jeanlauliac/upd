@@ -1,5 +1,6 @@
 #include "spawn.h"
 #include "errno_error.h"
+#include <cstring>
 #include <errno.h>
 #include <iostream>
 

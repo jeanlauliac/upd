@@ -1,5 +1,6 @@
 #include "recorder.h"
 #include "../io.h"
+#include <cstring>
 #include <fcntl.h>
 #include <iomanip>
 #include <sstream>
