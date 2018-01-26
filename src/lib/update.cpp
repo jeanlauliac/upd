@@ -28,6 +28,7 @@ XXH64_hash_t hash(const command_line_template &cli_template) {
   xxhash64_stream cli_hash(0);
   cli_hash << hash(cli_template.binary_path);
   cli_hash << hash(cli_template.parts);
+  cli_hash << hash(cli_template.environment);
   return cli_hash.digest();
 }
 

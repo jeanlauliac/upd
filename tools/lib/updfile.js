@@ -42,11 +42,23 @@ class ManifestBuilder {
     };
   }
 
-  cli_template(binary_path: string, args: Array<CliTemplateArgPath>): CliTemplateRef {
-    this._result.command_line_templates.push({
+  cli_template(
+    binary_path: string,
+    args: Array<CliTemplateArgPath>,
+    env?: {[string]: string},
+  ): CliTemplateRef {
+    const tpl: {
+      binary_path: string,
+      arguments: Array<CliTemplateArgPath>,
+      environment?: {[string]: string}
+    } = {
       binary_path,
       arguments: args,
-    });
+    };
+    if (env != null) {
+      tpl.environment = env;
+    }
+    this._result.command_line_templates.push(tpl);
     return {cli_ix: this._result.command_line_templates.length - 1};
   }
 

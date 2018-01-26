@@ -10,6 +10,7 @@
           upd::command_line_template_part(
               {"beep"}, {upd::command_line_template_variable::output_files}),
       },
+      {},
   };
   upd::command_line_parameters parts = {
       "",

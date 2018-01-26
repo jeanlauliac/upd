@@ -51,6 +51,8 @@ inline std::string inspect(const command_line_template_part &value,
   return insp.result();
 }
 
+typedef std::unordered_map<std::string, std::string> environment_t;
+
 /**
  * A command line template is composed as an alternance of literal and variable
  * args. These are arranged as subsequences ("parts") that describe a pair of
@@ -69,11 +71,13 @@ inline std::string inspect(const command_line_template_part &value,
 struct command_line_template {
   std::string binary_path;
   std::vector<command_line_template_part> parts;
+  environment_t environment;
 };
 
 inline bool operator==(const command_line_template &left,
                        const command_line_template &right) {
-  return left.binary_path == right.binary_path && left.parts == right.parts;
+  return left.binary_path == right.binary_path && left.parts == right.parts &&
+         left.environment == right.environment;
 }
 
 inline std::string inspect(const command_line_template &value,
@@ -81,6 +85,7 @@ inline std::string inspect(const command_line_template &value,
   collection_inspector insp("upd::command_line_template", options);
   insp.push_back("binary_path", value.binary_path);
   insp.push_back("parts", value.parts);
+  insp.push_back("environment", value.environment);
   return insp.result();
 }
 
@@ -90,6 +95,7 @@ inline std::string inspect(const command_line_template &value,
 struct command_line {
   std::string binary_path;
   std::vector<std::string> args;
+  environment_t environment;
 };
 
 /**

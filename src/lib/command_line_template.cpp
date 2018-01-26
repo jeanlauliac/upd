@@ -36,6 +36,7 @@ command_line reify_command_line(const command_line_template &base,
                                 const std::string &working_path) {
   command_line result;
   result.binary_path = base.binary_path;
+  result.environment = base.environment;
   for (auto const &part : base.parts) {
     for (auto const &literal_arg : part.literal_args) {
       result.args.push_back(literal_arg);

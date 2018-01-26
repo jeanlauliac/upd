@@ -141,6 +141,19 @@ template <typename ObjectReader> struct read_command_line_template_part_field {
   }
 };
 
+struct read_environment_handler
+    : public json::all_unexpected_elements_handler<environment_t> {
+  template <typename ObjectReader>
+  environment_t object(ObjectReader &reader) const {
+    environment_t result;
+    std::string field_name;
+    while (reader.next(field_name)) {
+      result[field_name] = reader.next_value(string_handler());
+    }
+    return result;
+  }
+};
+
 template <typename ObjectReader> struct read_command_line_template_field {
   static void read(ObjectReader reader, const std::string &field_name,
                    command_line_template &value) {
@@ -152,6 +165,10 @@ template <typename ObjectReader> struct read_command_line_template_field {
       json::read_vector_field_value<object_handler<
           command_line_template_part, read_command_line_template_part_field>>(
           reader, value.parts);
+      return;
+    }
+    if (field_name == "environment") {
+      value.environment = reader.next_value(read_environment_handler());
       return;
     }
     throw std::runtime_error("doesn't know field `" + field_name + "`");

@@ -77,6 +77,9 @@ command_line_result run_command_line(const command_line &target,
 
   system::string_vector env;
   env.push_back("TERM=xterm-color");
+  for (const auto &var : target.environment) {
+    env.push_back(var.first + "=" + var.second);
+  }
 
   pid_t child_pid = system::spawn(target.binary_path, actions, argv, env);
   actions.destroy();

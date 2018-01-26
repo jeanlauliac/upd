@@ -52,6 +52,7 @@ using namespace upd;
                command_line_template_part(
                    {"-I", "/usr/local/include"},
                    {command_line_template_variable::input_files})},
+              {},
           },
       },
       {

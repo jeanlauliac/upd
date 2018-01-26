@@ -65,6 +65,23 @@ template <typename T> XXH64_hash_t hash(const std::vector<T> &target) {
   return target_hash.digest();
 }
 
+template <typename T, typename R>
+XXH64_hash_t hash(const std::pair<T, R> &target) {
+  XXH64_hash_t hashes[2];
+  hashes[0] = hash(target.first);
+  hashes[1] = hash(target.second);
+  return XXH64(hashes, sizeof(hashes), 0);
+}
+
+template <typename T, typename R>
+XXH64_hash_t hash(const std::unordered_map<T, R> &target) {
+  xxhash64_stream target_hash(0);
+  for (auto const &item : target) {
+    target_hash << hash(item);
+  }
+  return target_hash.digest();
+}
+
 /**
  * Hashes an entire file, fast. Since the hash will be different for
  * small changes, this is a handy way to check if a source file changed
