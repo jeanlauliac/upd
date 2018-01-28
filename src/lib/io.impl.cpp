@@ -1,4 +1,5 @@
 #include "io.h"
+#include "path.h"
 #include "system/errno_error.h"
 #include <cstring>
 #include <fcntl.h>
@@ -25,15 +26,6 @@ std::string getcwd() {
   return temp;
 }
 
-std::string dirname_string(const std::string &path) {
-  if (path.size() >= MAXPATHLEN) {
-    throw std::runtime_error("string too long");
-  }
-  char temp[MAXPATHLEN];
-  std::strcpy(temp, path.c_str());
-  return dirname(temp);
-}
-
 static bool is_regular_file(const std::string &path) {
   struct stat data;
   auto stat_ret = stat(path.c_str(), &data);
@@ -49,7 +41,7 @@ static bool is_regular_file(const std::string &path) {
 std::string find_root_path(std::string path) {
   bool found = is_regular_file(path + ROOTFILE_SUFFIX);
   while (!found && path != "/") {
-    path = dirname_string(path);
+    path = dirname(path);
     found = is_regular_file(path + ROOTFILE_SUFFIX);
   }
   if (!found) throw cannot_find_root_error();

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "io.h"
+#include "path.h"
 #include <unordered_set>
 
 namespace upd {
@@ -28,7 +28,7 @@ template <mkdir_type Mkdir> struct directory_cache {
   void create(const std::string &local_path) {
     if (local_path == ".") return;
     if (existing_local_paths_.count(local_path) > 0) return;
-    auto local_dir_path = io::dirname_string(local_path);
+    auto local_dir_path = dirname(local_path);
     create(local_dir_path);
     auto full_path = root_path_ + '/' + local_path;
     if (Mkdir(full_path.c_str(), 0700) != 0 && errno != EEXIST) {

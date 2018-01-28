@@ -16,11 +16,6 @@ extern const char *UPDFILE_SUFFIX;
 std::string getcwd();
 
 /**
- * Same as `dirname`, but with `std::string`.
- */
-std::string dirname_string(const std::string &path);
-
-/**
  * Thrown when no directory could be found containing a `.updroot` file,
  * searching all the current working directory and its parents.
  */

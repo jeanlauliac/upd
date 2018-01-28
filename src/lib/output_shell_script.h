@@ -23,7 +23,7 @@ void output_shell_script(
     auto const &target_file = target_descriptor.second;
     auto const &command_line_tpl =
         command_line_templates[target_file.command_line_ix];
-    auto local_dir = io::dirname_string(local_target_path);
+    auto local_dir = dirname(local_target_path);
     if (mked_dir_paths.count(local_dir) == 0) {
       shell_escape(os << "mkdir -p ", local_dir) << std::endl;
       mked_dir_paths.insert(local_dir);

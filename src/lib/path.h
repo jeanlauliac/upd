@@ -5,6 +5,11 @@
 
 namespace upd {
 
+/**
+ * Same as `dirname`, but with `std::string`.
+ */
+std::string dirname(const std::string &path);
+
 std::string normalize_path(const std::string &path);
 
 bool is_path_absolute(const std::string &path);

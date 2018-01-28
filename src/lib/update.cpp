@@ -120,7 +120,7 @@ schedule_file_update(update_context &cx,
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
   }
-  cx.dir_cache.create(io::dirname_string(local_target_path));
+  cx.dir_cache.create(dirname(local_target_path));
   auto read_depfile_future =
       std::async(std::launch::async, &depfile::read, depfile_path);
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
@@ -149,7 +149,7 @@ void finalize_scheduled_update(
   if (unlink(sfu.depfile_path.c_str()) != 0) {
     throw std::runtime_error("unlink() failed");
   }
-  if (rmdir(io::dirname_string(sfu.depfile_path).c_str()) != 0) {
+  if (rmdir(dirname(sfu.depfile_path).c_str()) != 0) {
     throw std::runtime_error("rmdir() failed");
   }
 

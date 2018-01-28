@@ -1,7 +1,23 @@
 #include "path.h"
+#include <fcntl.h>
+#include <libgen.h>
 #include <sstream>
+#include <stdlib.h>
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 namespace upd {
+
+std::string dirname(const std::string &path) {
+  if (path.size() >= MAXPATHLEN) {
+    throw std::runtime_error("string too long");
+  }
+  char temp[MAXPATHLEN];
+  std::strcpy(temp, path.c_str());
+  return ::dirname(temp);
+}
 
 std::vector<std::string> split_path(const std::string &path) {
   std::vector<std::string> parts;

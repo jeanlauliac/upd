@@ -132,21 +132,24 @@ const cli_parser_cpp_file = manifest.rule(
   [compiled_tools]
 );
 
+const mock_cpp_files = [manifest.source("(src/**/*.mock.cpp)")];
+const impl_cpp_files = [manifest.source("(src/**/*.impl.cpp)")];
 const cpp_files = [manifest.source("(src/lib/**/*).cpp"), cli_parser_cpp_file];
 
-const compiled_optimized_cpp_files = manifest.rule(
-  compile_optimized_cpp_cli,
-  cpp_files,
-  `${BUILD_DIR}/optimized/$1.o`,
-  [cli_parser_cpp_file]
-);
+function compile_cpp(files, type: 'optimized' | 'debug') {
+  return manifest.rule(
+    type === 'optimized' ? compile_optimized_cpp_cli : compile_debug_cpp_cli,
+    files,
+    `${BUILD_DIR}/${type}/$1.o`,
+    [cli_parser_cpp_file]
+  );
+}
 
-const compiled_debug_cpp_files = manifest.rule(
-  compile_debug_cpp_cli,
-  cpp_files,
-  `${BUILD_DIR}/debug/$1.o`,
-  [cli_parser_cpp_file]
-);
+const compiled_optimized_cpp_files = compile_cpp(cpp_files, 'optimized');
+const compiled_debug_cpp_files = compile_cpp(cpp_files, 'debug');
+const compiled_optimized_impl_files = compile_cpp(impl_cpp_files, 'optimized');
+const compiled_debug_impl_files = compile_cpp(impl_cpp_files, 'debug');
+const compiled_debug_mock_files = compile_cpp(mock_cpp_files, 'debug');
 
 const c_files = manifest.source("(src/lib/**/*).c");
 
@@ -257,7 +260,12 @@ manifest.rule(
   [
     manifest.rule(
       link_optimized_cpp_cli,
-      [compiled_optimized_cpp_files, compiled_optimized_c_files, compiled_optimized_main_files],
+      [
+        compiled_optimized_cpp_files,
+        compiled_optimized_impl_files,
+        compiled_optimized_c_files,
+        compiled_optimized_main_files,
+      ],
       `${BUILD_DIR}/pre_strip_upd`
     ),
   ],
@@ -266,13 +274,23 @@ manifest.rule(
 
 manifest.rule(
   link_debug_cpp_cli,
-  [compiled_debug_cpp_files, compiled_debug_c_files, compiled_debug_main_files],
+  [
+    compiled_debug_cpp_files,
+    compiled_debug_impl_files,
+    compiled_debug_c_files,
+    compiled_debug_main_files,
+  ],
   "dist/upd_debug"
 );
 
 manifest.rule(
   link_debug_cpp_cli,
-  [compiled_debug_cpp_files, compiled_debug_c_files, compiled_test_files],
+  [
+    compiled_debug_cpp_files,
+    compiled_debug_mock_files,
+    compiled_debug_c_files,
+    compiled_test_files,
+  ],
   "dist/unit_tests"
 );
 
