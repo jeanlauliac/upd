@@ -142,10 +142,10 @@ To get started on developing `upd`:
 yarn
 
 # setup update manifest
-./configure.js
+./configure
 
-# compile `upd` using itself!
-dist/upd update dist/upd
+# compile `upd` using itself
+bootstrap/upd update dist/upd
 
 # run unit+e2e tests
 yarn test

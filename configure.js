@@ -1,4 +1,3 @@
-#!/usr/bin/env node_modules/.bin/babel-node --plugins transform-flow-strip-types
 /* @flow */
 
 const BUILD_DIR = "gen";
@@ -240,7 +239,7 @@ const link_optimized_cpp_cli = manifest.cli_template(compilerPath, [
     variables: ["input_files"]
   },
   {literals: ["-lpthread"]},
-]);
+], {PATH: process.env.PATH || ''});
 
 const link_debug_cpp_cli = manifest.cli_template(compilerPath, [
   {literals: ["-o"], variables: ["output_file"]},
@@ -249,7 +248,7 @@ const link_debug_cpp_cli = manifest.cli_template(compilerPath, [
     variables: ["input_files"]
   },
   {literals: ["-lpthread"]},
-]);
+], {PATH: process.env.PATH || ''});
 
 manifest.rule(
   manifest.cli_template(resolveBinary('strip'), [
