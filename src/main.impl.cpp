@@ -1,13 +1,13 @@
-#include "../gen/src/lib/cli/parse_options.h"
-#include "lib/cli/utils.h"
-#include "lib/execute_manifest.h"
-#include "lib/gen_update_map.h"
-#include "lib/inspect.h"
-#include "lib/manifest/read_from_file.h"
-#include "lib/path.h"
-#include "lib/system/errno_error.h"
-#include "lib/update_log/read.h"
+#include "../gen/src/cli/parse_options.h"
+#include "cli/utils.h"
+#include "execute_manifest.h"
+#include "gen_update_map.h"
+#include "inspect.h"
+#include "manifest/read_from_file.h"
 #include "package.h"
+#include "path.h"
+#include "system/errno_error.h"
+#include "update_log/read.h"
 #include <cstring>
 
 namespace upd {

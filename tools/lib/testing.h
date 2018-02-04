@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../src/lib/inspect.h"
+#include "../../src/inspect.h"
 #include <iostream>
 
 namespace testing {

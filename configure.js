@@ -98,7 +98,7 @@ const compiled_tools = manifest.rule(
   `${BUILD_DIR}/($1)`
 );
 
-const cppt_sources = manifest.source("(src/lib/**/*).cppt");
+const cppt_sources = manifest.source("(src/**/*).cppt");
 const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
 
 const test_cpp_files = manifest.rule(
@@ -123,18 +123,18 @@ const cli_parser_cpp_file = manifest.rule(
       variables: ["output_file"]
     },
     {
-      literals: [`${BUILD_DIR}/src/lib/cli/parse_options.h`],
+      literals: [`${BUILD_DIR}/src/cli/parse_options.h`],
       variables: ["dependency_file", "input_files"],
     },
   ]),
-  [manifest.source("(src/lib/cli/parse_options).json")],
+  [manifest.source("(src/cli/parse_options).json")],
   `${BUILD_DIR}/($1).cpp`,
   [compiled_tools]
 );
 
 const mock_cpp_files = [manifest.source("(src/**/*.mock.cpp)")];
 const impl_cpp_files = [manifest.source("(src/**/*.impl.cpp)")];
-const cpp_files = [manifest.source("(src/lib/**/*).cpp"), cli_parser_cpp_file];
+const cpp_files = [manifest.source("(src/**/*).cpp"), cli_parser_cpp_file];
 
 function compile_cpp(files, type: 'optimized' | 'debug') {
   return manifest.rule(
@@ -151,7 +151,7 @@ const compiled_optimized_impl_files = compile_cpp(impl_cpp_files, 'optimized');
 const compiled_debug_impl_files = compile_cpp(impl_cpp_files, 'debug');
 const compiled_debug_mock_files = compile_cpp(mock_cpp_files, 'debug');
 
-const c_files = manifest.source("(src/lib/**/*).c");
+const c_files = manifest.source("(src/**/*).c");
 
 const compiled_optimized_c_files = manifest.rule(
   compile_optimized_c_cli,
@@ -205,18 +205,16 @@ const package_cpp_file = manifest.rule(
   [compiled_tools]
 );
 
-const main_cpp = manifest.source("(src/main).cpp");
-
 const compiled_optimized_main_files = manifest.rule(
   compile_optimized_cpp_cli,
-  [main_cpp, package_cpp_file],
+  [package_cpp_file],
   `${BUILD_DIR}/optimized/$1.o`,
   [cli_parser_cpp_file]
 );
 
 const compiled_debug_main_files = manifest.rule(
   compile_debug_cpp_cli,
-  [main_cpp, package_cpp_file],
+  [package_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
   [cli_parser_cpp_file]
 );

@@ -1,4 +1,4 @@
-#include "../../../gen/src/lib/cli/parse_options.h"
+#include "../../gen/src/cli/parse_options.h"
 
 namespace upd {
 namespace cli {
