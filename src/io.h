@@ -7,7 +7,6 @@
 namespace upd {
 namespace io {
 
-extern const char *ROOTFILE_SUFFIX;
 extern const char *UPDFILE_SUFFIX;
 
 /**
@@ -15,19 +14,7 @@ extern const char *UPDFILE_SUFFIX;
  */
 std::string getcwd();
 
-/**
- * Thrown when no directory could be found containing a `.updroot` file,
- * searching all the current working directory and its parents.
- */
-struct cannot_find_root_error {};
-
-/**
- * Figure out the root directory of the project. It is identified by containing
- * a file named `.updroot`. This path is used as the base for what we call
- * "local paths". All these local paths are canonicalized in terms of the root
- * path.
- */
-std::string find_root_path(std::string origin_path);
+bool is_regular_file(const std::string &path);
 
 /**
  * Keep track and automatically delete a directory handle.

@@ -15,7 +15,6 @@
 namespace upd {
 namespace io {
 
-const char *ROOTFILE_SUFFIX = "/.updroot";
 const char *UPDFILE_SUFFIX = "/updfile.json";
 
 std::string getcwd() {
@@ -26,7 +25,7 @@ std::string getcwd() {
   return temp;
 }
 
-static bool is_regular_file(const std::string &path) {
+bool is_regular_file(const std::string &path) {
   struct stat data;
   auto stat_ret = stat(path.c_str(), &data);
   if (stat_ret != 0) {
@@ -36,16 +35,6 @@ static bool is_regular_file(const std::string &path) {
     throw std::runtime_error("`stat` function returned unhanled error");
   }
   return S_ISREG(data.st_mode) != 0;
-}
-
-std::string find_root_path(std::string path) {
-  bool found = is_regular_file(path + ROOTFILE_SUFFIX);
-  while (!found && path != "/") {
-    path = dirname(path);
-    found = is_regular_file(path + ROOTFILE_SUFFIX);
-  }
-  if (!found) throw cannot_find_root_error();
-  return path;
 }
 
 dir::dir(const std::string &path) : ptr_(opendir(path.c_str())) {

@@ -3,12 +3,11 @@
 namespace upd {
 namespace io {
 
-const char *ROOTFILE_SUFFIX = "/.updroot";
 const char *UPDFILE_SUFFIX = "/updfile.json";
 
 std::string getcwd() { return "/home/tests"; }
 
-std::string find_root_path(std::string) { return "/home/tests"; }
+bool is_regular_file(const std::string &) { return true; }
 
 dir::dir(const std::string &) : ptr_(nullptr) {}
 

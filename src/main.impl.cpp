@@ -12,10 +12,38 @@
 
 namespace upd {
 
+const char *ROOTFILE_SUFFIX = "/.updroot";
+
 void create_root(const std::string &dir_path) {
   std::ofstream file;
   file.exceptions(std::ifstream::badbit);
-  file.open(dir_path + io::ROOTFILE_SUFFIX);
+  file.open(dir_path + ROOTFILE_SUFFIX);
+}
+
+/**
+ * Thrown when no directory could be found containing a `.updroot` file,
+ * searching the current working directory and all its parents.
+ */
+struct cannot_find_root_error {};
+
+/**
+ * `upd` acts only on a subtree of the entire file sytem. The root of this tree,
+ * that one could call the "project", is defined by the presence of a "root"
+ * file. On startup, we look for this root in the current directory and
+ * its successive parent paths (not necessarily parent directories, because
+ * the path might contain symlinks, that we currently ignore).
+ * This is similar to the way Git and Mercurial find their own project trees.
+ * Most of the paths we manipulate in the rest of the program are "local" paths,
+ * relative to this subtree.
+ */
+std::string find_root_path(std::string path) {
+  bool found = io::is_regular_file(path + ROOTFILE_SUFFIX);
+  while (!found && path != "/") {
+    path = dirname(path);
+    found = io::is_regular_file(path + ROOTFILE_SUFFIX);
+  }
+  if (!found) throw cannot_find_root_error();
+  return path;
 }
 
 template <typename OStream> struct err_functor {
@@ -95,7 +123,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
       create_root(working_path);
       return 0;
     }
-    auto root_path = io::find_root_path(working_path);
+    auto root_path = find_root_path(working_path);
     if (cli_opts.command == cli::command::root) {
       std::cout << root_path << std::endl;
       return 0;
@@ -108,7 +136,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
     return 0;
   } catch (update_failed_error error) {
     err() << "one or more files failed to update" << std::endl;
-  } catch (io::cannot_find_root_error) {
+  } catch (cannot_find_root_error) {
     err() << "cannot find a `.updroot' file in the current directory or "
           << "in any of the parent directories" << std::endl
           << "To start a new project in the current directory, "
