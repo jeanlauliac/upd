@@ -7,8 +7,6 @@
 namespace upd {
 namespace io {
 
-extern const char *UPDFILE_SUFFIX;
-
 /**
  * Get the current working directory.
  */

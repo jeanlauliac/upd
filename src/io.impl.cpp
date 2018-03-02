@@ -15,8 +15,6 @@
 namespace upd {
 namespace io {
 
-const char *UPDFILE_SUFFIX = "/updfile.json";
-
 std::string getcwd() {
   char temp[MAXPATHLEN];
   if (::getcwd(temp, MAXPATHLEN) == nullptr) {

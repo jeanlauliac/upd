@@ -10,6 +10,8 @@
 namespace upd {
 namespace manifest {
 
+const char *UPDFILE_SUFFIX = "/updfile.json";
+
 struct source_pattern_handler
     : public json::all_unexpected_elements_handler<path_glob::pattern> {
   path_glob::pattern string_literal(const std::string &pattern_string) const {
@@ -208,7 +210,7 @@ template manifest parse(string_lexer &);
 manifest read_from_file(const std::string &root_path) {
   std::ifstream file;
   file.exceptions(std::ifstream::badbit);
-  std::string file_path = root_path + io::UPDFILE_SUFFIX;
+  std::string file_path = root_path + UPDFILE_SUFFIX;
   file.open(file_path);
   if (!file.is_open()) {
     throw missing_manifest_error(root_path);
