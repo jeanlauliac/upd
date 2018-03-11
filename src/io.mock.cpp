@@ -1,4 +1,7 @@
 #include "io.h"
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace upd {
 namespace io {
@@ -32,11 +35,49 @@ std::string mkdtemp(const std::string &) { return "/tmp/foo"; }
 
 void mkfifo(const std::string &, mode_t) {}
 
-int open(const std::string &, int, mode_t) { return 3; }
+struct fd_data {
+  std::string file_path;
+  size_t position;
+};
 
-size_t write(int, const void *, size_t) { return 0; }
+std::unordered_map<std::string, std::vector<char>> files;
+std::unordered_map<int, fd_data> fds;
 
-void close(int) {}
+int open(const std::string &file_path, int, mode_t) {
+  if (files.find(file_path) == files.end()) {
+    files[file_path] = {};
+  }
+  int fd = 3;
+  while (fds.find(fd) != fds.end() && fd < 1024) ++fd;
+  if (fd == 1024) throw std::runtime_error("too many files open");
+  fds[fd] = {file_path, 0};
+  return fd;
+}
+
+size_t write(int fd, const void *buf, size_t size) {
+  auto &desc = fds[fd];
+  auto &file_buf = files[desc.file_path];
+  auto new_size = desc.position + size;
+  if (file_buf.size() < new_size) {
+    file_buf.resize(new_size);
+  }
+  std::memcpy(file_buf.data() + desc.position, buf, size);
+  desc.position += size;
+  return size;
+}
+
+ssize_t read(int fd, void *buf, size_t size) {
+  auto &desc = fds[fd];
+  auto &file_buf = files[desc.file_path];
+  if (desc.position + size > file_buf.size()) {
+    size = file_buf.size() - desc.position;
+  }
+  std::memcpy(buf, file_buf.data() + desc.position, size);
+  desc.position += size;
+  return size;
+}
+
+void close(int fd) { fds.erase(fd); }
 
 } // namespace io
 } // namespace upd
