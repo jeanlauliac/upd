@@ -1,4 +1,5 @@
 #include "fd_char_reader.h"
+#include "io.h"
 #include <stdexcept>
 #include <unistd.h>
 
@@ -6,7 +7,7 @@ namespace upd {
 
 bool fd_char_reader::next(char &c) {
   if (next_ >= end_) {
-    auto count = read(fd_, buffer_, sizeof(buffer_));
+    auto count = io::read(fd_, buffer_, sizeof(buffer_));
     if (count < 0) {
       throw std::runtime_error("read() failed");
     }

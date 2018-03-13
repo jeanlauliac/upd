@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../inspect.h"
 #include <vector>
 
 namespace upd {
@@ -40,6 +41,15 @@ struct file_record {
 inline bool operator==(const file_record &left, const file_record &right) {
   return left.imprint == right.imprint && left.hash == right.hash &&
          left.dependency_local_paths == right.dependency_local_paths;
+}
+
+inline std::string inspect(const file_record &value,
+                           const inspect_options &options) {
+  collection_inspector insp("upd::update_log::file_record", options);
+  insp.push_back("imprint", value.imprint);
+  insp.push_back("hash", value.hash);
+  insp.push_back("dependency_local_paths", value.dependency_local_paths);
+  return insp.result();
 }
 
 enum class record_type : char { entity_name, file_update };

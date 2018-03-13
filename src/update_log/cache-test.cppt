@@ -1,0 +1,17 @@
+#include "cache.h"
+
+using namespace upd;
+
+@it "reloads the cache from file" {
+  update_log::file_record ref_record = {1234, 5678, {"bar.h", "glo.h"}};
+  {
+    update_log::cache cache("/update_log");
+    cache.record("foo.cpp", ref_record);
+  }
+  {
+    auto cache = update_log::cache::from_log_file("/update_log");
+    auto record = cache.find("foo.cpp");
+    @assert(record != cache.end());
+    @expect(record->second).to_equal(ref_record);
+  }
+}

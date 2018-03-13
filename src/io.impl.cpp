@@ -96,6 +96,14 @@ size_t write(int fd, const void *buf, size_t count) {
   return bytes_written;
 }
 
+ssize_t read(int fd, void *buf, size_t count) {
+  ssize_t bytes_read = ::read(fd, buf, count);
+  if (bytes_read < 0) {
+    throw system::errno_error(errno);
+  }
+  return bytes_read;
+}
+
 void close(int fd) {
   if (::close(fd) != 0) {
     throw system::errno_error(errno);
