@@ -4,7 +4,9 @@
   "description": "Update files, fast.",
   "author": "Jean Lauliac <jean@lauliac.com>",
   "license": "MIT",
-  "bin": {"upd": "bootstrap/upd"},
+  "bin": {
+    "upd": "bootstrap/upd"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jeanlauliac/upd.git"
@@ -13,7 +15,8 @@
     "babel-cli": "^6.26.0",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "chalk": "^1.1.3",
-    "clang-format": "^1.1.0"
+    "clang-format": "^1.1.0",
+    "json5": "^1.0.1"
   },
   "devDependencies": {
     "faucet": "^0.0.1",

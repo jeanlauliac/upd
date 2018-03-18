@@ -1,0 +1,45 @@
+{
+  "namespace":["upd", "update_log"],
+  "includes": [
+    "../inspect.h",
+    "vector",
+    "string"
+  ],
+  "structs":[
+    /**
+     * For each file we update, we keep track of how we generated it, and what
+     * we got. This allows us, the next time around, to know if a file needs
+     * update again, or is up-to-date.
+     */
+    {
+      "name": "file_record",
+      "fields": [
+        /**
+         * This is a hash digest of the command line that generated that
+         * particular file, plus all the source files and dependencies content.
+         * When we wish to update a file, we recompute this hash from the fresh
+         * command line; if it's the same as the record, it means it's already
+         * up-to-date.
+         */
+        {"type": "unsigned long long", "name": "imprint"},
+        /**
+         * This is a hash digest of the file content. This is handy to know if a
+         * file hasn't been corrupted after having been generated; in which case
+         * it needs to be updated again.
+         */
+        {"type": "unsigned long long", "name": "hash"},
+        /**
+         * This is all the files on which this particular file depends on for it
+         * generation, in addition to its direct sources. For example, in C++,
+         * an object file depends on the `.cpp` file, but headers are additional
+         * dependencies that we must consider.
+         *
+         * Another example: if we use a JavaScript script to update some files,
+         * this script itself has modules it depends on. If these modules
+         * change, it's probably best to update the files again.
+         */
+        {"type": "std::vector<std::string>", "name": "dependency_local_paths"}
+      ]
+    }
+  ]
+}

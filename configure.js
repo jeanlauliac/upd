@@ -132,6 +132,18 @@ const cli_parser_cpp_file = manifest.rule(
   [compiled_tools]
 );
 
+const struct_header_files = manifest.rule(
+  manifest.cli_template(nodePath, [
+    {
+      literals: [`${BUILD_DIR}/tools/gen_cpp_struct.js`],
+      variables: ["output_file", "dependency_file", "input_files"],
+    },
+  ]),
+  [manifest.source("(src/**/*).struct.json")],
+  `${BUILD_DIR}/($1).h`,
+  [compiled_tools],
+);
+
 const mock_cpp_files = [manifest.source("(src/**/*.mock.cpp)")];
 const impl_cpp_files = [manifest.source("(src/**/*.impl.cpp)")];
 const cpp_files = [manifest.source("(src/**/*).cpp"), cli_parser_cpp_file];
@@ -141,7 +153,7 @@ function compile_cpp(files, type: 'optimized' | 'debug') {
     type === 'optimized' ? compile_optimized_cpp_cli : compile_debug_cpp_cli,
     files,
     `${BUILD_DIR}/${type}/$1.o`,
-    [cli_parser_cpp_file]
+    [cli_parser_cpp_file, struct_header_files],
   );
 }
 
@@ -223,7 +235,7 @@ const compiled_test_files = manifest.rule(
   compile_debug_cpp_cli,
   [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, test_index_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
-  [cli_parser_cpp_file]
+  [cli_parser_cpp_file, struct_header_files]
 );
 
 const commonLinkFlags = ["-Wall", "-std=c++14"];

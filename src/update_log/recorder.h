@@ -1,7 +1,7 @@
 #pragma once
 
+#include "../../gen/src/update_log/file_record.h"
 #include "../file_descriptor.h"
-#include "file_record.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
