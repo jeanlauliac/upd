@@ -40,8 +40,9 @@ struct update_worker {
   update_worker(update_worker &&) = delete;
   void notify();
   void join();
+  inline std::mutex &mutex() { return mutex_; }
 
-private:
+public:
   void run_();
 
   worker_status &status_;

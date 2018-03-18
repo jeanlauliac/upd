@@ -52,6 +52,7 @@ struct worker_state {
         worker(status, result, sfu.job, mutex, cv) {}
   worker_state(worker_state &) = delete;
   worker_state(worker_state &&other) = delete;
+  ~worker_state();
 
   worker_status status;
   command_line_result result;
@@ -63,13 +64,21 @@ struct worker_state {
   update_worker worker;
 };
 
+worker_state::~worker_state() {
+  std::unique_lock<std::mutex> lock(worker.mutex());
+  status = worker_status::shutdown;
+  worker.notify();
+  lock.unlock();
+  worker.join();
+}
+
 void execute_update_plan(
     update_context &cx, const update_map &updm, update_plan &plan,
     std::vector<command_line_template> command_line_templates) {
   std::mutex state_mutex;
-  std::unique_lock<std::mutex> lock(state_mutex);
   std::condition_variable global_cv;
   std::vector<std::unique_ptr<worker_state>> worker_states;
+  std::unique_lock<std::mutex> lock(state_mutex);
 
   while (!plan.pending_output_file_paths.empty()) {
     while (!plan.queued_output_file_paths.empty()) {
@@ -177,9 +186,6 @@ void execute_update_plan(
     ws->worker.notify();
   }
   lock.unlock();
-  for (auto &ws : worker_states) {
-    ws->worker.join();
-  }
 }
 
 } // namespace upd
