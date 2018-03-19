@@ -63,13 +63,39 @@ struct worker_state {
   update_worker worker;
 };
 
+struct worker_pool {
+  worker_pool() : lock(state_mutex){};
+  ~worker_pool();
+
+  std::mutex state_mutex;
+  std::unique_lock<std::mutex> lock;
+  std::condition_variable global_cv;
+  std::vector<std::unique_ptr<worker_state>> worker_states;
+};
+
+/**
+ * We want to make sure to shutdown the threads cleanly, otherwise
+ * `std::thread::~thread` will call `std::terminate`.
+ */
+worker_pool::~worker_pool() {
+  if (!lock.owns_lock()) lock.lock();
+  for (auto &ws : worker_states) {
+    ws->status = worker_status::shutdown;
+    ws->worker.notify();
+  }
+  lock.unlock();
+  for (auto &ws : worker_states) {
+    ws->worker.join();
+  }
+}
+
 void execute_update_plan(
     update_context &cx, const update_map &updm, update_plan &plan,
     std::vector<command_line_template> command_line_templates) {
-  std::mutex state_mutex;
-  std::unique_lock<std::mutex> lock(state_mutex);
-  std::condition_variable global_cv;
-  std::vector<std::unique_ptr<worker_state>> worker_states;
+
+  worker_pool pool;
+  std::vector<std::unique_ptr<worker_state>> &worker_states =
+      pool.worker_states;
 
   while (!plan.pending_output_file_paths.empty()) {
     while (!plan.queued_output_file_paths.empty()) {
@@ -94,7 +120,8 @@ void execute_update_plan(
         ++i;
       if (i == worker_states.size()) {
         if (i >= cx.concurrency) break;
-        auto wr = std::make_unique<worker_state>(state_mutex, global_cv);
+        auto wr =
+            std::make_unique<worker_state>(pool.state_mutex, pool.global_cv);
         worker_states.push_back(std::move(wr));
       }
       plan.queued_output_file_paths.pop();
@@ -124,7 +151,7 @@ void execute_update_plan(
             has_finished = true;
         }
         if (has_finished || !has_in_progress) break;
-        global_cv.wait(lock);
+        pool.global_cv.wait(pool.lock);
       } while (true);
 
       for (size_t i = 0; i < worker_states.size(); ++i) {
@@ -170,15 +197,6 @@ void execute_update_plan(
     if (has_errors) {
       break;
     }
-  }
-
-  for (auto &ws : worker_states) {
-    ws->status = worker_status::shutdown;
-    ws->worker.notify();
-  }
-  lock.unlock();
-  for (auto &ws : worker_states) {
-    ws->worker.join();
   }
 }
 
