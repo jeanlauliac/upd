@@ -65,12 +65,12 @@ template <typename ObjectReader> struct read_rule_input_field {
                    update_rule_input &value) {
     if (field_name == "source_ix") {
       value.input_ix = reader.next_value(read_size_t_handler());
-      value.type = update_rule_input::type::source;
+      value.type = input_type::source;
       return;
     }
     if (field_name == "rule_ix") {
       value.input_ix = reader.next_value(read_size_t_handler());
-      value.type = update_rule_input::type::rule;
+      value.type = input_type::rule;
       return;
     }
     throw std::runtime_error("doesn't know field `" + field_name + "`");

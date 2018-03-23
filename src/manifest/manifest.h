@@ -7,22 +7,23 @@
 namespace upd {
 namespace manifest {
 
+enum class input_type { source, rule };
+
 struct update_rule_input {
-  enum class type { source, rule };
 
   update_rule_input() {}
-  update_rule_input(type type_, size_t input_ix_)
+  update_rule_input(input_type type_, size_t input_ix_)
       : type(type_), input_ix(input_ix_) {}
 
   static update_rule_input from_source(size_t ix) {
-    return update_rule_input(type::source, ix);
+    return update_rule_input(input_type::source, ix);
   }
 
   static update_rule_input from_rule(size_t ix) {
-    return update_rule_input(type::rule, ix);
+    return update_rule_input(input_type::rule, ix);
   }
 
-  type type;
+  input_type type;
   size_t input_ix;
 };
 
@@ -31,7 +32,7 @@ inline bool operator==(const update_rule_input &left,
   return left.type == right.type && left.input_ix == right.input_ix;
 }
 
-inline std::string inspect(enum update_rule_input::type value,
+inline std::string inspect(enum input_type value,
                            const inspect_options &options) {
   return inspect(static_cast<size_t>(value), options);
 }
