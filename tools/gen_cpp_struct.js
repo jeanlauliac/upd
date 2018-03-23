@@ -34,7 +34,24 @@ cli(function () {
   write('\n');
   json.namespace.forEach(name => write(`namespace ${name} {\n`));
   write('\n');
-  json.structs.forEach(spec => {
+  const ns = json.namespace.join('::');
+  (json.enums || []).forEach(spec => {
+    write(`enum class ${spec.name} {\n`);
+    spec.values.forEach(value => {
+      write(`  ${value},\n`);
+    });
+    write(`};\n\n`);
+    write(`inline std::string inspect(const ${spec.name}& value, const inspect_options &options) {
+  switch (value) {\n`);
+    spec.values.forEach(value => {
+      const qualifiedName = `${spec.name}::${value}`;
+      write(`    case ${qualifiedName}: return "${ns}::${qualifiedName}";\n`);
+    });
+    write(`  }\n`);
+    write(`  throw std::runtime_error('invalid enum value');\n`)
+    write(`}\n\n`);
+  });
+  (json.structs || []).forEach(spec => {
     write(`struct ${spec.name} {\n`);
     spec.fields.forEach(fspec => {
       write(`  ${fspec.type} ${fspec.name};\n`);
@@ -51,7 +68,7 @@ cli(function () {
     write(`;\n}\n`);
     write(`
 inline std::string inspect(const ${spec.name}& value, const inspect_options &options) {
-  collection_inspector insp("${json.namespace.join('::')}::${spec.name}", options);
+  collection_inspector insp("${ns}::${spec.name}", options);
 `);
     spec.fields.forEach(fspec => {
       write(`  insp.push_back("${fspec.name}", value.${fspec.name});\n`);
