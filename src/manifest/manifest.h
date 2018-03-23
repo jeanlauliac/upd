@@ -1,13 +1,12 @@
 #pragma once
 
+#include "../../gen/src/manifest/manifest.h"
 #include "../command_line_template.h"
 #include "../path_glob.h"
 #include "../substitution.h"
 
 namespace upd {
 namespace manifest {
-
-enum class input_type { source, rule };
 
 struct update_rule_input {
 
@@ -30,11 +29,6 @@ struct update_rule_input {
 inline bool operator==(const update_rule_input &left,
                        const update_rule_input &right) {
   return left.type == right.type && left.input_ix == right.input_ix;
-}
-
-inline std::string inspect(enum input_type value,
-                           const inspect_options &options) {
-  return inspect(static_cast<size_t>(value), options);
 }
 
 inline std::string inspect(const update_rule_input &value,

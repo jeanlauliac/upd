@@ -1,0 +1,12 @@
+{
+  "namespace": ["upd", "manifest"],
+  "includes": [
+    "../inspect.h",
+  ],
+  "enums": [
+    {
+      "name": "input_type",
+      "values": ["source", "rule"],
+    },
+  ],
+}
