@@ -1,11 +1,11 @@
 {
-  "namespace":["upd", "update_log"],
+  "namespace": ["upd", "update_log"],
   "includes": [
     "../inspect.h",
     "vector",
     "string"
   ],
-  "structs":[
+  "structs": [
     /**
      * For each file we update, we keep track of how we generated it, and what
      * we got. This allows us, the next time around, to know if a file needs
