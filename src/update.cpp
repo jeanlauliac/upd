@@ -66,15 +66,22 @@ bool is_file_up_to_date(update_log::cache &log_cache,
     return false;
   }
   auto const &record = entry->second;
-  auto new_imprint =
-      get_target_imprint(hash_cache, root_path, local_src_paths,
-                         record.dependency_local_paths, cli_template);
-  if (new_imprint != record.imprint) {
+  try {
+    auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
+    if (new_hash != record.hash) {
+      throw file_changed_manually_error{local_target_path};
+    }
+  } catch (std::system_error error) {
+    if (error.code() != std::errc::no_such_file_or_directory) {
+      throw;
+    }
     return false;
   }
   try {
-    auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
-    return new_hash == record.hash;
+    auto new_imprint =
+        get_target_imprint(hash_cache, root_path, local_src_paths,
+                           record.dependency_local_paths, cli_template);
+    return new_imprint == record.imprint;
   } catch (std::system_error error) {
     if (error.code() != std::errc::no_such_file_or_directory) {
       throw;

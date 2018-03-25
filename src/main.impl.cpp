@@ -149,7 +149,7 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
   } catch (io::ifstream_failed_error error) {
     err() << "failed to read file `" << error.file_path << "`" << std::endl;
   } catch (update_log::unexpected_end_of_file_error) {
-    err() << "update log is corrupted; delete or revert the `.upd/log` file"
+    err() << "update log is corrupted; delete or revert the `.upd/log' file"
           << std::endl;
   } catch (unknown_target_error error) {
     err() << "unknown output file: " << error.relative_path << std::endl;
@@ -213,6 +213,10 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
     es << error_header{working_path, error.file_path,
                        error.reason.location.from, color_diags}
        << " unexpected number" << std::endl;
+  } catch (file_changed_manually_error error) {
+    err() << "the file `" << error.local_file_path << "'" << " has been "
+      << "modified manually and won't be overwritten in order to protect local changes; "
+      << "to resolve this issue, revert the file or delete it" << std::endl;
   }
   return 2;
 }

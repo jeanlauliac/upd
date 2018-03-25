@@ -77,6 +77,10 @@ XXH64_hash_t hash_files(file_hash_cache &hash_cache,
                         const std::string &root_path,
                         const std::vector<std::string> &local_paths);
 
+struct file_changed_manually_error {
+  std::string local_file_path;
+};
+
 bool is_file_up_to_date(update_log::cache &log_cache,
                         file_hash_cache &hash_cache,
                         const std::string &root_path,
