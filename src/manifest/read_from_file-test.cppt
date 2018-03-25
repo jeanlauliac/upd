@@ -63,11 +63,11 @@ using namespace upd;
           {
               13,
               {
-                  manifest::update_rule_input::from_source(1),
-                  manifest::update_rule_input::from_rule(2),
+                  {manifest::input_type::source, 1},
+                  {manifest::input_type::rule, 2},
               },
               {
-                  manifest::update_rule_input::from_rule(3),
+                  {manifest::input_type::rule, 3},
               },
               substitution::parse("dist/($1).o"),
           },

@@ -9,4 +9,13 @@
       "values": ["source", "rule"],
     },
   ],
+  "structs": [
+    {
+      "name": "update_rule_input",
+      "fields": [
+        {"name": "type", "type": "input_type"},
+        {"name": "input_ix", "type": "size_t"},
+      ]
+    },
+  ],
 }

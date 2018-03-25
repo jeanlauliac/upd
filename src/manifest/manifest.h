@@ -8,39 +8,6 @@
 namespace upd {
 namespace manifest {
 
-struct update_rule_input {
-
-  update_rule_input() {}
-  update_rule_input(input_type type_, size_t input_ix_)
-      : type(type_), input_ix(input_ix_) {}
-
-  static update_rule_input from_source(size_t ix) {
-    return update_rule_input(input_type::source, ix);
-  }
-
-  static update_rule_input from_rule(size_t ix) {
-    return update_rule_input(input_type::rule, ix);
-  }
-
-  input_type type;
-  size_t input_ix;
-};
-
-inline bool operator==(const update_rule_input &left,
-                       const update_rule_input &right) {
-  return left.type == right.type && left.input_ix == right.input_ix;
-}
-
-inline std::string inspect(const update_rule_input &value,
-                           const inspect_options &options) {
-  std::ostringstream os;
-  inspect_options inner_options({options.global, options.depth + 1});
-  os << "upd::manifest::update_rule_input(";
-  os << inspect(value.type, inner_options) << ", "
-     << inspect(value.input_ix, inner_options) << ')';
-  return os.str();
-}
-
 struct update_rule {
   size_t command_line_ix;
   std::vector<update_rule_input> inputs;
