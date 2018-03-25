@@ -72,8 +72,15 @@ bool is_file_up_to_date(update_log::cache &log_cache,
   if (new_imprint != record.imprint) {
     return false;
   }
-  auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
-  return new_hash == record.hash;
+  try {
+    auto new_hash = hash_cache.hash(root_path + "/" + local_target_path);
+    return new_hash == record.hash;
+  } catch (std::system_error error) {
+    if (error.code() != std::errc::no_such_file_or_directory) {
+      throw;
+    }
+    return false;
+  }
 }
 
 scheduled_file_update::scheduled_file_update() {}

@@ -213,9 +213,6 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
     es << error_header{working_path, error.file_path,
                        error.reason.location.from, color_diags}
        << " unexpected number" << std::endl;
-  } catch (const system::errno_error &error) {
-    std::cerr << "*** UNEXPECTED I/O ERROR " << error.code << ": "
-              << std::strerror(error.code) << std::endl;
   }
   return 2;
 }

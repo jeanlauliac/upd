@@ -83,7 +83,7 @@ void mkfifo(const std::string &file_path, mode_t mode) {
 int open(const std::string &file_path, int flags, mode_t mode) {
   int fd = ::open(file_path.c_str(), flags, mode);
   if (fd < 0) {
-    throw system::errno_error(errno);
+    throw std::system_error(errno, std::generic_category());
   }
   return fd;
 }
@@ -91,7 +91,7 @@ int open(const std::string &file_path, int flags, mode_t mode) {
 size_t write(int fd, const void *buf, size_t count) {
   ssize_t bytes_written = ::write(fd, buf, count);
   if (bytes_written < 0) {
-    throw system::errno_error(errno);
+    throw std::system_error(errno, std::generic_category());
   }
   return bytes_written;
 }
@@ -99,14 +99,14 @@ size_t write(int fd, const void *buf, size_t count) {
 ssize_t read(int fd, void *buf, size_t count) {
   ssize_t bytes_read = ::read(fd, buf, count);
   if (bytes_read < 0) {
-    throw system::errno_error(errno);
+    throw std::system_error(errno, std::generic_category());
   }
   return bytes_read;
 }
 
 void close(int fd) {
   if (::close(fd) != 0) {
-    throw system::errno_error(errno);
+    throw std::system_error(errno, std::generic_category());
   }
 }
 
