@@ -36,8 +36,8 @@ cache cache::from_log_file(const std::string &log_file_path) {
   file_descriptor fd;
   try {
     fd = io::open(log_file_path, O_RDONLY, 0);
-  } catch (const system::errno_error &error) {
-    if (error.code != ENOENT) throw;
+  } catch (const std::system_error &error) {
+    if (error.code() != std::errc::no_such_file_or_directory) throw;
     return cache(log_file_path);
   }
   fd_char_reader reader(fd);
