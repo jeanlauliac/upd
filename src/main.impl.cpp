@@ -215,10 +215,9 @@ int run_with_options(const cli::options &cli_opts, bool auto_color_diags) {
                        error.reason.location.from, color_diags}
        << " unexpected number" << std::endl;
   } catch (const file_changed_manually_error &error) {
-    err() << "the file `" << error.local_file_path << "'"
-          << " has been "
-          << "modified manually and won't be overwritten in order to protect "
-             "local changes; "
+    err() << "the file `" << error.local_file_path << "' "
+          << "has been modified manually and won't "
+          << "be overwritten in order to protect local changes; "
           << "to resolve this issue, revert the file or delete it" << std::endl;
   }
   return 2;
