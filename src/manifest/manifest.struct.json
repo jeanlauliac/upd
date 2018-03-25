@@ -2,6 +2,7 @@
   "namespace": ["upd", "manifest"],
   "includes": [
     "../inspect.h",
+    "../substitution.h",
   ],
   "enums": [
     {
@@ -16,6 +17,15 @@
         {"name": "type", "type": "input_type"},
         {"name": "input_ix", "type": "size_t"},
       ]
+    },
+    {
+      "name": "update_rule",
+      "fields": [
+        {"name": "command_line_ix", "type": "size_t"},
+        {"name": "inputs", "type": "std::vector<update_rule_input>"},
+        {"name": "order_only_dependencies", "type": "std::vector<update_rule_input>"},
+        {"name": "output", "type": "substitution::pattern"},
+      ],
     },
   ],
 }
