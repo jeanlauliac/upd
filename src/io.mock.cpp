@@ -1,5 +1,9 @@
 #include "io.h"
+#include <fcntl.h>
 #include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <system_error>
 #include <unordered_map>
 #include <vector>
 
@@ -43,8 +47,11 @@ struct fd_data {
 std::unordered_map<std::string, std::vector<char>> files;
 std::unordered_map<int, fd_data> fds;
 
-int open(const std::string &file_path, int, mode_t) {
+int open(const std::string &file_path, int flags, mode_t) {
   if (files.find(file_path) == files.end()) {
+    if ((flags & O_CREAT) == 0) {
+      throw std::system_error(ENOENT, std::generic_category());
+    }
     files[file_path] = {};
   }
   int fd = 3;

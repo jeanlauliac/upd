@@ -1,8 +1,12 @@
 #include "xxhash64.h"
+#include "file_descriptor.h"
 #include "io.h"
 #include "path.h"
 #include <array>
+#include <fcntl.h>
 #include <fstream>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 namespace upd {
 
@@ -10,21 +14,21 @@ XXH64_hash_t hash(const std::string &str) {
   return XXH64(str.c_str(), str.size(), 0);
 }
 
-XXH64_hash_t hash_file(unsigned long long seed, const std::string &file_path) {
+constexpr size_t BLOCK_SIZE = 1 << 12;
+
+XXH64_hash_t hash_file(XXH64_hash_t seed, const std::string &file_path) {
   upd::xxhash64 hash(seed);
-  std::ifstream ifs(file_path, std::ifstream::binary);
-  std::array<char, 4096> buffer;
+  file_descriptor fd = io::open(file_path, O_RDONLY, 0);
+  std::array<char, BLOCK_SIZE> buffer;
+  size_t bytes_read;
   do {
-    ifs.read(buffer.data(), buffer.size());
-    hash.update(buffer.data(), ifs.gcount());
-  } while (ifs.good());
-  if (ifs.bad()) {
-    throw io::ifstream_failed_error(file_path);
-  }
+    bytes_read = io::read(fd, buffer.data(), buffer.size());
+    hash.update(buffer.data(), bytes_read);
+  } while (bytes_read == BLOCK_SIZE);
   return hash.digest();
 }
 
-unsigned long long file_hash_cache::hash(const std::string &file_path) {
+XXH64_hash_t file_hash_cache::hash(const std::string &file_path) {
   if (!is_path_absolute(file_path)) {
     throw std::runtime_error("expected absolute path");
   }

@@ -1,29 +1,16 @@
+#include "io-utils.h"
 #include "io.h"
 #include <fcntl.h>
 #include <sstream>
 
 using namespace upd;
 
-const size_t BLOCK_SIZE = 1024;
-
-std::string read_entire_file(const std::string &file_path) {
-  auto fd = io::open(file_path, O_RDONLY, 0);
-  std::ostringstream oss;
-  std::vector<char> buffer(BLOCK_SIZE);
-  size_t read_size;
-  do {
-    read_size = io::read(fd, buffer.data(), buffer.size());
-    oss.write(buffer.data(), read_size);
-  } while (read_size == BLOCK_SIZE);
-  return oss.str();
-}
-
 @it "can write a file" {
   auto fd = io::open("/foobar.txt", O_CREAT, 0600);
   std::string str = "hello, world";
   io::write(fd, str.c_str(), str.size());
   io::close(fd);
-  @expect(read_entire_file("/foobar.txt")).to_equal(str);
+  @expect(io::read_entire_file("/foobar.txt")).to_equal(str);
 }
 
 @it "can write a file in pieces" {
@@ -32,5 +19,5 @@ std::string read_entire_file(const std::string &file_path) {
   io::write(fd, str.c_str(), 5);
   io::write(fd, str.c_str() + 5, 7);
   io::close(fd);
-  @expect(read_entire_file("/foobar.txt")).to_equal(str);
+  @expect(io::read_entire_file("/foobar.txt")).to_equal(str);
 }

@@ -1,0 +1,24 @@
+#include "io-utils.h"
+#include "xxhash64.h"
+
+using namespace upd;
+
+@it "throws for non-existent file" {
+  upd::file_hash_cache cache;
+  try {
+    cache.hash("/foobar.txt");
+    throw std::runtime_error("should not reach there");
+  } catch (std::system_error error) {
+    @assert(error.code() == std::errc::no_such_file_or_directory);
+  }
+}
+
+@it "returns a different hash for different content" {
+  upd::file_hash_cache cache;
+  io::write_entire_file("/foo.txt", "Hello, world");
+  auto first = cache.hash("/foo.txt");
+  io::write_entire_file("/foo.txt", "Hello, world!");
+  cache.invalidate("/foo.txt");
+  auto second = cache.hash("/foo.txt");
+  @expect(first).not_to_equal(second);
+}
