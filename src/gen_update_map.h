@@ -1,6 +1,6 @@
 #pragma once
 
-#include "manifest/manifest.h"
+#include "../gen/src/manifest/manifest.h"
 #include "update.h"
 #include <string>
 

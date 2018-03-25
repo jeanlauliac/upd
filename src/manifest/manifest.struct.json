@@ -3,6 +3,8 @@
   "includes": [
     "../inspect.h",
     "../substitution.h",
+    "../command_line_template.h",
+    "../path_glob.h",
   ],
   "enums": [
     {
@@ -25,6 +27,14 @@
         {"name": "inputs", "type": "std::vector<update_rule_input>"},
         {"name": "order_only_dependencies", "type": "std::vector<update_rule_input>"},
         {"name": "output", "type": "substitution::pattern"},
+      ],
+    },
+    {
+      "name": "manifest",
+      "fields": [
+        {"name": "command_line_templates", "type": "std::vector<command_line_template>"},
+        {"name": "source_patterns", "type": "std::vector<path_glob::pattern>"},
+        {"name": "rules", "type": "std::vector<update_rule>"},
       ],
     },
   ],

@@ -1,10 +1,10 @@
 #pragma once
+#include "../../gen/src/manifest/manifest.h"
 #include "../command_line_template.h"
 #include "../json/parser.h"
 #include "../path_glob.h"
 #include "../string_char_reader.h"
 #include "../substitution.h"
-#include "manifest.h"
 
 namespace upd {
 namespace manifest {
