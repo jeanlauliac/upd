@@ -4,14 +4,21 @@ using namespace upd;
 
 @it "reloads the cache from file" {
   update_log::file_record ref_record = {1234, 5678, {"bar.h", "glo.h"}};
+  update_log::file_record ref_record2 = {9876, 5432, {"taz.txt"}};
   {
     update_log::cache cache("/update_log");
     cache.record("foo.cpp", ref_record);
+    cache.record("bar.cpp", ref_record2);
   }
   {
     auto cache = update_log::cache::from_log_file("/update_log");
     auto record = cache.find("foo.cpp");
     @assert(record != cache.end());
     @expect(record->second).to_equal(ref_record);
+    record = cache.find("bar.cpp");
+    @assert(record != cache.end());
+    @expect(record->second).to_equal(ref_record2);
+    record = cache.find("unexistent.cpp");
+    @assert(record == cache.end());
   }
 }
