@@ -148,10 +148,10 @@ function transform(options: TransformOptions): void {
   const mainFuncName = `test_${testId}`;
   write(`#line ${writer.line() + 1} "${options.targetFilePath}"\n`);
   write(`using namespace testing;\n`);
-  write(`void ${mainFuncName}(int& index) {\n`);
+  write(`void ${mainFuncName}(const std::string& file_path, int& index) {\n`);
   for (const test of tr.tests) {
-    write(`  run_case(${test.funcName}, index, `);
-    writeString(write, test.title);
+    write(`  run_case(${test.funcName}, index, file_path + ":" + `);
+    writeString(write, `${test.line}: ${test.title}`);
     write(`);\n`);
   }
   write(`}\n`);
@@ -168,7 +168,7 @@ class Transformer {
   _opts: Options;
   _testBraceStack: number;
   _beginLine: boolean;
-  tests: Array<{hash: string, funcName: string, title: string}>;
+  tests: Array<{hash: string, funcName: string, title: string, line: number}>;
 
   constructor(iter, write, options) {
     this._iter = iter;
@@ -354,7 +354,7 @@ class Transformer {
     const hash = hashString(title);
     const funcName = `test_case_${hash}`;
     this._write(`static void ${funcName}() {`);
-    this.tests.push({hash, funcName, title});
+    this.tests.push({hash, funcName, title, line: markerLoc.line});
     this._testBraceStack = 1;
   }
 

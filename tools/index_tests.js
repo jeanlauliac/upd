@@ -17,20 +17,25 @@ function writeContent(stream, sourcePaths, targetDirPath, testingHeaderPath) {
     // make the repository non-relocatable.
     // const absPath = path.resolve(sourceFilePath);
     const manifest = JSON.parse(fs.readFileSync(sourceFilePath, 'utf8'));
-    const mainFuncName = `test_${manifest.id}`;
-    return mainFuncName;
+    return {
+      name: `test_${manifest.id}`,
+      filePath: path.relative(
+        targetDirPath,
+        path.join(path.dirname(sourceFilePath), manifest.sourceFilePath),
+      ),
+    };
   });
   stream.write(`#include "${headerPath}"\n`);
   stream.write(`\n`);
-  entryPointNames.forEach(name => {
-    stream.write(`void ${name}(int&);\n`);
+  entryPointNames.forEach(entry => {
+    stream.write(`void ${entry.name}(const std::string&, int&);\n`);
   });
   stream.write(`\n`);
   stream.write(`int main() {\n`);
   stream.write(`  int index = 0;\n`);
   stream.write(`  testing::write_header();\n`);
-  entryPointNames.forEach(name => {
-    stream.write(`  ${name}(index);\n`);
+  entryPointNames.forEach(entry => {
+    stream.write(`  ${entry.name}("${entry.filePath}", index);\n`);
   });
   stream.write(`  testing::write_plan(index);\n`);
   stream.write('}\n');
