@@ -2,7 +2,7 @@
 
 #include "depfile/read.h"
 #include "directory_cache.h"
-#include "file_descriptor.h"
+#include "io/file_descriptor.h"
 #include "update_log/cache.h"
 #include "update_worker.h"
 #include "xxhash64.h"
@@ -93,7 +93,7 @@ struct scheduled_file_update {
   scheduled_file_update(
       update_job &&job,
       std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future,
-      const std::string &depfile_path, file_descriptor &&depfile_dummy_fd);
+      const std::string &depfile_path, io::file_descriptor &&depfile_dummy_fd);
   scheduled_file_update(scheduled_file_update &) = delete;
   scheduled_file_update(scheduled_file_update &&);
   scheduled_file_update &operator=(scheduled_file_update &&);
@@ -101,7 +101,7 @@ struct scheduled_file_update {
   update_job job;
   std::future<std::unique_ptr<depfile::depfile_data>> read_depfile_future;
   std::string depfile_path;
-  file_descriptor depfile_dummy_fd;
+  io::file_descriptor depfile_dummy_fd;
 };
 
 scheduled_file_update

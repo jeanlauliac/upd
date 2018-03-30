@@ -1,6 +1,6 @@
 #include "cache.h"
 #include "../fd_char_reader.h"
-#include "../io.h"
+#include "../io/io.h"
 #include "../system/errno_error.h"
 #include "read.h"
 #include <fcntl.h>
@@ -33,7 +33,7 @@ void cache::record(const std::string &local_file_path,
 }
 
 cache cache::from_log_file(const std::string &log_file_path) {
-  file_descriptor fd;
+  io::file_descriptor fd;
   try {
     fd = io::open(log_file_path, O_RDONLY, 0);
   } catch (const std::system_error &error) {

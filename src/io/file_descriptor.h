@@ -3,6 +3,7 @@
 #include "io.h"
 
 namespace upd {
+namespace io {
 
 struct file_descriptor {
   file_descriptor() : fd_(-1) {}
@@ -27,4 +28,5 @@ private:
   int fd_;
 };
 
+} // namespace io
 } // namespace upd

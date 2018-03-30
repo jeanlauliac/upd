@@ -1,6 +1,5 @@
 #include "xxhash64.h"
-#include "file_descriptor.h"
-#include "io.h"
+#include "io/file_descriptor.h"
 #include "path.h"
 #include <array>
 #include <fcntl.h>
@@ -18,7 +17,7 @@ constexpr size_t BLOCK_SIZE = 1 << 12;
 
 XXH64_hash_t hash_file(XXH64_hash_t seed, const std::string &file_path) {
   upd::xxhash64 hash(seed);
-  file_descriptor fd = io::open(file_path, O_RDONLY, 0);
+  io::file_descriptor fd = io::open(file_path, O_RDONLY, 0);
   std::array<char, BLOCK_SIZE> buffer;
   size_t bytes_read;
   do {

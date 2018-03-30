@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../gen/src/update_log/file_record.h"
-#include "../file_descriptor.h"
+#include "../io/file_descriptor.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -31,7 +31,7 @@ private:
   uint16_t get_path_id_(const std::string &file_path);
   void record_ent_name_(uint16_t parent_ent_id, const std::string &name);
 
-  file_descriptor fd_;
+  io::file_descriptor fd_;
   ent_ids_by_path ent_ids_by_path_;
 };
 

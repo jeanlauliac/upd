@@ -1,7 +1,7 @@
 #include "read_from_file.h"
 
 #include "../cli/utils.h"
-#include "../io.h"
+#include "../io/io.h"
 #include "../istream_char_reader.h"
 #include "../json/vector_handler.h"
 #include "../path.h"

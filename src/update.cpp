@@ -95,7 +95,7 @@ scheduled_file_update::scheduled_file_update() {}
 scheduled_file_update::scheduled_file_update(
     update_job &&job_,
     std::future<std::unique_ptr<depfile::depfile_data>> &&read_depfile_future_,
-    const std::string &depfile_path_, file_descriptor &&depfile_dummy_fd_)
+    const std::string &depfile_path_, io::file_descriptor &&depfile_dummy_fd_)
     : job(std::move(job_)),
       read_depfile_future(std::move(read_depfile_future_)),
       depfile_path(depfile_path_),
@@ -143,7 +143,7 @@ schedule_file_update(update_context &cx,
   if (fd < 0) {
     throw new std::runtime_error("open() failed");
   }
-  file_descriptor depfile_dummy_fd(fd);
+  io::file_descriptor depfile_dummy_fd(fd);
 
   return scheduled_file_update({cx.root_path, command_line},
                                std::move(read_depfile_future), depfile_path,
