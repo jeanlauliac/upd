@@ -3,25 +3,23 @@
 namespace upd {
 
 std::string inspect(size_t value, const inspect_options &) {
-  std::ostringstream stream;
-  stream << value;
-  return stream.str();
+  return std::to_string(value);
 }
 
 std::string inspect(unsigned long long value, const inspect_options &) {
-  return std::to_string(value);
+  return std::to_string(value) + "ull";
 }
 
 std::string inspect(unsigned short value, const inspect_options &) {
-  return std::to_string(value);
+  return std::to_string(value) + "u";
 }
 
 std::string inspect(float value, const inspect_options &) {
-  return std::to_string(value);
+  return std::to_string(value) + "f";
 }
 
 std::string inspect(bool value, const inspect_options &) {
-  return std::to_string(value);
+  return value ? "true" : "false";
 }
 
 std::string inspect(char value, const inspect_options &) {

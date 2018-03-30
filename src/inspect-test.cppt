@@ -6,3 +6,19 @@ using namespace upd;
   @expect(upd::inspect("foobar")).to_equal("\"foobar\"");
   @expect(upd::inspect("foo\nbar")).to_equal("\"foo\\nbar\"");
 }
+
+@it "inspects numbers" {
+  @expect(upd::inspect<size_t>(42)).to_equal("42");
+  @expect(upd::inspect<unsigned long long>(42)).to_equal("42ull");
+  @expect(upd::inspect<float>(42.1f)).to_equal("42.099998f");
+}
+
+@it "inspects booleans" {
+  @expect(upd::inspect(true)).to_equal("true");
+  @expect(upd::inspect(false)).to_equal("false");
+}
+
+@it "inspects vectors" {
+  @expect(upd::inspect(std::vector<size_t>{3, 7, 13, 21}))
+      .to_equal("std::vector{\n  3,\n  7,\n  13,\n  21 }");
+}

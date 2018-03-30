@@ -48,7 +48,7 @@ struct collection_inspector {
       : indent_spaces_(
             std::string((options.depth + 1) * options.global.indent, ' ')),
         inner_options_({options.global, options.depth + 1}), begin_(true) {
-    os_ << class_name << "({";
+    os_ << class_name << "{";
   }
 
   template <typename T> void push_back(const T &value) {
@@ -75,7 +75,7 @@ struct collection_inspector {
   }
 
   std::string result() {
-    os_ << " })";
+    os_ << " }";
     return os_.str();
   }
 
@@ -164,13 +164,6 @@ std::string inspect(const std::unordered_map<TKey, TValue> &collection,
   }
   return insp.result();
 }
-
-// template <typename TAny>
-// std::string inspect(const TAny &any, const inspect_options &options) {
-//   (void)any;
-//   (void)options;
-//   return "<unknown-object>";
-// }
 
 template <typename T> std::string inspect(const T &value) {
   global_inspect_options global = {2, 60};
