@@ -7,6 +7,8 @@
 namespace upd {
 namespace io {
 
+void reset_mock();
+
 /**
  * Get the current working directory.
  */

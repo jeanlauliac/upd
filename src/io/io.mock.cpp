@@ -47,6 +47,11 @@ struct fd_data {
 std::unordered_map<std::string, std::vector<char>> files;
 std::unordered_map<size_t, fd_data> fds;
 
+void reset_mock() {
+  files.clear();
+  fds.clear();
+}
+
 size_t alloc_fd() {
   int fd = 3;
   while (fds.find(fd) != fds.end() && fd < 1024) ++fd;
