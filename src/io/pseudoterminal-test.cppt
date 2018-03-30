@@ -1,0 +1,8 @@
+#include "pseudoterminal.h"
+
+using namespace upd;
+
+@it "returns a pts name" {
+  io::pseudoterminal term;
+  @expect(term.ptsname()).to_equal("/pseudoterminal/3");
+}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "io/file_descriptor.h"
+#include "io/pseudoterminal.h"
 #include "run_command_line.h"
 #include <condition_variable>
 #include <memory>
@@ -15,18 +17,6 @@ struct update_job {
 };
 
 enum class worker_status { idle, in_progress, finished, shutdown };
-
-struct pseudoterminal {
-  pseudoterminal();
-  ~pseudoterminal();
-
-  int fd() const { return fd_; }
-  const std::string &ptsname() const { return ptsname_; }
-
-private:
-  int fd_;
-  std::string ptsname_;
-};
 
 /**
  * Because we start a thread referencing the internal condition variable,
@@ -51,7 +41,7 @@ private:
   std::condition_variable &output_cv_;
   std::condition_variable cv_;
   std::thread thread_;
-  pseudoterminal stderr_pty_;
+  io::pseudoterminal stderr_pty_;
 };
 
 } // namespace upd

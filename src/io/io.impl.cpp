@@ -15,6 +15,8 @@
 namespace upd {
 namespace io {
 
+void throw_errno() { throw std::system_error(errno, std::generic_category()); }
+
 std::string getcwd() {
   char temp[MAXPATHLEN];
   if (::getcwd(temp, MAXPATHLEN) == nullptr) {
@@ -90,24 +92,38 @@ int open(const std::string &file_path, int flags, mode_t mode) {
 
 size_t write(int fd, const void *buf, size_t count) {
   ssize_t bytes_written = ::write(fd, buf, count);
-  if (bytes_written < 0) {
-    throw std::system_error(errno, std::generic_category());
-  }
+  if (bytes_written < 0) throw_errno();
   return bytes_written;
 }
 
 ssize_t read(int fd, void *buf, size_t count) {
   ssize_t bytes_read = ::read(fd, buf, count);
-  if (bytes_read < 0) {
-    throw std::system_error(errno, std::generic_category());
-  }
+  if (bytes_read < 0) throw_errno();
   return bytes_read;
 }
 
 void close(int fd) {
-  if (::close(fd) != 0) {
-    throw std::system_error(errno, std::generic_category());
-  }
+  if (::close(fd) != 0) throw_errno();
+}
+
+int posix_openpt(int oflag) {
+  int fd = ::posix_openpt(oflag);
+  if (fd < 0) throw_errno();
+  return fd;
+}
+
+void grantpt(int fd) {
+  if (::grantpt(fd) != 0) throw_errno();
+}
+
+void unlockpt(int fd) {
+  if (::unlockpt(fd) != 0) throw_errno();
+}
+
+std::string ptsname(int fd) {
+  char *c = ::ptsname(fd);
+  if (c == nullptr) throw_errno();
+  return c;
 }
 
 } // namespace io

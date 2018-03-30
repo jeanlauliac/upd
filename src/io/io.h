@@ -96,5 +96,10 @@ ssize_t read(int fd, void *buf, size_t count);
 
 void close(int fd);
 
+int posix_openpt(int oflag);
+void grantpt(int fd);
+void unlockpt(int fd);
+std::string ptsname(int fd);
+
 } // namespace io
 } // namespace upd

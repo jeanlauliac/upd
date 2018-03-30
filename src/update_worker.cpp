@@ -1,4 +1,5 @@
 #include "update_worker.h"
+#include "io/io.h"
 #include "run_command_line.h"
 #include <fcntl.h>
 #include <iostream>
@@ -6,20 +7,6 @@
 #include <unistd.h>
 
 namespace upd {
-
-pseudoterminal::pseudoterminal() {
-  fd_ = posix_openpt(O_RDWR | O_NOCTTY);
-  if (fd_ < 0) throw std::runtime_error("could not open pseudoterminal");
-  if (grantpt(fd_) != 0) {
-    throw std::runtime_error("could not grantpt()");
-  }
-  if (unlockpt(fd_) != 0) {
-    throw std::runtime_error("could not unlockpt()");
-  }
-  ptsname_ = ::ptsname(fd_);
-}
-
-pseudoterminal::~pseudoterminal() { close(fd_); }
 
 update_worker::update_worker(worker_status &status, command_line_result &result,
                              update_job &job, std::mutex &mutex,

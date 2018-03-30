@@ -17,7 +17,6 @@ struct file_descriptor {
     other.fd_ = -1;
     return *this;
   }
-  int fd() const { return fd_; }
   operator int() const { return fd_; }
   void close() {
     if (fd_ >= 0) io::close(fd_);

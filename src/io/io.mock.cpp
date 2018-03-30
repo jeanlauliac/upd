@@ -45,7 +45,14 @@ struct fd_data {
 };
 
 std::unordered_map<std::string, std::vector<char>> files;
-std::unordered_map<int, fd_data> fds;
+std::unordered_map<size_t, fd_data> fds;
+
+size_t alloc_fd() {
+  int fd = 3;
+  while (fds.find(fd) != fds.end() && fd < 1024) ++fd;
+  if (fd == 1024) throw std::system_error(EMFILE, std::generic_category());
+  return fd;
+}
 
 int open(const std::string &file_path, int flags, mode_t) {
   if (files.find(file_path) == files.end()) {
@@ -54,9 +61,7 @@ int open(const std::string &file_path, int flags, mode_t) {
     }
     files[file_path] = {};
   }
-  int fd = 3;
-  while (fds.find(fd) != fds.end() && fd < 1024) ++fd;
-  if (fd == 1024) throw std::runtime_error("too many files open");
+  auto fd = alloc_fd();
   fds[fd] = {file_path, 0};
   return fd;
 }
@@ -85,6 +90,17 @@ ssize_t read(int fd, void *buf, size_t size) {
 }
 
 void close(int fd) { fds.erase(fd); }
+
+int posix_openpt(int) {
+  auto fd = alloc_fd();
+  fds[fd] = {"", 0};
+  return fd;
+}
+
+void grantpt(int) {}
+void unlockpt(int) {}
+
+std::string ptsname(int fd) { return "/pseudoterminal/" + std::to_string(fd); }
 
 } // namespace io
 } // namespace upd
