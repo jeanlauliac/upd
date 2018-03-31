@@ -28,14 +28,13 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
   ssize_t count;
   do {
     char buffer[1 << 12];
-    count = io::read(fd, buffer, sizeof(buffer));
-    if (count < 0) {
-      if (allow_eio && errno == EIO) {
-        // On Linux, EIO is returned when the last
-        // slave of a pseudo-terminal is closed.
-        return result.str();
-      }
-      throw std::runtime_error("read() failed: " + std::to_string(errno));
+    try {
+      count = io::read(fd, buffer, sizeof(buffer));
+    } catch (const std::system_error &error) {
+      // On Linux, EIO is returned when the last
+      // slave of a pseudo-terminal is closed.
+      if (allow_eio && error.code() == std::errc::io_error) return result.str();
+      throw;
     }
     result.write(buffer, count);
   } while (count > 0);
