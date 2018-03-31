@@ -16,8 +16,7 @@ std::string read_entire_file(const std::string &file_path) {
   size_t bytes_read;
   do {
     bytes_read = io::read(fd, buffer.data(), buffer.size());
-    if (sb.sputn(buffer.data(), bytes_read) == 0)
-      throw std::runtime_error("failed to write string");
+    sb.sputn(buffer.data(), bytes_read);
   } while (bytes_read == BLOCK_SIZE);
   return sb.str();
 }

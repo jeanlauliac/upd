@@ -23,8 +23,7 @@ namespace upd {
  * as a single string.
  */
 static std::string read_fd_to_string(int fd, bool allow_eio) {
-  std::ostringstream result;
-  result.exceptions(std::ostringstream::badbit | std::ostringstream::failbit);
+  std::stringbuf result;
   ssize_t count;
   do {
     char buffer[1 << 12];
@@ -36,7 +35,7 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
       if (allow_eio && error.code() == std::errc::io_error) return result.str();
       throw;
     }
-    result.write(buffer, count);
+    result.sputn(buffer, count);
   } while (count > 0);
   return result.str();
 }
