@@ -1,4 +1,5 @@
 #include "run_command_line.h"
+#include "io/io.h"
 #include "system/spawn.h"
 #include <fcntl.h>
 #include <future>
@@ -27,7 +28,7 @@ static std::string read_fd_to_string(int fd, bool allow_eio) {
   ssize_t count;
   do {
     char buffer[1 << 12];
-    count = read(fd, buffer, sizeof(buffer));
+    count = io::read(fd, buffer, sizeof(buffer));
     if (count < 0) {
       if (allow_eio && errno == EIO) {
         // On Linux, EIO is returned when the last
@@ -56,8 +57,7 @@ command_line_result run_command_line(const command_line &target,
   int stdout[2];
   if (pipe(stdout) != 0) throw std::runtime_error("pipe() failed");
 
-  int stderr_fd = open(stderr_pts.c_str(), O_WRONLY | O_NOCTTY);
-  if (stderr_fd < 0) throw std::runtime_error("open() for stderr failed");
+  int stderr_fd = io::open(stderr_pts.c_str(), O_WRONLY | O_NOCTTY, 0);
   if (!isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
 
   system::spawn_file_actions actions;
@@ -84,8 +84,8 @@ command_line_result run_command_line(const command_line &target,
   pid_t child_pid = system::spawn(target.binary_path, actions, argv, env);
   actions.destroy();
 
-  if (close(stdout[1]) != 0) throw std::runtime_error("close() failed");
-  if (close(stderr_fd) != 0) throw std::runtime_error("close() failed");
+  io::close(stdout[1]);
+  io::close(stderr_fd);
 
   int status;
   if (waitpid(child_pid, &status, 0) != child_pid) {
@@ -98,7 +98,7 @@ command_line_result run_command_line(const command_line &target,
       status,
   };
 
-  if (close(stdout[0])) throw std::runtime_error("close() failed");
+  io::close(stdout[0]);
 
   return result;
 }
