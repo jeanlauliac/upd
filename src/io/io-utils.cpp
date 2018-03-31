@@ -11,14 +11,15 @@ constexpr size_t BLOCK_SIZE = 1 << 12;
 
 std::string read_entire_file(const std::string &file_path) {
   file_descriptor fd = io::open(file_path, O_RDONLY, 0);
-  std::ostringstream oss;
+  std::stringbuf sb;
   std::array<char, BLOCK_SIZE> buffer;
   size_t bytes_read;
   do {
     bytes_read = io::read(fd, buffer.data(), buffer.size());
-    oss.write(buffer.data(), bytes_read);
+    if (sb.sputn(buffer.data(), bytes_read) == 0)
+      throw std::runtime_error("failed to write string");
   } while (bytes_read == BLOCK_SIZE);
-  return oss.str();
+  return sb.str();
 }
 
 void write_entire_file(const std::string &file_path,
