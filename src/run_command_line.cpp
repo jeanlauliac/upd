@@ -53,10 +53,10 @@ command_line_result run_command_line(const command_line &target,
   }
 
   int stdout[2];
-  if (pipe(stdout) != 0) throw std::runtime_error("pipe() failed");
+  io::pipe(stdout);
 
   int stderr_fd = io::open(stderr_pts.c_str(), O_WRONLY | O_NOCTTY, 0);
-  if (!isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
+  if (!io::isatty(stderr_fd)) throw std::runtime_error("stderr is not a tty");
 
   system::spawn_file_actions actions;
 

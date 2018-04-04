@@ -103,5 +103,9 @@ void grantpt(int fd);
 void unlockpt(int fd);
 std::string ptsname(int fd);
 
+void pipe(int pipefd[2]);
+
+int isatty(int fd);
+
 } // namespace io
 } // namespace upd

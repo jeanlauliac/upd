@@ -1,0 +1,13 @@
+#include "run_command_line.h"
+#include "io/pseudoterminal.h"
+
+using namespace upd;
+
+@it "does smth" {
+  io::pseudoterminal pst;
+  run_command_line({
+    "/bin/foobar",
+    {"tadam", "arbitrary", "arguments"},
+    {{"SOMETHING", "1234"}},
+  }, 2, pst.ptsname());
+}

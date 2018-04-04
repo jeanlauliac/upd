@@ -126,5 +126,13 @@ std::string ptsname(int fd) {
   return c;
 }
 
+void pipe(int pipefd[2]) {
+  if (::pipe(pipefd) != 0) throw_errno();
+}
+
+int isatty(int fd) {
+  return ::isatty(fd);
+}
+
 } // namespace io
 } // namespace upd

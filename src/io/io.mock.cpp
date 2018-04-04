@@ -39,12 +39,22 @@ std::string mkdtemp(const std::string &) { return "/tmp/foo"; }
 
 void mkfifo(const std::string &, mode_t) {}
 
+enum class file_type {
+  regular,
+  pts,
+};
+
+struct file_data {
+  file_type type;
+  std::vector<char> buf;
+};
+
 struct fd_data {
   std::string file_path;
   size_t position;
 };
 
-std::unordered_map<std::string, std::vector<char>> files;
+std::unordered_map<std::string, file_data> files;
 std::unordered_map<size_t, fd_data> fds;
 
 void reset_mock() {
@@ -64,7 +74,7 @@ int open(const std::string &file_path, int flags, mode_t) {
     if ((flags & O_CREAT) == 0) {
       throw std::system_error(ENOENT, std::generic_category());
     }
-    files[file_path] = {};
+    files[file_path] = {file_type::regular, {}};
   }
   auto fd = alloc_fd();
   fds[fd] = {file_path, 0};
@@ -73,7 +83,7 @@ int open(const std::string &file_path, int flags, mode_t) {
 
 size_t write(int fd, const void *buf, size_t size) {
   auto &desc = fds[fd];
-  auto &file_buf = files[desc.file_path];
+  auto &file_buf = files[desc.file_path].buf;
   auto new_size = desc.position + size;
   if (file_buf.size() < new_size) {
     file_buf.resize(new_size);
@@ -85,7 +95,7 @@ size_t write(int fd, const void *buf, size_t size) {
 
 ssize_t read(int fd, void *buf, size_t size) {
   auto &desc = fds[fd];
-  auto &file_buf = files[desc.file_path];
+  auto &file_buf = files[desc.file_path].buf;
   if (desc.position + size > file_buf.size()) {
     size = file_buf.size() - desc.position;
   }
@@ -105,7 +115,21 @@ int posix_openpt(int) {
 void grantpt(int) {}
 void unlockpt(int) {}
 
-std::string ptsname(int fd) { return "/pseudoterminal/" + std::to_string(fd); }
+std::string ptsname(int fd) {
+  auto name = "/pseudoterminal/" + std::to_string(fd);
+  files[name] = {file_type::pts, {}};
+  return name;
+}
+
+void pipe(int pipefd[2]) {
+  pipefd[0] = alloc_fd();
+  pipefd[1] = alloc_fd();
+}
+
+int isatty(int fd) {
+  auto &desc = fds[fd];
+  return files[desc.file_path].type == file_type::pts;
+}
 
 } // namespace io
 } // namespace upd
