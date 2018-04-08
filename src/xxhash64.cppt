@@ -4,7 +4,7 @@
 using namespace upd;
 
 @it "throws for non-existent file" {
-  io::reset_mock();
+  io::mock::reset();
   upd::file_hash_cache cache;
   try {
     cache.hash("/foobar.txt");
@@ -15,7 +15,7 @@ using namespace upd;
 }
 
 @it "returns a different hash for different content" {
-  io::reset_mock();
+  io::mock::reset();
   upd::file_hash_cache cache;
   io::write_entire_file("/foo.txt", "Hello, world");
   auto first = cache.hash("/foo.txt");

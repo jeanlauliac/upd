@@ -86,9 +86,7 @@ command_line_result run_command_line(const command_line &target,
   io::close(stderr_fd);
 
   int status;
-  if (waitpid(child_pid, &status, 0) != child_pid) {
-    throw std::runtime_error("waitpid failed");
-  }
+  io::waitpid(child_pid, &status, 0);
 
   command_line_result result = {
       read_stdout.get(),

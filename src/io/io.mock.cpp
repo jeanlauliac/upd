@@ -10,6 +10,10 @@
 namespace upd {
 namespace io {
 
+static void throw_errno(int value) {
+  throw std::system_error(value, std::generic_category());
+}
+
 std::string getcwd() { return "/home/tests"; }
 
 bool is_regular_file(const std::string &) { return true; }
@@ -57,23 +61,16 @@ struct fd_data {
 std::unordered_map<std::string, file_data> files;
 std::unordered_map<size_t, fd_data> fds;
 
-void reset_mock() {
-  files.clear();
-  fds.clear();
-}
-
 size_t alloc_fd() {
   int fd = 3;
   while (fds.find(fd) != fds.end() && fd < 1024) ++fd;
-  if (fd == 1024) throw std::system_error(EMFILE, std::generic_category());
+  if (fd == 1024) throw_errno(EMFILE);
   return fd;
 }
 
 int open(const std::string &file_path, int flags, mode_t) {
   if (files.find(file_path) == files.end()) {
-    if ((flags & O_CREAT) == 0) {
-      throw std::system_error(ENOENT, std::generic_category());
-    }
+    if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
     files[file_path] = {file_type::regular, {}};
   }
   auto fd = alloc_fd();
@@ -130,6 +127,62 @@ int isatty(int fd) {
   auto &desc = fds[fd];
   return files[desc.file_path].type == file_type::pts;
 }
+
+struct posix_spawn_file_actions_mock {};
+
+std::unordered_map<const posix_spawn_file_actions_t *,
+                   posix_spawn_file_actions_mock>
+    file_action_entries;
+
+void posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *actions,
+                                       int) {
+  if (file_action_entries.find(actions) == file_action_entries.end())
+    throw_errno(EINVAL);
+}
+
+void posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions, int,
+                                      int) {
+  if (file_action_entries.find(actions) == file_action_entries.end())
+    throw_errno(EINVAL);
+}
+
+void posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions, int,
+                                      const char *, int, mode_t) {
+  if (file_action_entries.find(actions) == file_action_entries.end())
+    throw_errno(EINVAL);
+}
+
+void posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *actions) {
+  if (file_action_entries.find(actions) == file_action_entries.end())
+    throw_errno(EINVAL);
+  file_action_entries.erase(actions);
+}
+
+void posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions) {
+  if (file_action_entries.find(actions) != file_action_entries.end())
+    throw_errno(EINVAL);
+  file_action_entries[actions] = {};
+}
+
+void posix_spawn(pid_t *pid, const char *,
+                 const posix_spawn_file_actions_t *file_actions,
+                 const posix_spawnattr_t *, char *const[], char *const[]) {
+  if (file_action_entries.find(file_actions) == file_action_entries.end())
+    throw_errno(EINVAL);
+  *pid = (1 << 16) + 1;
+}
+
+pid_t waitpid(pid_t pid, int *, int) { return pid; }
+
+namespace mock {
+
+void reset() {
+  files.clear();
+  fds.clear();
+  file_action_entries.clear();
+}
+
+} // namespace mock
 
 } // namespace io
 } // namespace upd

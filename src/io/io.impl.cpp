@@ -1,5 +1,4 @@
 #include "../path.h"
-#include "../system/errno_error.h"
 #include "io.h"
 #include <cstring>
 #include <fcntl.h>
@@ -19,9 +18,7 @@ void throw_errno() { throw std::system_error(errno, std::generic_category()); }
 
 std::string getcwd() {
   char temp[MAXPATHLEN];
-  if (::getcwd(temp, MAXPATHLEN) == nullptr) {
-    throw system::errno_error(errno);
-  }
+  if (::getcwd(temp, MAXPATHLEN) == nullptr) throw_errno();
   return temp;
 }
 
@@ -73,13 +70,12 @@ void dir_files_reader::close() { target_.close(); }
 std::string mkdtemp(const std::string &template_path) {
   std::vector<char> tpl(template_path.size() + 1);
   strcpy(tpl.data(), template_path.c_str());
-  if (::mkdtemp(tpl.data()) != NULL) return tpl.data();
-  throw system::errno_error(errno);
+  if (::mkdtemp(tpl.data()) == nullptr) throw_errno();
+  return tpl.data();
 }
 
 void mkfifo(const std::string &file_path, mode_t mode) {
-  if (::mkfifo(file_path.c_str(), mode) == 0) return;
-  throw system::errno_error(errno);
+  if (::mkfifo(file_path.c_str(), mode) != 0) throw_errno();
 }
 
 int open(const std::string &file_path, int flags, mode_t mode) {
@@ -130,8 +126,47 @@ void pipe(int pipefd[2]) {
   if (::pipe(pipefd) != 0) throw_errno();
 }
 
-int isatty(int fd) {
-  return ::isatty(fd);
+int isatty(int fd) { return ::isatty(fd); }
+
+void posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *actions,
+                                       int fd) {
+  if (::posix_spawn_file_actions_addclose(actions, fd) != 0) throw_errno();
+}
+
+void posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions,
+                                      int fd, int new_fd) {
+  if (::posix_spawn_file_actions_adddup2(actions, fd, new_fd) != 0)
+    throw_errno();
+}
+
+void posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions,
+                                      int fd, const char *file_path, int oflag,
+                                      mode_t mode) {
+  if (::posix_spawn_file_actions_addopen(actions, fd, file_path, oflag, mode) !=
+      0)
+    throw_errno();
+}
+
+void posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *actions) {
+  if (::posix_spawn_file_actions_destroy(actions) != 0) throw_errno();
+}
+
+void posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions) {
+  if (::posix_spawn_file_actions_init(actions) != 0) throw_errno();
+}
+
+void posix_spawn(pid_t *pid, const char *path,
+                 const posix_spawn_file_actions_t *file_actions,
+                 const posix_spawnattr_t *attrp, char *const argv[],
+                 char *const envp[]) {
+  if (::posix_spawn(pid, path, file_actions, attrp, argv, envp) != 0)
+    throw_errno();
+}
+
+pid_t waitpid(pid_t pid, int *status, int options) {
+  auto rpid = ::waitpid(pid, status, options);
+  if (rpid < 0) throw_errno();
+  return rpid;
 }
 
 } // namespace io

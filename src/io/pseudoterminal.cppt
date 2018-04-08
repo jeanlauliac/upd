@@ -3,7 +3,7 @@
 using namespace upd;
 
 @it "returns a pts name" {
-  io::reset_mock();
+  io::mock::reset();
   io::pseudoterminal term;
   @expect(term.ptsname()).to_equal("/pseudoterminal/3");
 }

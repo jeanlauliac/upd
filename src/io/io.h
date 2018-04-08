@@ -2,12 +2,15 @@
 
 #include <dirent.h>
 #include <iostream>
+#include <spawn.h>
 #include <sys/types.h>
 
 namespace upd {
 namespace io {
 
-void reset_mock();
+namespace mock {
+void reset();
+}
 
 /**
  * Get the current working directory.
@@ -106,6 +109,23 @@ std::string ptsname(int fd);
 void pipe(int pipefd[2]);
 
 int isatty(int fd);
+
+void posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *actions,
+                                       int fd);
+void posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions,
+                                      int fd, int new_fd);
+void posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions,
+                                      int fd, const char *file_path, int oflag,
+                                      mode_t mode);
+void posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *actions);
+void posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions);
+
+void posix_spawn(pid_t *pid, const char *path,
+                 const posix_spawn_file_actions_t *file_actions,
+                 const posix_spawnattr_t *attrp, char *const argv[],
+                 char *const envp[]);
+
+pid_t waitpid(pid_t pid, int *status, int options);
 
 } // namespace io
 } // namespace upd
