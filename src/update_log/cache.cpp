@@ -1,7 +1,6 @@
 #include "cache.h"
 #include "../fd_char_reader.h"
 #include "../io/io.h"
-#include "../system/errno_error.h"
 #include "read.h"
 #include <fcntl.h>
 #include <iomanip>

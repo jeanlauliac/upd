@@ -6,7 +6,6 @@
 #include "manifest/read_from_file.h"
 #include "package.h"
 #include "path.h"
-#include "system/errno_error.h"
 #include "update_log/read.h"
 #include <cstring>
 
