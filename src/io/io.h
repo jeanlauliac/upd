@@ -1,16 +1,14 @@
 #pragma once
 
+#include "../../gen/src/io/io.h"
 #include <dirent.h>
 #include <iostream>
 #include <spawn.h>
 #include <sys/types.h>
+#include <vector>
 
 namespace upd {
 namespace io {
-
-namespace mock {
-void reset();
-}
 
 /**
  * Get the current working directory.
@@ -126,6 +124,17 @@ void posix_spawn(pid_t *pid, const char *path,
                  char *const envp[]);
 
 pid_t waitpid(pid_t pid, int *status, int options);
+
+namespace mock {
+
+typedef std::vector<spawn_record> spawn_records_t;
+extern spawn_records_t spawn_records;
+
+void reset();
+void register_binary(const std::string &binary_path, const std::string &stdout,
+                     const std::string &stderr);
+
+} // namespace mock
 
 } // namespace io
 } // namespace upd

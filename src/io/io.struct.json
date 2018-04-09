@@ -1,0 +1,19 @@
+{
+  "namespace": ["upd", "io", "mock"],
+  "includes": [
+    "../inspect.h",
+    "vector",
+    "string",
+    "unordered_map",
+  ],
+  "structs": [
+    {
+      "name": "spawn_record",
+      "fields": [
+        {"name": "binary_path", "type": "std::string"},
+        {"name": "args", "type": "std::vector<std::string>"},
+        {"name": "env", "type": "std::vector<std::string>"}
+      ]
+    },
+  ],
+}

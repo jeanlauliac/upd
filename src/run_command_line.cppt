@@ -4,6 +4,8 @@
 using namespace upd;
 
 @it "does smth" {
+  io::mock::reset();
+  io::mock::register_binary("/bin/foobar", "", "some stderr output");
   io::pseudoterminal pst;
   run_command_line(
       {
@@ -12,4 +14,12 @@ using namespace upd;
           {{"SOMETHING", "1234"}},
       },
       2, pst.ptsname());
+  @expect(io::mock::spawn_records)
+      .to_equal(io::mock::spawn_records_t{
+          {
+              "/bin/foobar",
+              {"/bin/foobar", "tadam", "arbitrary", "arguments"},
+              {"TERM=xterm-color", "SOMETHING=1234"},
+          },
+      });
 }

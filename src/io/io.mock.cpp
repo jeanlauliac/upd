@@ -5,7 +5,6 @@
 #include <sys/types.h>
 #include <system_error>
 #include <unordered_map>
-#include <vector>
 
 namespace upd {
 namespace io {
@@ -164,12 +163,38 @@ void posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions) {
   file_action_entries[actions] = {};
 }
 
-void posix_spawn(pid_t *pid, const char *,
+struct registered_binary {
+  std::string stdout;
+  std::string stderr;
+};
+
+static int next_pid = (1 << 16) + 1;
+static std::unordered_map<std::string, registered_binary> reg_bins;
+
+namespace mock {
+std::vector<spawn_record> spawn_records;
+}
+
+std::vector<std::string> ntsa_to_vector(char *const strs[]) {
+  std::vector<std::string> result;
+  while (*strs != nullptr) {
+    result.push_back(*strs);
+    ++strs;
+  }
+  return result;
+}
+
+void posix_spawn(pid_t *pid, const char *binary_path,
                  const posix_spawn_file_actions_t *file_actions,
-                 const posix_spawnattr_t *, char *const[], char *const[]) {
+                 const posix_spawnattr_t *, char *const args[],
+                 char *const env[]) {
   if (file_action_entries.find(file_actions) == file_action_entries.end())
     throw_errno(EINVAL);
-  *pid = (1 << 16) + 1;
+  auto reg_bin = reg_bins.find(binary_path);
+  if (reg_bin == reg_bins.end()) throw_errno(ENOENT);
+  *pid = next_pid++;
+  mock::spawn_records.push_back(mock::spawn_record{
+      binary_path, ntsa_to_vector(args), ntsa_to_vector(env)});
 }
 
 pid_t waitpid(pid_t pid, int *, int) { return pid; }
@@ -180,6 +205,11 @@ void reset() {
   files.clear();
   fds.clear();
   file_action_entries.clear();
+}
+
+void register_binary(const std::string &binary_path, const std::string &stdout,
+                     const std::string &stderr) {
+  reg_bins[binary_path] = {stdout, stderr};
 }
 
 } // namespace mock
