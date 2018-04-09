@@ -8,14 +8,14 @@ using namespace upd;
   auto stdout = "hello, world";
   auto stderr = "some stderr output";
   io::mock::register_binary("/bin/foobar", stdout, stderr);
-  io::pseudoterminal pst;
+  io::pseudoterminal pt;
   auto result = run_command_line(
       {
           "/bin/foobar",
           {"tadam", "arbitrary", "arguments"},
           {{"SOMETHING", "1234"}},
       },
-      2, pst.ptsname());
+      pt.fd(), pt.ptsname());
   @expect(io::mock::spawn_records)
       .to_equal(io::mock::spawn_records_t{
           {
@@ -26,5 +26,5 @@ using namespace upd;
       });
   @expect(result.status).to_equal(0);
   @expect(result.stdout).to_equal(stdout);
-  @expect(result.stderr).to_equal("");
+  @expect(result.stderr).to_equal(stderr);
 }

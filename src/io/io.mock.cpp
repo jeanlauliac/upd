@@ -1,5 +1,6 @@
 #include "io.h"
 #include <fcntl.h>
+#include <memory>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -51,7 +52,13 @@ enum class file_type {
 struct file_data {
   file_type type;
   std::vector<char> buf;
+  std::shared_ptr<int> pts_real_pipe_fd;
 };
+
+void delete_shared_fd(int *fdp) {
+  ::close(*fdp);
+  delete fdp;
+}
 
 enum class fd_type {
   file,
@@ -62,7 +69,7 @@ struct fd_data {
   fd_type type;
   std::string file_path;
   size_t position;
-  int real_pipe_fd;
+  std::shared_ptr<int> real_pipe_fd;
 };
 
 std::unordered_map<std::string, file_data> files;
@@ -78,22 +85,29 @@ size_t alloc_fd() {
 }
 
 int open(const std::string &file_path, int flags, mode_t) {
-  if (files.find(file_path) == files.end()) {
-    if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
-    files[file_path] = {file_type::regular, {}};
-  }
+  auto file_iter = files.find(file_path);
   auto fd = alloc_fd();
-  fds[fd] = {fd_type::file, file_path, 0, -1};
+  if (file_iter == files.end()) {
+    if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
+    files[file_path] = {file_type::regular, {}, nullptr};
+  } else if (file_iter->second.type == file_type::pts) {
+    fds[fd] = {fd_type::pipe, file_path, 0, file_iter->second.pts_real_pipe_fd};
+    // FIXME: this prevent reusing the same ptsname() twice, that does not
+    // fit the way it really works.
+    file_iter->second.pts_real_pipe_fd.reset();
+    return fd;
+  }
+  fds[fd] = {fd_type::file, file_path, 0, nullptr};
   return fd;
 }
 
-size_t write(fd_data& desc, const void *buf, size_t size) {
+size_t write(fd_data &desc, const void *buf, size_t size) {
   if (desc.type == fd_type::pipe) {
-    size_t bytes = ::write(desc.real_pipe_fd, buf, size);
+    size_t bytes = ::write(*desc.real_pipe_fd, buf, size);
     if (bytes != size) throw_errno(errno);
     return bytes;
   }
-  auto &file_buf = files[desc.file_path].buf;
+  auto &file_buf = files.at(desc.file_path).buf;
   auto new_size = desc.position + size;
   if (file_buf.size() < new_size) {
     file_buf.resize(new_size);
@@ -108,13 +122,13 @@ size_t write(int fd, const void *buf, size_t size) {
 }
 
 ssize_t read(int fd, void *buf, size_t size) {
-  auto &desc = fds[fd];
+  auto &desc = fds.at(fd);
   if (desc.type == fd_type::pipe) {
-    ssize_t bytes = ::read(desc.real_pipe_fd, buf, size);
+    ssize_t bytes = ::read(*desc.real_pipe_fd, buf, size);
     if (bytes < 0) throw_errno(errno);
     return bytes;
   }
-  auto &file_buf = files[desc.file_path].buf;
+  auto &file_buf = files.at(desc.file_path).buf;
   if (desc.position + size > file_buf.size()) {
     size = file_buf.size() - desc.position;
   }
@@ -123,40 +137,44 @@ ssize_t read(int fd, void *buf, size_t size) {
   return size;
 }
 
-void close(int fd) {
-  auto iter = fds.find(fd);
-  if (iter == fds.end()) return;
-  if (iter->second.real_pipe_fd >= 0) ::close(iter->second.real_pipe_fd);
-  fds.erase(iter);
-}
+void close(int fd) { fds.erase(fd); }
 
 int posix_openpt(int) {
-  auto fd = alloc_fd();
-  fds[fd] = {fd_type::file, "", 0, -1};
-  return fd;
+  std::array<int, 2> real_pipe_fds;
+  if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
+  auto master_pt_fd = alloc_fd();
+  fds[master_pt_fd] = {
+      fd_type::pipe, "", 0,
+      std::shared_ptr<int>(new int(real_pipe_fds[0]), delete_shared_fd)};
+  auto pts_file_path = "/pseudoterminal/" + std::to_string(master_pt_fd);
+  files[pts_file_path] = {
+      file_type::pts,
+      {},
+      std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)};
+  return master_pt_fd;
 }
 
 void grantpt(int) {}
 void unlockpt(int) {}
 
-std::string ptsname(int fd) {
-  auto name = "/pseudoterminal/" + std::to_string(fd);
-  files[name] = {file_type::pts, {}};
-  return name;
-}
+std::string ptsname(int fd) { return "/pseudoterminal/" + std::to_string(fd); }
 
 void pipe(int pipefd[2]) {
   std::array<int, 2> real_pipe_fds;
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto read_fd = pipefd[0] = alloc_fd();
-  fds[read_fd] = {fd_type::pipe, "", 0, real_pipe_fds[0]};
+  fds[read_fd] = {
+      fd_type::pipe, "", 0,
+      std::shared_ptr<int>(new int(real_pipe_fds[0]), delete_shared_fd)};
   auto write_fd = pipefd[1] = alloc_fd();
-  fds[write_fd] = {fd_type::pipe, "", 0, real_pipe_fds[1]};
+  fds[write_fd] = {
+      fd_type::pipe, "", 0,
+      std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)};
 }
 
 int isatty(int fd) {
   auto &desc = fds[fd];
-  return files[desc.file_path].type == file_type::pts;
+  return files.at(desc.file_path).type == file_type::pts;
 }
 
 enum class action_type { dup2, close };
@@ -254,8 +272,10 @@ void posix_spawn(pid_t *pid, const char *binary_path,
     }
     }
   }
-  auto const& stdout = reg_bin->second.stdout;
+  auto const &stdout = reg_bin->second.stdout;
   write(proc_fds[STDOUT_FILENO], stdout.c_str(), stdout.size());
+  auto const &stderr = reg_bin->second.stderr;
+  write(proc_fds[STDERR_FILENO], stderr.c_str(), stderr.size());
 }
 
 pid_t waitpid(pid_t pid, int *, int) { return pid; }
