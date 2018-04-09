@@ -3,11 +3,13 @@
 
 using namespace upd;
 
-@it "does smth" {
+@it "executes the command line as expected" {
   io::mock::reset();
-  io::mock::register_binary("/bin/foobar", "", "some stderr output");
+  auto stdout = "hello, world";
+  auto stderr = "some stderr output";
+  io::mock::register_binary("/bin/foobar", stdout, stderr);
   io::pseudoterminal pst;
-  run_command_line(
+  auto result = run_command_line(
       {
           "/bin/foobar",
           {"tadam", "arbitrary", "arguments"},
@@ -22,4 +24,7 @@ using namespace upd;
               {"TERM=xterm-color", "SOMETHING=1234"},
           },
       });
+  @expect(result.status).to_equal(0);
+  @expect(result.stdout).to_equal(stdout);
+  @expect(result.stderr).to_equal("");
 }

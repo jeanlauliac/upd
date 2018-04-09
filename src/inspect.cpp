@@ -2,6 +2,10 @@
 
 namespace upd {
 
+std::string inspect(int value, const inspect_options &) {
+  return std::to_string(value);
+}
+
 std::string inspect(size_t value, const inspect_options &) {
   return std::to_string(value);
 }

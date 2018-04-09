@@ -22,6 +22,7 @@ struct inspect_options {
   unsigned int depth;
 };
 
+std::string inspect(int value, const inspect_options &);
 std::string inspect(size_t value, const inspect_options &);
 std::string inspect(unsigned long long value, const inspect_options &);
 std::string inspect(unsigned short value, const inspect_options &);

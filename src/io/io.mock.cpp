@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <system_error>
+#include <unistd.h>
 #include <unordered_map>
 
 namespace upd {
@@ -52,13 +53,22 @@ struct file_data {
   std::vector<char> buf;
 };
 
+enum class fd_type {
+  file,
+  pipe,
+};
+
 struct fd_data {
+  fd_type type;
   std::string file_path;
   size_t position;
+  int real_pipe_fd;
 };
 
 std::unordered_map<std::string, file_data> files;
-std::unordered_map<size_t, fd_data> fds;
+
+typedef std::unordered_map<size_t, fd_data> fds_t;
+fds_t fds;
 
 size_t alloc_fd() {
   int fd = 3;
@@ -73,12 +83,16 @@ int open(const std::string &file_path, int flags, mode_t) {
     files[file_path] = {file_type::regular, {}};
   }
   auto fd = alloc_fd();
-  fds[fd] = {file_path, 0};
+  fds[fd] = {fd_type::file, file_path, 0, -1};
   return fd;
 }
 
-size_t write(int fd, const void *buf, size_t size) {
-  auto &desc = fds[fd];
+size_t write(fd_data& desc, const void *buf, size_t size) {
+  if (desc.type == fd_type::pipe) {
+    size_t bytes = ::write(desc.real_pipe_fd, buf, size);
+    if (bytes != size) throw_errno(errno);
+    return bytes;
+  }
   auto &file_buf = files[desc.file_path].buf;
   auto new_size = desc.position + size;
   if (file_buf.size() < new_size) {
@@ -89,8 +103,17 @@ size_t write(int fd, const void *buf, size_t size) {
   return size;
 }
 
+size_t write(int fd, const void *buf, size_t size) {
+  return write(fds.at(fd), buf, size);
+}
+
 ssize_t read(int fd, void *buf, size_t size) {
   auto &desc = fds[fd];
+  if (desc.type == fd_type::pipe) {
+    ssize_t bytes = ::read(desc.real_pipe_fd, buf, size);
+    if (bytes < 0) throw_errno(errno);
+    return bytes;
+  }
   auto &file_buf = files[desc.file_path].buf;
   if (desc.position + size > file_buf.size()) {
     size = file_buf.size() - desc.position;
@@ -100,11 +123,16 @@ ssize_t read(int fd, void *buf, size_t size) {
   return size;
 }
 
-void close(int fd) { fds.erase(fd); }
+void close(int fd) {
+  auto iter = fds.find(fd);
+  if (iter == fds.end()) return;
+  if (iter->second.real_pipe_fd >= 0) ::close(iter->second.real_pipe_fd);
+  fds.erase(iter);
+}
 
 int posix_openpt(int) {
   auto fd = alloc_fd();
-  fds[fd] = {"", 0};
+  fds[fd] = {fd_type::file, "", 0, -1};
   return fd;
 }
 
@@ -118,8 +146,12 @@ std::string ptsname(int fd) {
 }
 
 void pipe(int pipefd[2]) {
-  pipefd[0] = alloc_fd();
-  pipefd[1] = alloc_fd();
+  std::array<int, 2> real_pipe_fds;
+  if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
+  auto read_fd = pipefd[0] = alloc_fd();
+  fds[read_fd] = {fd_type::pipe, "", 0, real_pipe_fds[0]};
+  auto write_fd = pipefd[1] = alloc_fd();
+  fds[write_fd] = {fd_type::pipe, "", 0, real_pipe_fds[1]};
 }
 
 int isatty(int fd) {
@@ -127,22 +159,34 @@ int isatty(int fd) {
   return files[desc.file_path].type == file_type::pts;
 }
 
-struct posix_spawn_file_actions_mock {};
+enum class action_type { dup2, close };
+
+struct file_action {
+  action_type type;
+  int fd;
+  int new_fd;
+};
+
+struct posix_spawn_file_actions_mock {
+  std::vector<file_action> acts;
+};
 
 std::unordered_map<const posix_spawn_file_actions_t *,
                    posix_spawn_file_actions_mock>
     file_action_entries;
 
 void posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *actions,
-                                       int) {
-  if (file_action_entries.find(actions) == file_action_entries.end())
-    throw_errno(EINVAL);
+                                       int fd) {
+  auto actions_iter = file_action_entries.find(actions);
+  if (actions_iter == file_action_entries.end()) throw_errno(EINVAL);
+  actions_iter->second.acts.push_back({action_type::close, fd, -1});
 }
 
-void posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions, int,
-                                      int) {
-  if (file_action_entries.find(actions) == file_action_entries.end())
-    throw_errno(EINVAL);
+void posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *actions,
+                                      int fd, int new_fd) {
+  auto actions_iter = file_action_entries.find(actions);
+  if (actions_iter == file_action_entries.end()) throw_errno(EINVAL);
+  actions_iter->second.acts.push_back({action_type::dup2, fd, new_fd});
 }
 
 void posix_spawn_file_actions_addopen(posix_spawn_file_actions_t *actions, int,
@@ -188,13 +232,30 @@ void posix_spawn(pid_t *pid, const char *binary_path,
                  const posix_spawn_file_actions_t *file_actions,
                  const posix_spawnattr_t *, char *const args[],
                  char *const env[]) {
-  if (file_action_entries.find(file_actions) == file_action_entries.end())
-    throw_errno(EINVAL);
+  auto actions_iter = file_action_entries.find(file_actions);
+  if (actions_iter == file_action_entries.end()) throw_errno(EINVAL);
   auto reg_bin = reg_bins.find(binary_path);
   if (reg_bin == reg_bins.end()) throw_errno(ENOENT);
   *pid = next_pid++;
   mock::spawn_records.push_back(mock::spawn_record{
       binary_path, ntsa_to_vector(args), ntsa_to_vector(env)});
+  fds_t proc_fds = fds;
+  for (auto const &act : actions_iter->second.acts) {
+    switch (act.type) {
+    case action_type::dup2: {
+      auto iter = proc_fds.find(act.fd);
+      if (iter == proc_fds.end()) throw_errno(EINVAL);
+      proc_fds[act.new_fd] = iter->second;
+      break;
+    }
+    case action_type::close: {
+      proc_fds.erase(act.fd);
+      break;
+    }
+    }
+  }
+  auto const& stdout = reg_bin->second.stdout;
+  write(proc_fds[STDOUT_FILENO], stdout.c_str(), stdout.size());
 }
 
 pid_t waitpid(pid_t pid, int *, int) { return pid; }
