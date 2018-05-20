@@ -78,6 +78,10 @@ void mkfifo(const std::string &file_path, mode_t mode) {
   if (::mkfifo(file_path.c_str(), mode) != 0) throw_errno();
 }
 
+void mkdir(const std::string &dir_path, mode_t mode) {
+  if (::mkdir(dir_path.c_str(), mode) != 0) throw_errno();
+}
+
 int open(const std::string &file_path, int flags, mode_t mode) {
   int fd = ::open(file_path.c_str(), flags, mode);
   if (fd < 0) {

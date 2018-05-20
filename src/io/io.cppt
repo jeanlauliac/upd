@@ -6,6 +6,7 @@
 using namespace upd;
 
 @it "can write a file" {
+  io::mock::reset();
   auto fd = io::open("/foobar.txt", O_CREAT, 0600);
   std::string str = "hello, world";
   io::write(fd, str.c_str(), str.size());
@@ -14,10 +15,31 @@ using namespace upd;
 }
 
 @it "can write a file in pieces" {
+  io::mock::reset();
   auto fd = io::open("/foobar.txt", O_CREAT, 0600);
   std::string str = "hello, world";
   io::write(fd, str.c_str(), 5);
   io::write(fd, str.c_str() + 5, 7);
   io::close(fd);
   @expect(io::read_entire_file("/foobar.txt")).to_equal(str);
+}
+
+@it "writes a file in a directory" {
+  io::mock::reset();
+  io::mkdir("/glo", 0);
+  auto fd = io::open("/glo/foobar.txt", O_CREAT, 0600);
+  std::string str = "hello, world";
+  io::write(fd, str.c_str(), str.size());
+  io::close(fd);
+  @expect(io::read_entire_file("/glo/foobar.txt")).to_equal(str);
+}
+
+@it "throws trying to write into non-existent directory" {
+  io::mock::reset();
+  try {
+    io::open("/glo/foobar.txt", O_WRONLY | O_CREAT, 0600);
+    throw std::runtime_error("should not reach");
+  } catch (std::system_error error) {
+    if (error.code() != std::errc::no_such_file_or_directory) throw;
+  }
 }

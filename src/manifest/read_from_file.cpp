@@ -1,11 +1,14 @@
 #include "read_from_file.h"
 
 #include "../cli/utils.h"
+#include "../io/file_descriptor.h"
 #include "../io/io.h"
 #include "../istream_char_reader.h"
 #include "../json/vector_handler.h"
 #include "../path.h"
+#include "../fd_char_reader.h"
 #include <fstream>
+#include <fcntl.h>
 
 namespace upd {
 namespace manifest {
@@ -208,15 +211,16 @@ template <typename Lexer> manifest parse(Lexer &lexer) {
 template manifest parse(string_lexer &);
 
 manifest read_from_file(const std::string &root_path) {
-  std::ifstream file;
-  file.exceptions(std::ifstream::badbit);
+  // std::ifstream file;
+  // file.exceptions(std::ifstream::badbit);
   std::string file_path = root_path + UPDFILE_SUFFIX;
-  file.open(file_path);
-  if (!file.is_open()) {
-    throw missing_manifest_error(root_path);
-  }
-  istream_char_reader<std::ifstream> reader(file);
-  json::lexer<istream_char_reader<std::ifstream>> lexer(reader);
+  // file.open(file_path);
+  // if (!file.is_open()) {
+  //   throw missing_manifest_error(root_path);
+  // }
+  io::file_descriptor fd(io::open(file_path, O_RDONLY, 0));
+  fd_char_reader reader(fd);
+  json::lexer<fd_char_reader> lexer(reader);
   try {
     return parse(lexer);
   } catch (json::invalid_character_error error) {

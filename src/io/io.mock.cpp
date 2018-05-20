@@ -44,21 +44,30 @@ std::string mkdtemp(const std::string &) { return "/tmp/foo"; }
 
 void mkfifo(const std::string &, mode_t) {}
 
-enum class file_type {
+enum class node_type {
   regular,
+  directory,
   pts,
-};
-
-struct file_data {
-  file_type type;
-  std::vector<char> buf;
-  std::shared_ptr<int> pts_real_pipe_fd;
 };
 
 void delete_shared_fd(int *fdp) {
   ::close(*fdp);
   delete fdp;
 }
+
+struct file_node {
+  node_type type;
+  std::unordered_map<std::string, file_node> ents;
+  std::vector<char> buf;
+  std::shared_ptr<int> pts_real_pipe_fd;
+};
+
+file_node root_dir = {
+  node_type::directory,
+  {},
+  {},
+  nullptr,
+};
 
 enum class fd_type {
   file,
@@ -67,15 +76,54 @@ enum class fd_type {
 
 struct fd_data {
   fd_type type;
-  std::string file_path;
+  file_node* node;
   size_t position;
   std::shared_ptr<int> real_pipe_fd;
 };
 
-std::unordered_map<std::string, file_data> files;
-
 typedef std::unordered_map<size_t, fd_data> fds_t;
 fds_t fds;
+
+struct resolution_t {
+  std::vector<file_node*> node_path;
+  file_node* node;
+  std::string name;
+};
+
+resolution_t resolve(const std::string& file_path) {
+  if (file_path.empty()) throw_errno(ENOENT);
+  if (file_path[0] != '/') {
+    throw std::runtime_error("cannot resolve relative paths in this mock");
+  }
+  size_t slash_idx = 1;
+  std::vector<file_node*> node_path;
+  file_node* current_node = &root_dir;
+  std::string ent_name;
+  do {
+    auto next_slash_idx = file_path.find('/', slash_idx + 1);
+    if (current_node == nullptr) throw_errno(ENOENT);
+    if (current_node->type != node_type::directory) throw_errno(ENOTDIR);
+    ent_name = next_slash_idx == std::string::npos
+      ? file_path.substr(slash_idx)
+      : file_path.substr(slash_idx, next_slash_idx - slash_idx);
+    slash_idx = next_slash_idx;
+    if (ent_name == "" || ent_name == ".") continue;
+    if (ent_name == "..") {
+      if (node_path.empty()) continue;
+      current_node = node_path.back();
+      node_path.pop_back();
+      continue;
+    }
+    auto next_node_iter = current_node->ents.find(ent_name);
+    node_path.push_back(current_node);
+    if (next_node_iter == current_node->ents.end()) {
+      current_node = nullptr;
+      continue;
+    }
+    current_node = &next_node_iter->second;
+  } while (slash_idx != std::string::npos);
+  return {std::move(node_path), current_node, ent_name};
+}
 
 size_t alloc_fd() {
   int fd = 3;
@@ -84,20 +132,31 @@ size_t alloc_fd() {
   return fd;
 }
 
+void mkdir(const std::string &dir_path, mode_t) {
+  auto resolution = resolve(dir_path);
+  if (resolution.node != nullptr) throw_errno(EEXIST);
+  resolution.node_path.back()->ents.emplace(resolution.name,
+      file_node{node_type::directory, {}, {}, nullptr});
+}
+
 int open(const std::string &file_path, int flags, mode_t) {
-  auto file_iter = files.find(file_path);
-  auto fd = alloc_fd();
-  if (file_iter == files.end()) {
+  auto resolution = resolve(file_path);
+  auto node = resolution.node;
+  if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
-    files[file_path] = {file_type::regular, {}, nullptr};
-  } else if (file_iter->second.type == file_type::pts) {
-    fds[fd] = {fd_type::pipe, file_path, 0, file_iter->second.pts_real_pipe_fd};
+    auto result = resolution.node_path.back()->ents.emplace(resolution.name,
+        file_node{node_type::regular, {}, {}, nullptr});
+    node = &result.first->second;
+  } else if (node->type == node_type::pts) {
+    auto fd = alloc_fd();
+    fds[fd] = {fd_type::pipe, node, 0, node->pts_real_pipe_fd};
     // FIXME: this prevent reusing the same ptsname() twice, that does not
     // fit the way it really works.
-    file_iter->second.pts_real_pipe_fd.reset();
+    node->pts_real_pipe_fd.reset();
     return fd;
   }
-  fds[fd] = {fd_type::file, file_path, 0, nullptr};
+  auto fd = alloc_fd();
+  fds[fd] = {fd_type::file, node, 0, nullptr};
   return fd;
 }
 
@@ -107,7 +166,7 @@ size_t write(fd_data &desc, const void *buf, size_t size) {
     if (bytes != size) throw_errno(errno);
     return bytes;
   }
-  auto &file_buf = files.at(desc.file_path).buf;
+  auto &file_buf = desc.node->buf;
   auto new_size = desc.position + size;
   if (file_buf.size() < new_size) {
     file_buf.resize(new_size);
@@ -128,7 +187,7 @@ ssize_t read(int fd, void *buf, size_t size) {
     if (bytes < 0) throw_errno(errno);
     return bytes;
   }
-  auto &file_buf = files.at(desc.file_path).buf;
+  auto &file_buf = desc.node->buf;
   if (desc.position + size > file_buf.size()) {
     size = file_buf.size() - desc.position;
   }
@@ -144,13 +203,20 @@ int posix_openpt(int) {
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto master_pt_fd = alloc_fd();
   fds[master_pt_fd] = {
-      fd_type::pipe, "", 0,
+      fd_type::pipe, nullptr, 0,
       std::shared_ptr<int>(new int(real_pipe_fds[0]), delete_shared_fd)};
+  try {
+    mkdir("/pseudoterminal", 0);
+  } catch (std::system_error error) {
+    if (error.code() != std::errc::file_exists) throw;
+  }
   auto pts_file_path = "/pseudoterminal/" + std::to_string(master_pt_fd);
-  files[pts_file_path] = {
-      file_type::pts,
+  auto resolution = resolve(pts_file_path);
+  resolution.node_path.back()->ents.emplace(resolution.name, file_node{
+      node_type::pts,
       {},
-      std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)};
+      {},
+      std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)});
   return master_pt_fd;
 }
 
@@ -164,17 +230,17 @@ void pipe(int pipefd[2]) {
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto read_fd = pipefd[0] = alloc_fd();
   fds[read_fd] = {
-      fd_type::pipe, "", 0,
+      fd_type::pipe, nullptr, 0,
       std::shared_ptr<int>(new int(real_pipe_fds[0]), delete_shared_fd)};
   auto write_fd = pipefd[1] = alloc_fd();
   fds[write_fd] = {
-      fd_type::pipe, "", 0,
+      fd_type::pipe, nullptr, 0,
       std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)};
 }
 
 int isatty(int fd) {
   auto &desc = fds[fd];
-  return files.at(desc.file_path).type == file_type::pts;
+  return desc.node->type == node_type::pts;
 }
 
 enum class action_type { dup2, close };
@@ -283,7 +349,12 @@ pid_t waitpid(pid_t pid, int *, int) { return pid; }
 namespace mock {
 
 void reset() {
-  files.clear();
+  root_dir = {
+    node_type::directory,
+    {},
+    {},
+    nullptr,
+  };
   fds.clear();
   file_action_entries.clear();
 }

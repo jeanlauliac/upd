@@ -88,6 +88,8 @@ std::string mkdtemp(const std::string &template_path);
  */
 void mkfifo(const std::string &file_path, mode_t mode);
 
+void mkdir(const std::string &dir_path, mode_t mode);
+
 /**
  * Open a file. Returned number is a valid file descriptor.
  */

@@ -1,0 +1,35 @@
+#include "execute_manifest.h"
+#include "io/io-utils.h"
+
+@it "updates correct files" {
+  return;
+  upd::io::write_entire_file("/some/root/updfile.json", R"JSON({
+    "command_line_templates": [
+      {
+        "binary_path": "/some/bin/compile",
+        "arguments": [
+          {
+            "variables": ["output_file", "input_files"]
+          }
+        ]
+      }
+    ],
+    "source_patterns": [
+      "src/foo.txt"
+    ],
+    "rules": [
+      {
+        "command_line_ix": 0,
+        "inputs": [
+          {
+            "source_ix": 0
+          }
+        ],
+        "output": "dist/bar.txt"
+      }
+    ]
+})JSON");
+  upd::io::write_entire_file("/some/root/src/foo.txt", "this is a test");
+  upd::execute_manifest("/some/root", "/some/root", false, false,
+      {"tadam"}, false, false, 1);
+}
