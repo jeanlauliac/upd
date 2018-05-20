@@ -98,8 +98,8 @@ const compiled_tools = manifest.rule(
   `${BUILD_DIR}/($1)`
 );
 
-const cppt_sources = manifest.source("(src/**/*.cppt)");
-// const cppt_sources = manifest.source("(src/io/io.cppt)");
+// const cppt_sources = manifest.source("(src/**/*.cppt)");
+const cppt_sources = manifest.source("(src/execute_manifest.cppt)");
 const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
 
 const test_cpp_files = manifest.rule(
