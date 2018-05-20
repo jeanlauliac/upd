@@ -20,8 +20,7 @@ static int set_errno(int value) {
   return -1;
 }
 
-template <typename Return>
-static Return set_errno(int value, Return retval) {
+template <typename Return> static Return set_errno(int value, Return retval) {
   errno = value;
   return retval;
 }
@@ -53,10 +52,10 @@ struct file_node {
 };
 
 file_node root_dir = {
-  node_type::directory,
-  {},
-  {},
-  nullptr,
+    node_type::directory,
+    {},
+    {},
+    nullptr,
 };
 
 enum class fd_type {
@@ -66,7 +65,7 @@ enum class fd_type {
 
 struct fd_data {
   fd_type type;
-  file_node* node;
+  file_node *node;
   size_t position;
   std::shared_ptr<int> real_pipe_fd;
 };
@@ -75,27 +74,28 @@ typedef std::unordered_map<size_t, fd_data> fds_t;
 fds_t fds;
 
 struct resolution_t {
-  std::vector<file_node*> node_path;
-  file_node* node;
+  std::vector<file_node *> node_path;
+  file_node *node;
   std::string name;
 };
 
-int resolve(resolution_t& rs, const std::string& file_path) noexcept {
+int resolve(resolution_t &rs, const std::string &file_path) noexcept {
   if (file_path.empty()) return set_errno(ENOENT);
   if (file_path[0] != '/') {
     throw std::runtime_error("cannot resolve relative paths in this mock");
   }
   size_t slash_idx = 1;
-  std::vector<file_node*> node_path;
-  file_node* current_node = &root_dir;
+  std::vector<file_node *> node_path;
+  file_node *current_node = &root_dir;
   std::string ent_name;
   do {
     auto next_slash_idx = file_path.find('/', slash_idx + 1);
     if (current_node == nullptr) return set_errno(ENOENT);
     if (current_node->type != node_type::directory) return set_errno(ENOTDIR);
-    ent_name = next_slash_idx == std::string::npos
-      ? file_path.substr(slash_idx + 1)
-      : file_path.substr(slash_idx + 1, next_slash_idx - slash_idx - 1);
+    ent_name =
+        next_slash_idx == std::string::npos
+            ? file_path.substr(slash_idx + 1)
+            : file_path.substr(slash_idx + 1, next_slash_idx - slash_idx - 1);
     slash_idx = next_slash_idx;
     if (ent_name == "" || ent_name == ".") continue;
     if (ent_name == "..") {
@@ -124,20 +124,19 @@ size_t alloc_fd() {
 }
 
 struct dir_stream {
-  file_node* node;
+  file_node *node;
   std::string last_name;
 };
 
-std::unordered_map<DIR*, dir_stream> dir_streams;
+std::unordered_map<DIR *, dir_stream> dir_streams;
 size_t next_dir_stream_idx = 1;
 
 DIR *opendir(const char *name) noexcept {
   resolution_t rs;
   if (resolve(rs, name)) return nullptr;
   if (rs.node == nullptr) return set_errno(ENOENT, nullptr);
-  if (rs.node->type != node_type::directory)
-    return set_errno(ENOTDIR, nullptr);
-  auto handle = reinterpret_cast<DIR*>(next_dir_stream_idx++);
+  if (rs.node->type != node_type::directory) return set_errno(ENOTDIR, nullptr);
+  auto handle = reinterpret_cast<DIR *>(next_dir_stream_idx++);
   dir_streams.emplace(handle, dir_stream{rs.node, ""});
   return handle;
 }
@@ -147,10 +146,9 @@ dirent global_dirent;
 struct dirent *readdir(DIR *dirp) noexcept {
   auto dir_iter = dir_streams.find(dirp);
   if (dir_iter == dir_streams.end()) return set_errno(EINVAL, nullptr);
-  auto& ds = dir_iter->second;
-  auto iter = ds.last_name.empty()
-    ? ds.node->ents.begin()
-    : ++ds.node->ents.find(ds.last_name);
+  auto &ds = dir_iter->second;
+  auto iter = ds.last_name.empty() ? ds.node->ents.begin()
+                                   : ++ds.node->ents.find(ds.last_name);
   if (iter == ds.node->ents.end()) return nullptr;
   global_dirent.d_reclen = sizeof(dirent);
   global_dirent.d_type = DT_UNKNOWN;
@@ -172,8 +170,8 @@ void mkdir(const std::string &dir_path, mode_t) {
   resolution_t rs;
   if (resolve(rs, dir_path)) throw_errno(errno);
   if (rs.node != nullptr) throw_errno(EEXIST);
-  rs.node_path.back()->ents.emplace(rs.name,
-      file_node{node_type::directory, {}, {}, nullptr});
+  rs.node_path.back()->ents.emplace(
+      rs.name, file_node{node_type::directory, {}, {}, nullptr});
 }
 
 int open(const std::string &file_path, int flags, mode_t) {
@@ -182,8 +180,8 @@ int open(const std::string &file_path, int flags, mode_t) {
   auto node = rs.node;
   if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
-    auto result = rs.node_path.back()->ents.emplace(rs.name,
-        file_node{node_type::regular, {}, {}, nullptr});
+    auto result = rs.node_path.back()->ents.emplace(
+        rs.name, file_node{node_type::regular, {}, {}, nullptr});
     node = &result.first->second;
   } else if (node->type == node_type::pts) {
     auto fd = alloc_fd();
@@ -251,11 +249,12 @@ int posix_openpt(int) {
   auto pts_file_path = "/pseudoterminal/" + std::to_string(master_pt_fd);
   resolution_t rs;
   if (resolve(rs, pts_file_path)) throw_errno(errno);
-  rs.node_path.back()->ents.emplace(rs.name, file_node{
-      node_type::pts,
-      {},
-      {},
-      std::shared_ptr<int>(new int(real_pipe_fds[1]), delete_shared_fd)});
+  rs.node_path.back()->ents.emplace(
+      rs.name, file_node{node_type::pts,
+                         {},
+                         {},
+                         std::shared_ptr<int>(new int(real_pipe_fds[1]),
+                                              delete_shared_fd)});
   return master_pt_fd;
 }
 
@@ -389,10 +388,10 @@ namespace mock {
 
 void reset() {
   root_dir = {
-    node_type::directory,
-    {},
-    {},
-    nullptr,
+      node_type::directory,
+      {},
+      {},
+      nullptr,
   };
   fds.clear();
   file_action_entries.clear();

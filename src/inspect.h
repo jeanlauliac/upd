@@ -34,7 +34,7 @@ std::string inspect(const std::string &value, const inspect_options &options);
 std::string inspect(const char *value, const inspect_options &options);
 
 template <typename Pointer>
-std::string inspect(Pointer* value, const inspect_options &) {
+std::string inspect(Pointer *value, const inspect_options &) {
   if (value == nullptr) {
     return "nullptr";
   }

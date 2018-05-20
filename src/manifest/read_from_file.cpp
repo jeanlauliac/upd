@@ -1,14 +1,14 @@
 #include "read_from_file.h"
 
 #include "../cli/utils.h"
+#include "../fd_char_reader.h"
 #include "../io/file_descriptor.h"
 #include "../io/io.h"
 #include "../istream_char_reader.h"
 #include "../json/vector_handler.h"
 #include "../path.h"
-#include "../fd_char_reader.h"
-#include <fstream>
 #include <fcntl.h>
+#include <fstream>
 
 namespace upd {
 namespace manifest {

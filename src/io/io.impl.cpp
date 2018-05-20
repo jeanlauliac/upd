@@ -35,7 +35,9 @@ bool is_regular_file(const std::string &path) {
 }
 
 DIR *opendir(const char *name) noexcept { return ::opendir(name); }
-struct dirent *readdir(DIR *dirp) noexcept { return io::readdir(dirp); }
+struct dirent *readdir(DIR *dirp) noexcept {
+  return io::readdir(dirp);
+}
 int closedir(DIR *dirp) noexcept { return io::closedir(dirp); }
 
 std::string mkdtemp(const std::string &template_path) {
