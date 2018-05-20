@@ -15,30 +15,20 @@ static void throw_errno(int value) {
   throw std::system_error(value, std::generic_category());
 }
 
+static int set_errno(int value) {
+  errno = value;
+  return -1;
+}
+
+template <typename Return>
+static Return set_errno(int value, Return retval) {
+  errno = value;
+  return retval;
+}
+
 std::string getcwd() { return "/home/tests"; }
 
 bool is_regular_file(const std::string &) { return true; }
-
-dir::dir(const std::string &) : ptr_(nullptr) {}
-
-dir::dir() : ptr_(nullptr) {}
-
-dir::~dir() {}
-
-void dir::open(const std::string &) {}
-
-void dir::close() {}
-
-dir_files_reader::dir_files_reader(const std::string &) {}
-dir_files_reader::dir_files_reader() {}
-
-struct dirent *dir_files_reader::next() {
-  return nullptr;
-}
-
-void dir_files_reader::open(const std::string &) {}
-
-void dir_files_reader::close() {}
 
 std::string mkdtemp(const std::string &) { return "/tmp/foo"; }
 
@@ -90,8 +80,8 @@ struct resolution_t {
   std::string name;
 };
 
-resolution_t resolve(const std::string& file_path) {
-  if (file_path.empty()) throw_errno(ENOENT);
+int resolve(resolution_t& rs, const std::string& file_path) noexcept {
+  if (file_path.empty()) return set_errno(ENOENT);
   if (file_path[0] != '/') {
     throw std::runtime_error("cannot resolve relative paths in this mock");
   }
@@ -101,11 +91,11 @@ resolution_t resolve(const std::string& file_path) {
   std::string ent_name;
   do {
     auto next_slash_idx = file_path.find('/', slash_idx + 1);
-    if (current_node == nullptr) throw_errno(ENOENT);
-    if (current_node->type != node_type::directory) throw_errno(ENOTDIR);
+    if (current_node == nullptr) return set_errno(ENOENT);
+    if (current_node->type != node_type::directory) return set_errno(ENOTDIR);
     ent_name = next_slash_idx == std::string::npos
-      ? file_path.substr(slash_idx)
-      : file_path.substr(slash_idx, next_slash_idx - slash_idx);
+      ? file_path.substr(slash_idx + 1)
+      : file_path.substr(slash_idx + 1, next_slash_idx - slash_idx - 1);
     slash_idx = next_slash_idx;
     if (ent_name == "" || ent_name == ".") continue;
     if (ent_name == "..") {
@@ -122,7 +112,8 @@ resolution_t resolve(const std::string& file_path) {
     }
     current_node = &next_node_iter->second;
   } while (slash_idx != std::string::npos);
-  return {std::move(node_path), current_node, ent_name};
+  rs = {std::move(node_path), current_node, ent_name};
+  return 0;
 }
 
 size_t alloc_fd() {
@@ -132,19 +123,66 @@ size_t alloc_fd() {
   return fd;
 }
 
+struct dir_stream {
+  file_node* node;
+  std::string last_name;
+};
+
+std::unordered_map<DIR*, dir_stream> dir_streams;
+size_t next_dir_stream_idx = 1;
+
+DIR *opendir(const char *name) noexcept {
+  resolution_t rs;
+  if (resolve(rs, name)) return nullptr;
+  if (rs.node == nullptr) return set_errno(ENOENT, nullptr);
+  if (rs.node->type != node_type::directory)
+    return set_errno(ENOTDIR, nullptr);
+  auto handle = reinterpret_cast<DIR*>(next_dir_stream_idx++);
+  dir_streams.emplace(handle, dir_stream{rs.node, ""});
+  return handle;
+}
+
+dirent global_dirent;
+
+struct dirent *readdir(DIR *dirp) noexcept {
+  auto dir_iter = dir_streams.find(dirp);
+  if (dir_iter == dir_streams.end()) return set_errno(EINVAL, nullptr);
+  auto& ds = dir_iter->second;
+  auto iter = ds.last_name.empty()
+    ? ds.node->ents.begin()
+    : ++ds.node->ents.find(ds.last_name);
+  if (iter == ds.node->ents.end()) return nullptr;
+  global_dirent.d_reclen = sizeof(dirent);
+  global_dirent.d_type = DT_UNKNOWN;
+  ds.last_name = iter->first;
+  if (ds.last_name.size() >= sizeof(global_dirent.d_name))
+    return set_errno(EIO, nullptr);
+  strcpy(global_dirent.d_name, ds.last_name.c_str());
+  return &global_dirent;
+}
+
+int closedir(DIR *dirp) noexcept {
+  auto iter = dir_streams.find(dirp);
+  if (iter == dir_streams.end()) return set_errno(EINVAL);
+  dir_streams.erase(iter);
+  return 0;
+}
+
 void mkdir(const std::string &dir_path, mode_t) {
-  auto resolution = resolve(dir_path);
-  if (resolution.node != nullptr) throw_errno(EEXIST);
-  resolution.node_path.back()->ents.emplace(resolution.name,
+  resolution_t rs;
+  if (resolve(rs, dir_path)) throw_errno(errno);
+  if (rs.node != nullptr) throw_errno(EEXIST);
+  rs.node_path.back()->ents.emplace(rs.name,
       file_node{node_type::directory, {}, {}, nullptr});
 }
 
 int open(const std::string &file_path, int flags, mode_t) {
-  auto resolution = resolve(file_path);
-  auto node = resolution.node;
+  resolution_t rs;
+  if (resolve(rs, file_path)) throw_errno(errno);
+  auto node = rs.node;
   if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
-    auto result = resolution.node_path.back()->ents.emplace(resolution.name,
+    auto result = rs.node_path.back()->ents.emplace(rs.name,
         file_node{node_type::regular, {}, {}, nullptr});
     node = &result.first->second;
   } else if (node->type == node_type::pts) {
@@ -211,8 +249,9 @@ int posix_openpt(int) {
     if (error.code() != std::errc::file_exists) throw;
   }
   auto pts_file_path = "/pseudoterminal/" + std::to_string(master_pt_fd);
-  auto resolution = resolve(pts_file_path);
-  resolution.node_path.back()->ents.emplace(resolution.name, file_node{
+  resolution_t rs;
+  if (resolve(rs, pts_file_path)) throw_errno(errno);
+  rs.node_path.back()->ents.emplace(rs.name, file_node{
       node_type::pts,
       {},
       {},

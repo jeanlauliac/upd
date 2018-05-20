@@ -17,43 +17,6 @@ std::string getcwd();
 
 bool is_regular_file(const std::string &path);
 
-/**
- * Keep track and automatically delete a directory handle.
- */
-struct dir {
-  dir(const std::string &path);
-  dir();
-  dir(dir &) = delete;
-  ~dir();
-  void open(const std::string &path);
-  void close();
-  bool is_open() { return ptr_ != nullptr; }
-  DIR *ptr() const { return ptr_; }
-
-private:
-  DIR *ptr_;
-};
-
-/**
- * Provide us with all the files+subfolders of a folder.
- */
-struct dir_files_reader {
-  dir_files_reader(const std::string &path);
-  dir_files_reader();
-  /**
-   * The returned dirent pointer should never be released manually. It is
-   * automatically released by the system on the next call, or object
-   * destruction.
-   */
-  struct dirent *next();
-  void open(const std::string &path);
-  void close();
-  bool is_open() { return target_.is_open(); }
-
-private:
-  dir target_;
-};
-
 struct ifstream_failed_error {
   ifstream_failed_error(const std::string &file_path_)
       : file_path(file_path_) {}
@@ -76,6 +39,10 @@ private:
   bool first_;
   std::string separator_;
 };
+
+DIR *opendir(const char *name) noexcept;
+struct dirent *readdir(DIR *dirp) noexcept;
+int closedir(DIR *dirp) noexcept;
 
 /**
  * Create a temporary folder. `template_path` must be a full path, for example

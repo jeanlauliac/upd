@@ -33,6 +33,14 @@ std::string inspect(char value, const inspect_options &);
 std::string inspect(const std::string &value, const inspect_options &options);
 std::string inspect(const char *value, const inspect_options &options);
 
+template <typename Pointer>
+std::string inspect(Pointer* value, const inspect_options &) {
+  if (value == nullptr) {
+    return "nullptr";
+  }
+  return std::to_string(reinterpret_cast<uintptr_t>(value));
+}
+
 template <typename TFirst, typename TSecond>
 std::string inspect_implicit_pair(const std::pair<TFirst, TSecond> &pair,
                                   const inspect_options &options) {

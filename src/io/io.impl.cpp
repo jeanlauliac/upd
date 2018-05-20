@@ -34,38 +34,9 @@ bool is_regular_file(const std::string &path) {
   return S_ISREG(data.st_mode) != 0;
 }
 
-dir::dir(const std::string &path) : ptr_(opendir(path.c_str())) {
-  if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
-}
-
-dir::dir() : ptr_(nullptr) {}
-
-dir::~dir() {
-  if (ptr_ != nullptr) closedir(ptr_);
-}
-
-void dir::open(const std::string &path) {
-  if (ptr_ != nullptr) closedir(ptr_);
-  ptr_ = opendir(path.c_str());
-  if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
-}
-
-void dir::close() {
-  closedir(ptr_);
-  ptr_ = nullptr;
-}
-
-dir_files_reader::dir_files_reader(const std::string &path) : target_(path) {}
-dir_files_reader::dir_files_reader() {}
-
-struct dirent *dir_files_reader::next() {
-  if (target_.ptr() == nullptr) throw std::runtime_error("no dir is open");
-  return readdir(target_.ptr());
-}
-
-void dir_files_reader::open(const std::string &path) { target_.open(path); }
-
-void dir_files_reader::close() { target_.close(); }
+DIR *opendir(const char *name) noexcept { return ::opendir(name); }
+struct dirent *readdir(DIR *dirp) noexcept { return io::readdir(dirp); }
+int closedir(DIR *dirp) noexcept { return io::closedir(dirp); }
 
 std::string mkdtemp(const std::string &template_path) {
   std::vector<char> tpl(template_path.size() + 1);

@@ -30,5 +30,39 @@ void write_entire_file(const std::string &file_path,
   }
 }
 
+dir::dir(const std::string &path) : ptr_(io::opendir(path.c_str())) {
+  if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
+}
+
+dir::dir() : ptr_(nullptr) {}
+
+dir::~dir() {
+  if (ptr_ != nullptr) io::closedir(ptr_);
+}
+
+void dir::open(const std::string &path) {
+  if (ptr_ != nullptr) io::closedir(ptr_);
+  ptr_ = io::opendir(path.c_str());
+  if (ptr_ == nullptr) throw std::runtime_error("opendir() failed");
+}
+
+void dir::close() {
+  io::closedir(ptr_);
+  ptr_ = nullptr;
+}
+
+dir_files_reader::dir_files_reader(const std::string &path) : target_(path) {}
+dir_files_reader::dir_files_reader() {}
+
+struct dirent *dir_files_reader::next() {
+  if (target_.ptr() == nullptr) throw std::runtime_error("no dir is open");
+  errno = 0;
+  return io::readdir(target_.ptr());
+}
+
+void dir_files_reader::open(const std::string &path) { target_.open(path); }
+
+void dir_files_reader::close() { target_.close(); }
+
 } // namespace io
 } // namespace upd

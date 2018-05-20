@@ -34,6 +34,9 @@ std::string inspect(char value, const inspect_options &) {
  * We'll probably want to add all the proper chars that need escaping.
  */
 std::string inspect(const char *value, const inspect_options &) {
+  if (value == nullptr) {
+    return "nullptr";
+  }
   std::ostringstream stream;
   stream << '"';
   for (; *value != 0; ++value) {
