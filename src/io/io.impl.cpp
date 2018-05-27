@@ -49,8 +49,8 @@ void mkfifo(const std::string &file_path, mode_t mode) {
   if (::mkfifo(file_path.c_str(), mode) != 0) throw_errno();
 }
 
-void mkdir(const std::string &dir_path, mode_t mode) {
-  if (::mkdir(dir_path.c_str(), mode) != 0) throw_errno();
+int mkdir(const char *path, mode_t mode) noexcept {
+  return ::mkdir(path, mode);
 }
 
 int open(const std::string &file_path, int flags, mode_t mode) {

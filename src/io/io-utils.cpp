@@ -9,6 +9,10 @@ namespace io {
 
 void throw_errno() { throw std::system_error(errno, std::generic_category()); }
 
+void mkdir_s(const std::string &dir_path, mode_t mode) {
+  if (io::mkdir(dir_path.c_str(), mode) != 0) throw_errno();
+}
+
 constexpr size_t BLOCK_SIZE = 1 << 12;
 
 std::string read_entire_file(const std::string &file_path) {

@@ -167,12 +167,13 @@ int closedir(DIR *dirp) noexcept {
   return 0;
 }
 
-void mkdir(const std::string &dir_path, mode_t) {
+int mkdir(const char *path, mode_t) noexcept {
   resolution_t rs;
-  if (resolve(rs, dir_path)) throw_errno();
-  if (rs.node != nullptr) throw_errno(EEXIST);
+  if (resolve(rs, path)) return -1;
+  if (rs.node != nullptr) return set_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
       rs.name, file_node{node_type::directory, {}, {}, nullptr});
+  return 0;
 }
 
 int open(const std::string &file_path, int flags, mode_t) {

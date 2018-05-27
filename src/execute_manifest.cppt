@@ -33,5 +33,5 @@
   upd::io::mkdir("/some/root/src", 0777);
   upd::io::write_entire_file("/some/root/src/foo.txt", "this is a test");
   // upd::execute_manifest("/some/root", "/some/root", false, false,
-  //     {"tadam"}, false, false, 1);
+  //     {"dist/bar.txt"}, false, false, 1);
 }

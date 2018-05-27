@@ -40,7 +40,7 @@ struct update_context {
    * assumed to exist. The directory cache is useful to automatically create
    * directories for output files.
    */
-  directory_cache<mkdir> dir_cache;
+  directory_cache<io::mkdir> dir_cache;
 
   /**
    * If `true`, commands are printed on the output before they are executed.

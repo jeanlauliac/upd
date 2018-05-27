@@ -140,9 +140,7 @@ schedule_file_update(update_context &cx,
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
   int fd = open(depfile_path.c_str(), O_WRONLY);
-  if (fd < 0) {
-    throw new std::runtime_error("open() failed");
-  }
+  if (fd < 0) io::throw_errno();
   io::file_descriptor depfile_dummy_fd(fd);
 
   return scheduled_file_update({cx.root_path, command_line},

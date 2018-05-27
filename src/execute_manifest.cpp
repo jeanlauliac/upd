@@ -50,7 +50,7 @@ void execute_manifest(const std::string &root_path,
     return;
   }
 
-  if (mkdir((root_path + "/" + CACHE_FOLDER).c_str(), 0700) != 0 &&
+  if (io::mkdir((root_path + "/" + CACHE_FOLDER).c_str(), 0700) != 0 &&
       errno != EEXIST) {
     throw std::runtime_error("cannot create upd hidden directory");
   }
@@ -61,7 +61,7 @@ void execute_manifest(const std::string &root_path,
 
   update_context cx = {
       root_path,         update_log::cache::from_log_file(log_file_path),
-      file_hash_cache(), directory_cache<mkdir>(root_path),
+      file_hash_cache(), directory_cache<io::mkdir>(root_path),
       print_commands,    concurrency};
   execute_update_plan(cx, updm, plan, manifest.command_line_templates);
 

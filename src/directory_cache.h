@@ -1,13 +1,12 @@
 #pragma once
 
+#include "io/io-utils.h"
 #include "path.h"
 #include <unordered_set>
 
 namespace upd {
 
 typedef int (*mkdir_type)(const char *pathname, mode_t mode);
-
-struct failed_to_create_directory_error {};
 
 /**
  * Keep track of directories that exist or not, and allows creating missing
@@ -31,9 +30,8 @@ template <mkdir_type Mkdir> struct directory_cache {
     auto local_dir_path = dirname(local_path);
     create(local_dir_path);
     auto full_path = root_path_ + '/' + local_path;
-    if (Mkdir(full_path.c_str(), 0700) != 0 && errno != EEXIST) {
-      throw failed_to_create_directory_error();
-    }
+    if (Mkdir(full_path.c_str(), 0700) != 0 && errno != EEXIST)
+      io::throw_errno();
     existing_local_paths_.insert(local_path);
   }
 

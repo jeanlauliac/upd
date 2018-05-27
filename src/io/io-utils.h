@@ -10,6 +10,8 @@ namespace io {
  */
 void throw_errno();
 
+void mkdir_s(const std::string &dir_path, mode_t mode);
+
 std::string read_entire_file(const std::string &file_path);
 void write_entire_file(const std::string &file_path,
                        const std::string &content);
