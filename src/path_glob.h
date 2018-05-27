@@ -2,6 +2,7 @@
 
 #include "glob.h"
 #include "inspect.h"
+#include "io/io-utils.h"
 #include "io/io.h"
 #include <iostream>
 #include <memory>
@@ -290,9 +291,7 @@ private:
     ent_type_ = ent_type::unsupported;
     struct stat stbuf;
     auto ent_path = root_path_ + path_prefix_ + ent_->d_name;
-    if (lstat(ent_path.c_str(), &stbuf) != 0) {
-      throw std::runtime_error("lstat failed");
-    }
+    if (io::lstat(ent_path.c_str(), &stbuf) != 0) io::throw_errno();
     if (S_ISDIR(stbuf.st_mode)) {
       ent_type_ = ent_type::directory;
     } else if (S_ISREG(stbuf.st_mode)) {

@@ -1,3 +1,4 @@
+#include "io-utils.h"
 #include "io.h"
 #include <fcntl.h>
 #include <memory>
@@ -168,7 +169,7 @@ int closedir(DIR *dirp) noexcept {
 
 void mkdir(const std::string &dir_path, mode_t) {
   resolution_t rs;
-  if (resolve(rs, dir_path)) throw_errno(errno);
+  if (resolve(rs, dir_path)) throw_errno();
   if (rs.node != nullptr) throw_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
       rs.name, file_node{node_type::directory, {}, {}, nullptr});
@@ -176,7 +177,7 @@ void mkdir(const std::string &dir_path, mode_t) {
 
 int open(const std::string &file_path, int flags, mode_t) {
   resolution_t rs;
-  if (resolve(rs, file_path)) throw_errno(errno);
+  if (resolve(rs, file_path)) throw_errno();
   auto node = rs.node;
   if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
@@ -199,7 +200,7 @@ int open(const std::string &file_path, int flags, mode_t) {
 size_t write(fd_data &desc, const void *buf, size_t size) {
   if (desc.type == fd_type::pipe) {
     size_t bytes = ::write(*desc.real_pipe_fd, buf, size);
-    if (bytes != size) throw_errno(errno);
+    if (bytes != size) throw_errno();
     return bytes;
   }
   auto &file_buf = desc.node->buf;
@@ -220,7 +221,7 @@ ssize_t read(int fd, void *buf, size_t size) {
   auto &desc = fds.at(fd);
   if (desc.type == fd_type::pipe) {
     ssize_t bytes = ::read(*desc.real_pipe_fd, buf, size);
-    if (bytes < 0) throw_errno(errno);
+    if (bytes < 0) throw_errno();
     return bytes;
   }
   auto &file_buf = desc.node->buf;
@@ -233,6 +234,26 @@ ssize_t read(int fd, void *buf, size_t size) {
 }
 
 void close(int fd) { fds.erase(fd); }
+
+int lstat(const char *path, struct ::stat *buf) noexcept {
+  resolution_t rs;
+  if (resolve(rs, path)) return -1;
+  if (rs.node == nullptr) set_errno(ENOENT);
+  buf->st_dev = 999;
+  buf->st_ino = 777;
+  buf->st_mode = 0666;
+  if (rs.node->type == node_type::regular)
+    buf->st_mode |= S_IFREG;
+  else if (rs.node->type == node_type::directory)
+    buf->st_mode |= S_IFDIR;
+  else if (rs.node->type == node_type::pts)
+    buf->st_mode |= S_IFIFO;
+  buf->st_nlink = 1;
+  buf->st_uid = 1;
+  buf->st_gid = 2;
+  buf->st_size = rs.node->buf.size();
+  return 0;
+}
 
 int posix_openpt(int) {
   std::array<int, 2> real_pipe_fds;

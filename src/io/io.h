@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <iostream>
 #include <spawn.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <vector>
 
@@ -67,6 +68,8 @@ size_t write(int fd, const void *buf, size_t count);
 ssize_t read(int fd, void *buf, size_t count);
 
 void close(int fd);
+
+int lstat(const char *path, struct ::stat *buf) noexcept;
 
 int posix_openpt(int oflag);
 void grantpt(int fd);

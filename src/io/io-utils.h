@@ -5,6 +5,11 @@
 namespace upd {
 namespace io {
 
+/**
+ * Throw a `system_error` with the current `errno` error code.
+ */
+void throw_errno();
+
 std::string read_entire_file(const std::string &file_path);
 void write_entire_file(const std::string &file_path,
                        const std::string &content);

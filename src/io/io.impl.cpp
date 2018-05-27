@@ -14,8 +14,6 @@
 namespace upd {
 namespace io {
 
-void throw_errno() { throw std::system_error(errno, std::generic_category()); }
-
 std::string getcwd() {
   char temp[MAXPATHLEN];
   if (::getcwd(temp, MAXPATHLEN) == nullptr) throw_errno();
@@ -77,6 +75,10 @@ ssize_t read(int fd, void *buf, size_t count) {
 
 void close(int fd) {
   if (::close(fd) != 0) throw_errno();
+}
+
+int lstat(const char *path, struct ::stat *buf) noexcept {
+  return ::lstat(path, buf);
 }
 
 int posix_openpt(int oflag) {

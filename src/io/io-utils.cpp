@@ -7,6 +7,8 @@
 namespace upd {
 namespace io {
 
+void throw_errno() { throw std::system_error(errno, std::generic_category()); }
+
 constexpr size_t BLOCK_SIZE = 1 << 12;
 
 std::string read_entire_file(const std::string &file_path) {
