@@ -59,6 +59,8 @@ int mkdir(const char *path, mode_t mode) noexcept;
  */
 int open(const std::string &file_path, int flags, mode_t mode);
 
+int mkfifo(const char *path, mode_t mode) noexcept;
+
 size_t write(int fd, const void *buf, size_t count);
 
 ssize_t read(int fd, void *buf, size_t count);

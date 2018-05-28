@@ -39,13 +39,7 @@ struct dirent *readdir(DIR *dirp) noexcept {
 }
 int closedir(DIR *dirp) noexcept { return ::closedir(dirp); }
 
-char *mkdtemp(char *tpl) noexcept {
-  return ::mkdtemp(tpl);
-}
-
-void mkfifo(const std::string &file_path, mode_t mode) {
-  if (::mkfifo(file_path.c_str(), mode) != 0) throw_errno();
-}
+char *mkdtemp(char *tpl) noexcept { return ::mkdtemp(tpl); }
 
 int mkdir(const char *path, mode_t mode) noexcept {
   return ::mkdir(path, mode);
@@ -57,6 +51,10 @@ int open(const std::string &file_path, int flags, mode_t mode) {
     throw std::system_error(errno, std::generic_category());
   }
   return fd;
+}
+
+int mkfifo(const char *path, mode_t mode) noexcept {
+  return ::mkfifo(path, mode);
 }
 
 size_t write(int fd, const void *buf, size_t count) {

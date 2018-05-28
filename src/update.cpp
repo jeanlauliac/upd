@@ -125,7 +125,7 @@ schedule_file_update(update_context &cx,
                      const std::string &local_target_path) {
 
   std::string depfile_path = io::mkdtemp_s(TEMPLATE) + "/dep";
-  io::mkfifo(depfile_path.c_str(), 0700);
+  if (io::mkfifo(depfile_path.c_str(), 0700) != 0) io::throw_errno();
 
   auto command_line = reify_command_line(
       cli_template, {depfile_path, local_src_paths, {local_target_path}},
