@@ -68,3 +68,8 @@ using namespace upd;
   io::mkdir("/foo", 0700);
   @expect(io::mkdtemp_s("/foo/bar-XXXXXX")).to_equal("/foo/bar-GybxCX");
 }
+
+@it "reads from a FIFO" {
+  io::mock::reset();
+  if (io::mkfifo("/test_fifo", 0600) != 0) io::throw_errno();
+}

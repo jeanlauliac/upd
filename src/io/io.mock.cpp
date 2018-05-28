@@ -87,6 +87,8 @@ file_node root_dir = {
     nullptr,
 };
 
+std::mutex gm;
+
 enum class fd_type {
   file,
   pipe,
@@ -226,18 +228,22 @@ int open(const std::string &file_path, int flags, mode_t) {
   return fd;
 }
 
-int mkfifo(const char *, mode_t) noexcept {
-  // resolution_t rs;
-  // if (resolve(rs, path)) return -1;
-  // if (rs.node != nullptr) return set_errno(EEXIST);
-  // auto result = rs.node_path.back()->ents.emplace(
-  //     rs.name, file_node{node_type::fifo, {}, {}, nullptr});
-  return set_errno(EINVAL);
+int mkfifo(const char *path, mode_t) noexcept {
+  resolution_t rs;
+  if (resolve(rs, path)) return -1;
+  if (rs.node != nullptr) return set_errno(EEXIST);
+  rs.node_path.back()->ents.emplace(
+      rs.name, file_node{node_type::fifo, {}, {}, nullptr});
+  return 0;
 }
 
 size_t write(fd_data &desc, const void *buf, size_t size) {
+  std::unique_lock<std::mutex> lock(gm);
   if (desc.type == fd_type::pipe) {
-    size_t bytes = ::write(desc.real_pipe_fd->get(), buf, size);
+    auto real_fd = desc.real_pipe_fd->get();
+    lock.unlock();
+    size_t bytes = ::write(real_fd, buf, size);
+    lock.lock();
     if (bytes != size) throw_errno();
     return bytes;
   }
@@ -256,9 +262,13 @@ size_t write(int fd, const void *buf, size_t size) {
 }
 
 ssize_t read(int fd, void *buf, size_t size) {
+  std::unique_lock<std::mutex> lock(gm);
   auto &desc = fds.at(fd);
   if (desc.type == fd_type::pipe) {
-    ssize_t bytes = ::read(desc.real_pipe_fd->get(), buf, size);
+    auto real_fd = desc.real_pipe_fd->get();
+    lock.unlock();
+    ssize_t bytes = ::read(real_fd, buf, size);
+    lock.lock();
     if (bytes < 0) throw_errno();
     return bytes;
   }
