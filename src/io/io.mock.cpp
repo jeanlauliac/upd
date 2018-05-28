@@ -32,7 +32,8 @@ std::string getcwd() { return "/home/tests"; }
 bool is_regular_file(const std::string &) { return true; }
 
 std::minstd_rand0 rand;
-std::uniform_int_distribution<char> char_dis('a', 'z');
+std::uniform_int_distribution<char> char_dis('A', 'Z');
+std::uniform_int_distribution<int> bool_dis(0, 1);
 
 char *mkdtemp(char *tpl) noexcept {
   auto len = strlen(tpl);
@@ -44,6 +45,9 @@ char *mkdtemp(char *tpl) noexcept {
   do {
     for (size_t i = len - 6; i < len; ++i) {
       tpl[i] = char_dis(rand);
+      if (bool_dis(rand) > 0) {
+        tpl[i] += 'a' - 'A';
+      }
     }
     retval = io::mkdir(tpl, 0700);
   } while (retval == 0 && errno == EEXIST);

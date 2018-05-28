@@ -62,3 +62,9 @@ using namespace upd;
   @expect(io::readdir(dirp)).to_equal(nullptr);
   @expect(io::closedir(dirp)).to_equal(0);
 }
+
+@it "gives temporary folder name" {
+  io::mock::reset();
+  io::mkdir("/foo", 0700);
+  @expect(io::mkdtemp_s("/foo/bar-XXXXXX")).to_equal("/foo/bar-GybxCX");
+}
