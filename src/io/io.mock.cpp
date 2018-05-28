@@ -78,6 +78,8 @@ struct file_node {
   std::unordered_map<std::string, file_node> ents;
   std::vector<char> buf;
   std::shared_ptr<real_fd> pts_real_pipe_fd;
+  size_t readers_count;
+  size_t writers_count;
 };
 
 file_node root_dir = {
@@ -85,9 +87,12 @@ file_node root_dir = {
     {},
     {},
     nullptr,
+    0,
+    0,
 };
 
 std::mutex gm;
+std::condition_variable fifo_cv;
 
 enum class fd_type {
   file,
@@ -99,6 +104,8 @@ struct fd_data {
   file_node *node;
   size_t position;
   std::shared_ptr<real_fd> real_pipe_fd;
+  bool readable;
+  bool writable;
 };
 
 typedef std::unordered_map<size_t, fd_data> fds_t;
@@ -202,29 +209,41 @@ int mkdir(const char *path, mode_t) noexcept {
   if (resolve(rs, path)) return -1;
   if (rs.node != nullptr) return set_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
-      rs.name, file_node{node_type::directory, {}, {}, nullptr});
+      rs.name, file_node{node_type::directory, {}, {}, nullptr, 0, 0});
   return 0;
 }
 
 int open(const std::string &file_path, int flags, mode_t) {
+  std::unique_lock<std::mutex> lock(gm);
   resolution_t rs;
   if (resolve(rs, file_path)) throw_errno();
   auto node = rs.node;
   if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
     auto result = rs.node_path.back()->ents.emplace(
-        rs.name, file_node{node_type::regular, {}, {}, nullptr});
+        rs.name, file_node{node_type::regular, {}, {}, nullptr, 0, 0});
     node = &result.first->second;
   } else if (node->type == node_type::pts) {
     auto fd = alloc_fd();
-    fds[fd] = {fd_type::pipe, node, 0, node->pts_real_pipe_fd};
+    fds[fd] = {fd_type::pipe, node, 0, node->pts_real_pipe_fd, true, true};
     // FIXME: this prevent reusing the same ptsname() twice, that does not
     // fit the way it really works.
     node->pts_real_pipe_fd.reset();
     return fd;
   }
+  if (node->type == node_type::fifo) {
+    if ((flags & O_WRONLY) > 0) {
+      ++node->writers_count;
+      fifo_cv.notify_all();
+      while (node->readers_count == 0) fifo_cv.wait(lock);
+    } else {
+      ++node->readers_count;
+      fifo_cv.notify_all();
+      while (node->writers_count == 0) fifo_cv.wait(lock);
+    }
+  }
   auto fd = alloc_fd();
-  fds[fd] = {fd_type::file, node, 0, nullptr};
+  fds[fd] = {fd_type::file, node, 0, nullptr, (flags & O_WRONLY) == 0, (flags & O_WRONLY) > 0 || (flags & O_RDWR) > 0};
   return fd;
 }
 
@@ -233,7 +252,7 @@ int mkfifo(const char *path, mode_t) noexcept {
   if (resolve(rs, path)) return -1;
   if (rs.node != nullptr) return set_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
-      rs.name, file_node{node_type::fifo, {}, {}, nullptr});
+      rs.name, file_node{node_type::fifo, {}, {}, nullptr, 0, 0});
   return 0;
 }
 
@@ -248,12 +267,22 @@ size_t write(fd_data &desc, const void *buf, size_t size) {
     return bytes;
   }
   auto &file_buf = desc.node->buf;
+  if (desc.node->type == node_type::fifo) {
+    while (file_buf.size() > 1024) {
+      fifo_cv.wait(lock);
+    }
+    desc.position = file_buf.size();
+  }
   auto new_size = desc.position + size;
   if (file_buf.size() < new_size) {
     file_buf.resize(new_size);
   }
   std::memcpy(file_buf.data() + desc.position, buf, size);
   desc.position += size;
+  if (desc.node->type == node_type::fifo) {
+    lock.unlock();
+    fifo_cv.notify_all();
+  }
   return size;
 }
 
@@ -273,15 +302,38 @@ ssize_t read(int fd, void *buf, size_t size) {
     return bytes;
   }
   auto &file_buf = desc.node->buf;
+  if (desc.node->type == node_type::fifo) {
+    while (file_buf.size() == 0 && desc.node->writers_count > 0) {
+      fifo_cv.wait(lock);
+    }
+    if (file_buf.size() == 0) {
+      return 0;
+    }
+    desc.position = 0;
+  }
   if (desc.position + size > file_buf.size()) {
     size = file_buf.size() - desc.position;
   }
   std::memcpy(buf, file_buf.data() + desc.position, size);
   desc.position += size;
+  if (desc.node->type == node_type::fifo) {
+    file_buf.erase(file_buf.begin(), file_buf.begin() + size);
+    lock.unlock();
+    fifo_cv.notify_all();
+  }
   return size;
 }
 
-void close(int fd) { fds.erase(fd); }
+void close(int fd) {
+  std::unique_lock<std::mutex> lock(gm);
+  auto &desc = fds.at(fd);
+  if (desc.node->type == node_type::fifo) {
+    if (desc.readable) desc.node->readers_count--;
+    if (desc.writable) desc.node->writers_count--;
+    fifo_cv.notify_all();
+  }
+  fds.erase(fd);
+}
 
 int lstat(const char *path, struct ::stat *buf) noexcept {
   resolution_t rs;
@@ -308,7 +360,7 @@ int posix_openpt(int) {
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto master_pt_fd = alloc_fd();
   fds[master_pt_fd] = {fd_type::pipe, nullptr, 0,
-                       std::make_shared<real_fd>(real_pipe_fds[0])};
+                       std::make_shared<real_fd>(real_pipe_fds[0]), true, true};
   try {
     mkdir("/pseudoterminal", 0);
   } catch (std::system_error error) {
@@ -320,7 +372,7 @@ int posix_openpt(int) {
   rs.node_path.back()->ents.emplace(
       rs.name,
       file_node{
-          node_type::pts, {}, {}, std::make_shared<real_fd>(real_pipe_fds[1])});
+          node_type::pts, {}, {}, std::make_shared<real_fd>(real_pipe_fds[1]), 0, 0});
   return master_pt_fd;
 }
 
@@ -334,10 +386,10 @@ void pipe(int pipefd[2]) {
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto read_fd = pipefd[0] = alloc_fd();
   fds[read_fd] = {fd_type::pipe, nullptr, 0,
-                  std::make_shared<real_fd>(real_pipe_fds[0])};
+                  std::make_shared<real_fd>(real_pipe_fds[0]), true, false};
   auto write_fd = pipefd[1] = alloc_fd();
   fds[write_fd] = {fd_type::pipe, nullptr, 0,
-                   std::make_shared<real_fd>(real_pipe_fds[1])};
+                   std::make_shared<real_fd>(real_pipe_fds[1]), false, true};
 }
 
 int isatty(int fd) {
@@ -456,6 +508,8 @@ void reset() {
       {},
       {},
       nullptr,
+      0,
+      0,
   };
   fds.clear();
   file_action_entries.clear();
