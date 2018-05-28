@@ -1,6 +1,6 @@
 #include "gen_update_map.h"
 
-#include "io/io-utils.h"
+#include "io/utils.h"
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
