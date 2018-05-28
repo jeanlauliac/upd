@@ -46,15 +46,11 @@ struct dirent *readdir(DIR *dirp) noexcept;
 int closedir(DIR *dirp) noexcept;
 
 /**
- * Create a temporary folder. `template_path` must be a full path, for example
- * `/tmp/foo.XXXXXX`, where "X"s are replaced by random unique characters.
- */
-std::string mkdtemp(const std::string &template_path);
-
-/**
  * Creates a FIFO (named pipe) with the specified name.
  */
 void mkfifo(const std::string &file_path, mode_t mode);
+
+char *mkdtemp(char *tpl) noexcept;
 
 int mkdir(const char *path, mode_t mode) noexcept;
 

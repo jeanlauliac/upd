@@ -13,6 +13,13 @@ void mkdir_s(const std::string &dir_path, mode_t mode) {
   if (io::mkdir(dir_path.c_str(), mode) != 0) throw_errno();
 }
 
+std::string mkdtemp_s(const std::string &template_path) {
+  std::vector<char> tpl(template_path.size() + 1);
+  strcpy(tpl.data(), template_path.c_str());
+  if (io::mkdtemp(tpl.data()) == nullptr) throw_errno();
+  return tpl.data();
+}
+
 constexpr size_t BLOCK_SIZE = 1 << 12;
 
 std::string read_entire_file(const std::string &file_path) {

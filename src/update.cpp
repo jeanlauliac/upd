@@ -124,7 +124,7 @@ schedule_file_update(update_context &cx,
                      const std::vector<std::string> &local_src_paths,
                      const std::string &local_target_path) {
 
-  std::string depfile_path = io::mkdtemp(TEMPLATE) + "/dep";
+  std::string depfile_path = io::mkdtemp_s(TEMPLATE) + "/dep";
   io::mkfifo(depfile_path.c_str(), 0700);
 
   auto command_line = reify_command_line(
@@ -139,8 +139,7 @@ schedule_file_update(update_context &cx,
       std::async(std::launch::async, &depfile::read, depfile_path);
   cx.hash_cache.invalidate(cx.root_path + '/' + local_target_path);
 
-  int fd = open(depfile_path.c_str(), O_WRONLY);
-  if (fd < 0) io::throw_errno();
+  int fd = io::open(depfile_path, O_WRONLY, 0600);
   io::file_descriptor depfile_dummy_fd(fd);
 
   return scheduled_file_update({cx.root_path, command_line},

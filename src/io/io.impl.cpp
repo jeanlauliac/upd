@@ -39,11 +39,8 @@ struct dirent *readdir(DIR *dirp) noexcept {
 }
 int closedir(DIR *dirp) noexcept { return ::closedir(dirp); }
 
-std::string mkdtemp(const std::string &template_path) {
-  std::vector<char> tpl(template_path.size() + 1);
-  strcpy(tpl.data(), template_path.c_str());
-  if (::mkdtemp(tpl.data()) == nullptr) throw_errno();
-  return tpl.data();
+char *mkdtemp(char *tpl) noexcept {
+  return ::mkdtemp(tpl);
 }
 
 void mkfifo(const std::string &file_path, mode_t mode) {

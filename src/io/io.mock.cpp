@@ -8,6 +8,7 @@
 #include <system_error>
 #include <unistd.h>
 #include <unordered_map>
+#include <random>
 
 namespace upd {
 namespace io {
@@ -30,7 +31,25 @@ std::string getcwd() { return "/home/tests"; }
 
 bool is_regular_file(const std::string &) { return true; }
 
-std::string mkdtemp(const std::string &) { return "/tmp/foo"; }
+std::minstd_rand0 rand;
+std::uniform_int_distribution<char> char_dis('a', 'z');
+
+char *mkdtemp(char *tpl) noexcept {
+  auto len = strlen(tpl);
+  if (len < 6) return set_errno(EINVAL, nullptr);
+  for (size_t i = len - 6; i < len; ++i) {
+    if (tpl[i] != 'X') return set_errno(EINVAL, nullptr);
+  }
+  int retval;
+  do {
+    for (size_t i = len - 6; i < len; ++i) {
+      tpl[i] = char_dis(rand);
+    }
+    retval = io::mkdir(tpl, 0700);
+  } while (retval == 0 && errno == EEXIST);
+  if (retval != 0) return nullptr;
+  return tpl;
+}
 
 void mkfifo(const std::string &, mode_t) {}
 

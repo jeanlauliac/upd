@@ -13,6 +13,12 @@ void throw_errno();
 
 void mkdir_s(const std::string &dir_path, mode_t mode);
 
+/**
+ * Create a temporary folder. `template_path` must be a full path, for example
+ * `/tmp/foo.XXXXXX`, where "X"s are replaced by random unique characters.
+ */
+std::string mkdtemp_s(const std::string &template_path);
+
 std::string read_entire_file(const std::string &file_path);
 void write_entire_file(const std::string &file_path,
                        const std::string &content);
