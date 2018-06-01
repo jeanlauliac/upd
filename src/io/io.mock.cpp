@@ -83,12 +83,7 @@ struct file_node {
 };
 
 file_node root_dir = {
-    node_type::directory,
-    {},
-    {},
-    nullptr,
-    0,
-    0,
+    node_type::directory, {}, {}, nullptr, 0, 0,
 };
 
 std::mutex gm;
@@ -232,6 +227,9 @@ int open(const std::string &file_path, int flags, mode_t) {
     return fd;
   }
   if (node->type == node_type::fifo) {
+    if ((flags & O_RDWR) > 0) {
+      throw_errno(EINVAL);
+    }
     if ((flags & O_WRONLY) > 0) {
       ++node->writers_count;
       fifo_cv.notify_all();
@@ -239,11 +237,16 @@ int open(const std::string &file_path, int flags, mode_t) {
     } else {
       ++node->readers_count;
       fifo_cv.notify_all();
-      while (node->writers_count == 0) fifo_cv.wait(lock);
+      while (node->writers_count == 0 && node->buf.empty()) fifo_cv.wait(lock);
     }
   }
   auto fd = alloc_fd();
-  fds[fd] = {fd_type::file, node, 0, nullptr, (flags & O_WRONLY) == 0, (flags & O_WRONLY) > 0 || (flags & O_RDWR) > 0};
+  fds[fd] = {fd_type::file,
+             node,
+             0,
+             nullptr,
+             (flags & O_WRONLY) == 0,
+             (flags & O_WRONLY) > 0 || (flags & O_RDWR) > 0};
   return fd;
 }
 
@@ -359,8 +362,9 @@ int posix_openpt(int) {
   std::array<int, 2> real_pipe_fds;
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto master_pt_fd = alloc_fd();
-  fds[master_pt_fd] = {fd_type::pipe, nullptr, 0,
-                       std::make_shared<real_fd>(real_pipe_fds[0]), true, true};
+  fds[master_pt_fd] = {
+      fd_type::pipe, nullptr, 0, std::make_shared<real_fd>(real_pipe_fds[0]),
+      true,          true};
   try {
     mkdir("/pseudoterminal", 0);
   } catch (std::system_error error) {
@@ -370,9 +374,12 @@ int posix_openpt(int) {
   resolution_t rs;
   if (resolve(rs, pts_file_path)) throw_errno(errno);
   rs.node_path.back()->ents.emplace(
-      rs.name,
-      file_node{
-          node_type::pts, {}, {}, std::make_shared<real_fd>(real_pipe_fds[1]), 0, 0});
+      rs.name, file_node{node_type::pts,
+                         {},
+                         {},
+                         std::make_shared<real_fd>(real_pipe_fds[1]),
+                         0,
+                         0});
   return master_pt_fd;
 }
 
@@ -385,11 +392,13 @@ void pipe(int pipefd[2]) {
   std::array<int, 2> real_pipe_fds;
   if (::pipe(real_pipe_fds.data()) != 0) throw_errno(errno);
   auto read_fd = pipefd[0] = alloc_fd();
-  fds[read_fd] = {fd_type::pipe, nullptr, 0,
-                  std::make_shared<real_fd>(real_pipe_fds[0]), true, false};
+  fds[read_fd] = {
+      fd_type::pipe, nullptr, 0, std::make_shared<real_fd>(real_pipe_fds[0]),
+      true,          false};
   auto write_fd = pipefd[1] = alloc_fd();
-  fds[write_fd] = {fd_type::pipe, nullptr, 0,
-                   std::make_shared<real_fd>(real_pipe_fds[1]), false, true};
+  fds[write_fd] = {
+      fd_type::pipe, nullptr, 0, std::make_shared<real_fd>(real_pipe_fds[1]),
+      false,         true};
 }
 
 int isatty(int fd) {
@@ -504,12 +513,7 @@ namespace mock {
 
 void reset() {
   root_dir = {
-      node_type::directory,
-      {},
-      {},
-      nullptr,
-      0,
-      0,
+      node_type::directory, {}, {}, nullptr, 0, 0,
   };
   fds.clear();
   file_action_entries.clear();

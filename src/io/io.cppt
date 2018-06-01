@@ -1,8 +1,8 @@
 #include "io.h"
 #include "utils.h"
 #include <fcntl.h>
-#include <sstream>
 #include <future>
+#include <sstream>
 
 using namespace upd;
 
@@ -73,7 +73,8 @@ using namespace upd;
 @it "reads from a FIFO" {
   io::mock::reset();
   if (io::mkfifo("/test_fifo", 0600) != 0) io::throw_errno();
-  auto reader = std::async(std::launch::async, io::read_entire_file, "/test_fifo");
+  auto reader =
+      std::async(std::launch::async, io::read_entire_file, "/test_fifo");
   auto fd = io::open("/test_fifo", O_WRONLY, 0600);
   std::string str = "hello, world";
   io::write(fd, str.c_str(), str.size());
