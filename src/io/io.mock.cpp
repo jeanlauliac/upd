@@ -74,17 +74,24 @@ private:
 };
 
 struct file_node {
+  ~file_node() {}
+
   node_type type;
-  std::unordered_map<std::string, file_node> ents;
+  std::unordered_map<std::string, std::shared_ptr<file_node>> ents;
   std::vector<char> buf;
   std::shared_ptr<real_fd> pts_real_pipe_fd;
   size_t readers_count;
   size_t writers_count;
 };
 
-file_node root_dir = {
-    node_type::directory, {}, {}, nullptr, 0, 0,
-};
+std::shared_ptr<file_node> root_dir(new file_node{
+    node_type::directory,
+    {},
+    {},
+    nullptr,
+    0,
+    0,
+});
 
 std::mutex gm;
 std::condition_variable fifo_cv;
@@ -96,7 +103,7 @@ enum class fd_type {
 
 struct fd_data {
   fd_type type;
-  file_node *node;
+  std::shared_ptr<file_node> node;
   size_t position;
   std::shared_ptr<real_fd> real_pipe_fd;
   bool readable;
@@ -107,8 +114,8 @@ typedef std::unordered_map<size_t, fd_data> fds_t;
 fds_t fds;
 
 struct resolution_t {
-  std::vector<file_node *> node_path;
-  file_node *node;
+  std::vector<std::shared_ptr<file_node>> node_path;
+  std::shared_ptr<file_node> node;
   std::string name;
 };
 
@@ -118,8 +125,8 @@ int resolve(resolution_t &rs, const std::string &file_path) noexcept {
     throw std::runtime_error("cannot resolve relative paths in this mock");
   }
   size_t slash_idx = 1;
-  std::vector<file_node *> node_path;
-  file_node *current_node = &root_dir;
+  std::vector<std::shared_ptr<file_node>> node_path;
+  std::shared_ptr<file_node> current_node = root_dir;
   std::string ent_name;
   do {
     auto next_slash_idx = file_path.find('/', slash_idx + 1);
@@ -143,7 +150,7 @@ int resolve(resolution_t &rs, const std::string &file_path) noexcept {
       current_node = nullptr;
       continue;
     }
-    current_node = &next_node_iter->second;
+    current_node = next_node_iter->second;
   } while (slash_idx != std::string::npos);
   rs = {std::move(node_path), current_node, ent_name};
   return 0;
@@ -157,7 +164,7 @@ size_t alloc_fd() {
 }
 
 struct dir_stream {
-  file_node *node;
+  std::shared_ptr<file_node> node;
   std::string last_name;
 };
 
@@ -170,7 +177,7 @@ DIR *opendir(const char *name) noexcept {
   if (rs.node == nullptr) return set_errno(ENOENT, nullptr);
   if (rs.node->type != node_type::directory) return set_errno(ENOTDIR, nullptr);
   auto handle = reinterpret_cast<DIR *>(next_dir_stream_idx++);
-  dir_streams.emplace(handle, dir_stream{rs.node, ""});
+  dir_streams.emplace(handle, dir_stream{std::move(rs.node), ""});
   return handle;
 }
 
@@ -204,7 +211,7 @@ int mkdir(const char *path, mode_t) noexcept {
   if (resolve(rs, path)) return -1;
   if (rs.node != nullptr) return set_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
-      rs.name, file_node{node_type::directory, {}, {}, nullptr, 0, 0});
+      rs.name, new file_node{node_type::directory, {}, {}, nullptr, 0, 0});
   return 0;
 }
 
@@ -216,8 +223,8 @@ int open(const std::string &file_path, int flags, mode_t) {
   if (node == nullptr) {
     if ((flags & O_CREAT) == 0) throw_errno(ENOENT);
     auto result = rs.node_path.back()->ents.emplace(
-        rs.name, file_node{node_type::regular, {}, {}, nullptr, 0, 0});
-    node = &result.first->second;
+        rs.name, new file_node{node_type::regular, {}, {}, nullptr, 0, 0});
+    node = result.first->second;
   } else if (node->type == node_type::pts) {
     auto fd = alloc_fd();
     fds[fd] = {fd_type::pipe, node, 0, node->pts_real_pipe_fd, true, true};
@@ -255,7 +262,7 @@ int mkfifo(const char *path, mode_t) noexcept {
   if (resolve(rs, path)) return -1;
   if (rs.node != nullptr) return set_errno(EEXIST);
   rs.node_path.back()->ents.emplace(
-      rs.name, file_node{node_type::fifo, {}, {}, nullptr, 0, 0});
+      rs.name, new file_node{node_type::fifo, {}, {}, nullptr, 0, 0});
   return 0;
 }
 
@@ -330,7 +337,7 @@ ssize_t read(int fd, void *buf, size_t size) {
 void close(int fd) {
   std::unique_lock<std::mutex> lock(gm);
   auto &desc = fds.at(fd);
-  if (desc.node->type == node_type::fifo) {
+  if (desc.type == fd_type::file && desc.node->type == node_type::fifo) {
     if (desc.readable) desc.node->readers_count--;
     if (desc.writable) desc.node->writers_count--;
     fifo_cv.notify_all();
@@ -374,12 +381,12 @@ int posix_openpt(int) {
   resolution_t rs;
   if (resolve(rs, pts_file_path)) throw_errno(errno);
   rs.node_path.back()->ents.emplace(
-      rs.name, file_node{node_type::pts,
-                         {},
-                         {},
-                         std::make_shared<real_fd>(real_pipe_fds[1]),
-                         0,
-                         0});
+      rs.name, new file_node{node_type::pts,
+                             {},
+                             {},
+                             std::make_shared<real_fd>(real_pipe_fds[1]),
+                             0,
+                             0});
   return master_pt_fd;
 }
 
@@ -481,6 +488,7 @@ void posix_spawn(pid_t *pid, const char *binary_path,
                  char *const env[]) {
   auto actions_iter = file_action_entries.find(file_actions);
   if (actions_iter == file_action_entries.end()) throw_errno(EINVAL);
+  // FIXME: use resolve() instead.
   auto reg_bin = reg_bins.find(binary_path);
   if (reg_bin == reg_bins.end()) throw_errno(ENOENT);
   *pid = next_pid++;
@@ -512,9 +520,14 @@ pid_t waitpid(pid_t pid, int *, int) { return pid; }
 namespace mock {
 
 void reset() {
-  root_dir = {
-      node_type::directory, {}, {}, nullptr, 0, 0,
-  };
+  root_dir.reset(new file_node{
+      node_type::directory,
+      {},
+      {},
+      nullptr,
+      0,
+      0,
+  });
   fds.clear();
   file_action_entries.clear();
 }
