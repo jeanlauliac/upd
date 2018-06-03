@@ -36,6 +36,6 @@ using namespace upd;
   io::mkdir("/tmp", 0777);
   io::write_entire_file("/some/root/src/foo.txt", "this is a test");
   io::mock::register_binary("/some/bin/compile", "", "");
-  // execute_manifest("/some/root", "/some/root", false, false,
-  //     {"dist/bar.txt"}, false, false, 1);
+  execute_manifest("/some/root", "/some/root", false, false,
+      {"dist/bar.txt"}, false, false, 1);
 }

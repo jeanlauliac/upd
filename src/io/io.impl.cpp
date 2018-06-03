@@ -77,6 +77,10 @@ int lstat(const char *path, struct ::stat *buf) noexcept {
   return ::lstat(path, buf);
 }
 
+int unlink(const char *pathname) noexcept {
+  return ::unlink(pathname);
+}
+
 int posix_openpt(int oflag) {
   int fd = ::posix_openpt(oflag);
   if (fd < 0) throw_errno();

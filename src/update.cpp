@@ -157,9 +157,7 @@ void finalize_scheduled_update(
   sfu.depfile_dummy_fd.close();
   std::unique_ptr<depfile::depfile_data> depfile_data =
       sfu.read_depfile_future.get();
-  if (unlink(sfu.depfile_path.c_str()) != 0) {
-    throw std::runtime_error("unlink() failed");
-  }
+  if (io::unlink(sfu.depfile_path.c_str()) != 0) io::throw_errno();
   if (rmdir(dirname(sfu.depfile_path).c_str()) != 0) {
     throw std::runtime_error("rmdir() failed");
   }

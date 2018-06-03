@@ -69,6 +69,8 @@ void close(int fd);
 
 int lstat(const char *path, struct ::stat *buf) noexcept;
 
+int unlink(const char *pathname) noexcept;
+
 int posix_openpt(int oflag);
 void grantpt(int fd);
 void unlockpt(int fd);

@@ -348,7 +348,7 @@ void close(int fd) {
 int lstat(const char *path, struct ::stat *buf) noexcept {
   resolution_t rs;
   if (resolve(rs, path)) return -1;
-  if (rs.node == nullptr) set_errno(ENOENT);
+  if (rs.node == nullptr) return set_errno(ENOENT);
   buf->st_dev = 999;
   buf->st_ino = 777;
   buf->st_mode = 0666;
@@ -362,6 +362,17 @@ int lstat(const char *path, struct ::stat *buf) noexcept {
   buf->st_uid = 1;
   buf->st_gid = 2;
   buf->st_size = rs.node->buf.size();
+  return 0;
+}
+
+int unlink(const char *ent_path) noexcept {
+  resolution_t rs;
+  if (resolve(rs, ent_path)) return -1;
+  if (rs.node == nullptr) return set_errno(ENOENT);
+  if (rs.node->type == node_type::directory) return set_errno(EISDIR);
+  if (rs.node_path.size() == 0) return set_errno(EPERM);
+  auto& dir_node = rs.node_path.back();
+  dir_node->ents.erase(rs.name);
   return 0;
 }
 
