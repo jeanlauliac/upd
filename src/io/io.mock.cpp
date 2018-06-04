@@ -215,6 +215,18 @@ int mkdir(const char *path, mode_t) noexcept {
   return 0;
 }
 
+int rmdir(const char *path) noexcept {
+  resolution_t rs;
+  if (resolve(rs, path)) return -1;
+  if (rs.node == nullptr) return set_errno(ENOENT);
+  if (rs.node->type != node_type::directory) return set_errno(ENOTDIR);
+  if (rs.node->ents.size() != 0) return set_errno(EEXIST);
+  if (rs.node_path.size() == 0) return set_errno(EPERM);
+  auto& dir_node = rs.node_path.back();
+  dir_node->ents.erase(rs.name);
+  return 0;
+}
+
 int open(const std::string &file_path, int flags, mode_t) {
   std::unique_lock<std::mutex> lock(gm);
   resolution_t rs;
@@ -526,7 +538,12 @@ void posix_spawn(pid_t *pid, const char *binary_path,
   write(proc_fds[STDERR_FILENO], stderr.c_str(), stderr.size());
 }
 
-pid_t waitpid(pid_t pid, int *, int) { return pid; }
+pid_t waitpid(pid_t pid, int *stat_loc, int) {
+  if (stat_loc != nullptr) {
+    *stat_loc = 0;
+  }
+  return pid;
+}
 
 namespace mock {
 

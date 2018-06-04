@@ -172,18 +172,24 @@ void execute_update_plan(
               << st.result.stdout << "========= END =========" << std::endl;
           has_error = true;
         }
-        if (!WIFEXITED(st.result.status)) {
-          std::cerr << "upd: error: process terminated unexpectedly"
+        auto exit_code = WEXITSTATUS(st.result.status);
+        if (WIFEXITED(st.result.status) == 0) {
+          std::cerr << "upd: error: process did not exit normally"
                     << std::endl;
           has_error = true;
-        }
-        if (WEXITSTATUS(st.result.status) != 0) {
-          std::cerr << "upd: error: process terminated with non-zero exit code"
+          if (WIFSIGNALED(st.result.status) != 0) {
+            std::cerr << "upd: error: process exited by signal " << WTERMSIG(st.result.status)
                     << std::endl;
+          }
+        } else if (exit_code != 0) {
+          std::cerr << "upd: error: process terminated with exit code "
+                    << exit_code << std::endl;
           has_error = true;
         }
         if (has_error) {
           has_errors = true;
+          // FIXME: we still need to remove the depfile FIFO and stuff that
+          // is done by `finalize_scheduled_update`
           continue;
         }
 

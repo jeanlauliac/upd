@@ -45,6 +45,10 @@ int mkdir(const char *path, mode_t mode) noexcept {
   return ::mkdir(path, mode);
 }
 
+int rmdir(const char *path) noexcept {
+  return ::rmdir(path);
+}
+
 int open(const std::string &file_path, int flags, mode_t mode) {
   int fd = ::open(file_path.c_str(), flags, mode);
   if (fd < 0) {

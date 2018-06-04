@@ -158,9 +158,7 @@ void finalize_scheduled_update(
   std::unique_ptr<depfile::depfile_data> depfile_data =
       sfu.read_depfile_future.get();
   if (io::unlink(sfu.depfile_path.c_str()) != 0) io::throw_errno();
-  if (rmdir(dirname(sfu.depfile_path).c_str()) != 0) {
-    throw std::runtime_error("rmdir() failed");
-  }
+  if (io::rmdir(dirname(sfu.depfile_path).c_str()) != 0) io::throw_errno();
 
   auto root_folder_path = cx.root_path + '/';
 

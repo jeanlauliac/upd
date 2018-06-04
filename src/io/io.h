@@ -53,6 +53,7 @@ void mkfifo(const std::string &file_path, mode_t mode);
 char *mkdtemp(char *tpl) noexcept;
 
 int mkdir(const char *path, mode_t mode) noexcept;
+int rmdir(const char *path) noexcept;
 
 /**
  * Open a file. Returned number is a valid file descriptor.
