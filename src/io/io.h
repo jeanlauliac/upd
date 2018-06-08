@@ -104,8 +104,10 @@ typedef std::vector<spawn_record> spawn_records_t;
 extern spawn_records_t spawn_records;
 
 void reset();
-void register_binary(const std::string &binary_path, const std::string &stdout,
-                     const std::string &stderr);
+
+typedef std::function<void(char *const args[])> binary_fn;
+void register_binary(const std::string &binary_path, std::string stdout,
+                     std::string stderr, binary_fn fn = binary_fn());
 
 } // namespace mock
 

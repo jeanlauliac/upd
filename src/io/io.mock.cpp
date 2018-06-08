@@ -487,6 +487,7 @@ void posix_spawn_file_actions_init(posix_spawn_file_actions_t *actions) {
 struct registered_binary {
   std::string stdout;
   std::string stderr;
+  mock::binary_fn fn;
 };
 
 static int next_pid = (1 << 16) + 1;
@@ -532,6 +533,9 @@ void posix_spawn(pid_t *pid, const char *binary_path,
     }
     }
   }
+  if (reg_bin->second.fn) {
+    reg_bin->second.fn(args);
+  }
   auto const &stdout = reg_bin->second.stdout;
   write(proc_fds[STDOUT_FILENO], stdout.c_str(), stdout.size());
   auto const &stderr = reg_bin->second.stderr;
@@ -560,9 +564,9 @@ void reset() {
   file_action_entries.clear();
 }
 
-void register_binary(const std::string &binary_path, const std::string &stdout,
-                     const std::string &stderr) {
-  reg_bins[binary_path] = {stdout, stderr};
+void register_binary(const std::string& binary_path, std::string stdout,
+                     std::string stderr, binary_fn fn) {
+  reg_bins[binary_path] = {std::move(stdout), std::move(stderr), std::move(fn)};
 }
 
 } // namespace mock
