@@ -124,7 +124,7 @@ int resolve(resolution_t &rs, const std::string &file_path) noexcept {
   if (file_path[0] != '/') {
     throw std::runtime_error("cannot resolve relative paths in this mock");
   }
-  size_t slash_idx = 1;
+  size_t slash_idx = 0;
   std::vector<std::shared_ptr<file_node>> node_path;
   std::shared_ptr<file_node> current_node = root_dir;
   std::string ent_name;
@@ -282,6 +282,9 @@ size_t write(fd_data &desc, const void *buf, size_t size) {
   std::unique_lock<std::mutex> lock(gm);
   if (desc.type == fd_type::pipe) {
     auto real_fd = desc.real_pipe_fd->get();
+    // FIXME: this is unsafe in theory. If an exception was thrown, it does
+    // not get locked again, though local objects' destructor might access
+    // shared data.
     lock.unlock();
     size_t bytes = ::write(real_fd, buf, size);
     lock.lock();
