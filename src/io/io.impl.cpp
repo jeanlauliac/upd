@@ -45,9 +45,7 @@ int mkdir(const char *path, mode_t mode) noexcept {
   return ::mkdir(path, mode);
 }
 
-int rmdir(const char *path) noexcept {
-  return ::rmdir(path);
-}
+int rmdir(const char *path) noexcept { return ::rmdir(path); }
 
 int open(const std::string &file_path, int flags, mode_t mode) {
   int fd = ::open(file_path.c_str(), flags, mode);
@@ -77,13 +75,15 @@ void close(int fd) {
   if (::close(fd) != 0) throw_errno();
 }
 
+int rename(const char *old_path, const char *new_path) noexcept {
+  return ::rename(old_path, new_path);
+}
+
 int lstat(const char *path, struct ::stat *buf) noexcept {
   return ::lstat(path, buf);
 }
 
-int unlink(const char *pathname) noexcept {
-  return ::unlink(pathname);
-}
+int unlink(const char *pathname) noexcept { return ::unlink(pathname); }
 
 int posix_openpt(int oflag) {
   int fd = ::posix_openpt(oflag);

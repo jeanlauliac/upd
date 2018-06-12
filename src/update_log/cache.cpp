@@ -1,6 +1,7 @@
 #include "cache.h"
 #include "../fd_char_reader.h"
 #include "../io/io.h"
+#include "../io/utils.h"
 #include "read.h"
 #include <fcntl.h>
 #include <iomanip>
@@ -55,9 +56,8 @@ void rewrite_file(const std::string &file_path,
     fresh_recorder.record(record_entry.first, record_entry.second);
   }
   fresh_recorder.close();
-  if (rename(temporary_file_path.c_str(), file_path.c_str()) != 0) {
-    throw failed_to_rewrite_error();
-  }
+  if (io::rename(temporary_file_path.c_str(), file_path.c_str()) != 0)
+    io::throw_errno();
 }
 
 } // namespace update_log

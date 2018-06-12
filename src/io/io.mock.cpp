@@ -222,7 +222,7 @@ int rmdir(const char *path) noexcept {
   if (rs.node->type != node_type::directory) return set_errno(ENOTDIR);
   if (rs.node->ents.size() != 0) return set_errno(EEXIST);
   if (rs.node_path.size() == 0) return set_errno(EPERM);
-  auto& dir_node = rs.node_path.back();
+  auto &dir_node = rs.node_path.back();
   dir_node->ents.erase(rs.name);
   return 0;
 }
@@ -360,7 +360,23 @@ void close(int fd) {
   fds.erase(fd);
 }
 
+int rename(const char *old_path, const char *new_path) noexcept {
+  std::unique_lock<std::mutex> lock(gm);
+  resolution_t old_rs, new_rs;
+  if (resolve(old_rs, old_path)) return -1;
+  if (old_rs.node == nullptr) return set_errno(ENOENT);
+  if (resolve(new_rs, new_path)) return -1;
+  if (new_rs.node != nullptr && new_rs.node->type == node_type::directory)
+    return set_errno(EEXIST);
+  auto &old_dir_node = old_rs.node_path.back();
+  old_dir_node->ents.erase(old_rs.name);
+  auto &new_dir_node = new_rs.node_path.back();
+  new_dir_node->ents[new_rs.name] = std::move(old_rs.node);
+  return 0;
+}
+
 int lstat(const char *path, struct ::stat *buf) noexcept {
+  std::unique_lock<std::mutex> lock(gm);
   resolution_t rs;
   if (resolve(rs, path)) return -1;
   if (rs.node == nullptr) return set_errno(ENOENT);
@@ -386,7 +402,7 @@ int unlink(const char *ent_path) noexcept {
   if (rs.node == nullptr) return set_errno(ENOENT);
   if (rs.node->type == node_type::directory) return set_errno(EISDIR);
   if (rs.node_path.size() == 0) return set_errno(EPERM);
-  auto& dir_node = rs.node_path.back();
+  auto &dir_node = rs.node_path.back();
   dir_node->ents.erase(rs.name);
   return 0;
 }
@@ -567,7 +583,7 @@ void reset() {
   file_action_entries.clear();
 }
 
-void register_binary(const std::string& binary_path, std::string stdout,
+void register_binary(const std::string &binary_path, std::string stdout,
                      std::string stderr, binary_fn fn) {
   reg_bins[binary_path] = {std::move(stdout), std::move(stderr), std::move(fn)};
 }

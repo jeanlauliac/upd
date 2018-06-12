@@ -25,6 +25,21 @@ using namespace upd;
   @expect(io::read_entire_file("/foobar.txt")).to_equal(str);
 }
 
+@it "renames a file" {
+  io::mock::reset();
+  @expect(io::mkdir("/test", 0)).to_equal(0);
+  std::string str = "hello, world";
+  io::write_entire_file("/test/foo.txt", str);
+  @expect(io::rename("/test/foo.txt", "/bar.txt")).to_equal(0);
+  @expect(io::read_entire_file("/bar.txt")).to_equal(str);
+  try {
+    io::open("/test/foo.txt", O_RDONLY, 0600);
+    throw std::runtime_error("should not reach");
+  } catch (std::system_error error) {
+    if (error.code() != std::errc::no_such_file_or_directory) throw;
+  }
+}
+
 @it "writes a file in a directory" {
   io::mock::reset();
   io::mkdir("/glo", 0);

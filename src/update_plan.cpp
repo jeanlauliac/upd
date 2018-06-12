@@ -174,12 +174,11 @@ void execute_update_plan(
         }
         auto exit_code = WEXITSTATUS(st.result.status);
         if (WIFEXITED(st.result.status) == 0) {
-          std::cerr << "upd: error: process did not exit normally"
-                    << std::endl;
+          std::cerr << "upd: error: process did not exit normally" << std::endl;
           has_error = true;
           if (WIFSIGNALED(st.result.status) != 0) {
-            std::cerr << "upd: error: process exited by signal " << WTERMSIG(st.result.status)
-                    << std::endl;
+            std::cerr << "upd: error: process exited by signal "
+                      << WTERMSIG(st.result.status) << std::endl;
           }
         } else if (exit_code != 0) {
           std::cerr << "upd: error: process terminated with exit code "

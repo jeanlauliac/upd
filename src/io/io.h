@@ -68,6 +68,8 @@ ssize_t read(int fd, void *buf, size_t count);
 
 void close(int fd);
 
+int rename(const char *old_path, const char *new_path) noexcept;
+
 int lstat(const char *path, struct ::stat *buf) noexcept;
 
 int unlink(const char *pathname) noexcept;
