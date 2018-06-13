@@ -1,6 +1,7 @@
 #include "utils.h"
 #include "file_descriptor.h"
 #include <array>
+#include <cstring>
 #include <fcntl.h>
 #include <sstream>
 
@@ -15,7 +16,7 @@ void mkdir_s(const std::string &dir_path, mode_t mode) {
 
 std::string mkdtemp_s(const std::string &template_path) {
   std::vector<char> tpl(template_path.size() + 1);
-  strcpy(tpl.data(), template_path.c_str());
+  std::strcpy(tpl.data(), template_path.c_str());
   if (io::mkdtemp(tpl.data()) == nullptr) throw_errno();
   return tpl.data();
 }

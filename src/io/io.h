@@ -2,6 +2,7 @@
 
 #include "../../gen/src/io/io.h"
 #include <dirent.h>
+#include <functional>
 #include <iostream>
 #include <spawn.h>
 #include <sys/stat.h>

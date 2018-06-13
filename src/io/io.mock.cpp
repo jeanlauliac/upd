@@ -1,7 +1,10 @@
 #include "io.h"
 #include "utils.h"
+#include <condition_variable>
+#include <cstring>
 #include <fcntl.h>
 #include <memory>
+#include <mutex>
 #include <random>
 #include <string>
 #include <sys/stat.h>
@@ -31,12 +34,12 @@ std::string getcwd() { return "/home/tests"; }
 
 bool is_regular_file(const std::string &) { return true; }
 
-std::minstd_rand0 rand;
+std::minstd_rand0 rand(0);
 std::uniform_int_distribution<char> char_dis('A', 'Z');
 std::uniform_int_distribution<int> bool_dis(0, 1);
 
 char *mkdtemp(char *tpl) noexcept {
-  auto len = strlen(tpl);
+  auto len = std::strlen(tpl);
   if (len < 6) return set_errno(EINVAL, nullptr);
   for (size_t i = len - 6; i < len; ++i) {
     if (tpl[i] != 'X') return set_errno(EINVAL, nullptr);
@@ -581,6 +584,8 @@ void reset() {
   });
   fds.clear();
   file_action_entries.clear();
+  reg_bins.clear();
+  mock::spawn_records.clear();
 }
 
 void register_binary(const std::string &binary_path, std::string stdout,

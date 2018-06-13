@@ -69,20 +69,22 @@ using namespace upd;
   DIR *dirp = io::opendir("/test");
   @expect(dirp).not_to_equal(nullptr);
   dirent *ent;
-  @expect(ent = io::readdir(dirp)).not_to_equal(nullptr);
-  @expect(std::string(ent->d_name)).to_equal("glo.txt");
-  @expect(ent = io::readdir(dirp)).not_to_equal(nullptr);
-  @expect(std::string(ent->d_name)).to_equal("bar.txt");
-  @expect(ent = io::readdir(dirp)).not_to_equal(nullptr);
-  @expect(std::string(ent->d_name)).to_equal("foo.txt");
-  @expect(io::readdir(dirp)).to_equal(nullptr);
+  std::unordered_set<std::string> names;
+  while ((ent = io::readdir(dirp)) != nullptr) {
+    names.emplace(ent->d_name);
+  }
+  @expect(names).to_equal(std::unordered_set<std::string>{
+      "glo.txt",
+      "bar.txt",
+      "foo.txt",
+  });
   @expect(io::closedir(dirp)).to_equal(0);
 }
 
 @it "gives temporary folder name" {
   io::mock::reset();
   io::mkdir("/foo", 0700);
-  @expect(io::mkdtemp_s("/foo/bar-XXXXXX")).to_equal("/foo/bar-GybxCX");
+  @expect(io::mkdtemp_s("/foo/bar-XXXXXX")).to_equal("/foo/bar-VbRJkp");
 }
 
 @it "reads from a FIFO" {

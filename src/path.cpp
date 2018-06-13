@@ -1,4 +1,5 @@
 #include "path.h"
+#include <cstring>
 #include <fcntl.h>
 #include <libgen.h>
 #include <sstream>
