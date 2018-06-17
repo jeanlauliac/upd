@@ -34,7 +34,7 @@ std::string getcwd() { return "/home/tests"; }
 
 bool is_regular_file(const std::string &) { return true; }
 
-std::minstd_rand0 rand(0);
+std::minstd_rand0 rand;
 std::uniform_int_distribution<char> char_dis('A', 'Z');
 std::uniform_int_distribution<int> bool_dis(0, 1);
 

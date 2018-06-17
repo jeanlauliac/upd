@@ -84,7 +84,14 @@ using namespace upd;
 @it "gives temporary folder name" {
   io::mock::reset();
   io::mkdir("/foo", 0700);
-  @expect(io::mkdtemp_s("/foo/bar-XXXXXX")).to_equal("/foo/bar-VbRJkp");
+  std::string tpl = "/foo/bar-XXXXXX";
+  auto tdir_path = io::mkdtemp_s(tpl);
+  @expect(tdir_path).not_to_equal(tpl);
+  @expect(tdir_path.substr(0, 9)).to_equal(tpl.substr(0, 9));
+  std::string str = "hello, world";
+  auto file_path = tdir_path + "/foo.txt";
+  io::write_entire_file(file_path, str);
+  @expect(io::read_entire_file(file_path)).to_equal(str);
 }
 
 @it "reads from a FIFO" {
