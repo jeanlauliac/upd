@@ -3,7 +3,8 @@
 
 using namespace upd;
 
-@it "updates correct files" {
+@it "updates files only once" {
+  io::mock::reset();
   io::mkdir("/some", 0700);
   io::mkdir("/some/root", 0700);
   io::write_entire_file("/some/root/updfile.json", R"JSON({
@@ -37,13 +38,25 @@ using namespace upd;
   io::write_entire_file("/some/root/src/foo.txt", "this is a test");
   io::mock::register_binary(
       "/some/bin/compile", "", "", [](char *const args[]) {
-        // FIXME: the path passed in the args contains some "../..", that is
-        // not normal. It should be directly the plain relative path.
         io::write_entire_file(std::string("/some/root/") + args[1],
                               "result file");
       });
   execute_manifest("/some/root", "/some/root", false, false, {"dist/bar.txt"},
                    false, false, 1);
+  @expect(io::mock::spawn_records)
+      .to_equal(std::vector<io::mock::spawn_record>{upd::io::mock::spawn_record{
+          /* .binary_path = */ "/some/bin/compile",
+          /* .args = */
+          // FIXME: the path passed in the args contains some "../..", that is
+          // not normal. It should be directly the plain relative path.
+          {"/some/bin/compile", "../../some/root/dist/bar.txt",
+           "../../some/root/src/foo.txt"},
+          /* .env = */ {"TERM=xterm-color"}}});
   @expect(io::read_entire_file("/some/root/dist/bar.txt"))
       .to_equal("result file");
+  io::mock::spawn_records.clear();
+  execute_manifest("/some/root", "/some/root", false, false, {"dist/bar.txt"},
+                   false, false, 1);
+  @expect(io::mock::spawn_records)
+      .to_equal(std::vector<io::mock::spawn_record>{});
 }
