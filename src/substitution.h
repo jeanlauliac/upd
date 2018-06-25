@@ -146,4 +146,13 @@ capture(const std::vector<std::pair<size_t, size_t>> &capture_groups,
         const std::vector<size_t> &resolved_start_segment_ids);
 
 } // namespace substitution
+
+template <> struct type_info<substitution::segment> {
+  static const char *name() { return "upd::substitution::segment"; }
+};
+
+template <> struct type_info<substitution::pattern> {
+  static const char *name() { return "upd::substitution::pattern"; }
+};
+
 } // namespace upd

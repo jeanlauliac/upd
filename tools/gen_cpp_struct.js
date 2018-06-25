@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const reporting = require('./lib/reporting');
 const writeNodeDepFile = require('./lib/writeNodeDepFile');
+const writeCppString = require('./lib/writeCppString');
 const json5 = require('json5');
 
 cli(function () {
@@ -24,6 +25,7 @@ cli(function () {
   write('#pragma once\n\n');
   const originDirPath = path.dirname(sourcePath);
   const targetDirPath = path.dirname(targetPath);
+  const typeInfos = [];
   json.includes.forEach(incPath => {
     if (incPath.includes('/')) {
       write(`#include "${path.relative(targetDirPath, path.join(originDirPath, incPath))}"\n`);
@@ -41,6 +43,7 @@ cli(function () {
       write(`  ${value},\n`);
     });
     write(`};\n\n`);
+    typeInfos.push({qualifiedName: `${ns}::${spec.name}`});
     write(`inline std::string inspect(const ${spec.name}& value, const inspect_options &) {
   switch (value) {\n`);
     spec.values.forEach(value => {
@@ -65,7 +68,8 @@ cli(function () {
       write(`left.${fspec.name} == right.${fspec.name}`);
       first = false;
     });
-    write(`;\n}\n`);
+    write(`;\n}\n\n`);
+    typeInfos.push({qualifiedName: `${ns}::${spec.name}`});
     write(`
 inline std::string inspect(const ${spec.name}& value, const inspect_options &options) {
   collection_inspector insp("${ns}::${spec.name}", options);
@@ -76,6 +80,14 @@ inline std::string inspect(const ${spec.name}& value, const inspect_options &opt
     write(`  return insp.result();\n}\n\n`);
   });
   json.namespace.forEach(name => write(`} // namespace ${name}\n`));
+  write('\n');
+  for (const typeInfo of typeInfos) {
+    write(`template<> struct upd::type_info<${typeInfo.qualifiedName}> {\n`);
+    write('  constexpr static const char* name() { return ');
+    writeCppString(str => void write(str), typeInfo.qualifiedName);
+    write('; };\n')
+    write(`};\n\n`);
+  }
   targetStream.end();
   writeNodeDepFile(depfilePath, targetPath);
   return 0;

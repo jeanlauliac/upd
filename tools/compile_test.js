@@ -13,6 +13,7 @@ const path = require('path');
 const hashString = require('./compile_test/hashString');
 const reporting = require('./lib/reporting');
 const writeNodeDepFile = require('./lib/writeNodeDepFile');
+const writeCppString = require('./lib/writeCppString');
 
 import type {ReadChar, Write, Location, LocatedChar, ReadLocatedChar} from './compile_test/types';
 
@@ -151,7 +152,7 @@ function transform(options: TransformOptions): void {
   write(`void ${mainFuncName}(const std::string& file_path, int& index) {\n`);
   for (const test of tr.tests) {
     write(`  run_case(${test.funcName}, index, file_path + ":" + `);
-    writeString(write, `${test.line}: ${test.title}`);
+    writeCppString(write, `${test.line}: ${test.title}`);
     write(`);\n`);
   }
   write(`}\n`);
@@ -366,7 +367,7 @@ class Transformer {
     this._write(`#line ${loc.line}\n`);
     this._write(' '.repeat(loc.column - 1));
     this._write(expr + ', ');
-    writeString(this._write, expr);
+    writeCppString(this._write, expr);
     this._write(`)`);
   }
 
@@ -396,9 +397,9 @@ class Transformer {
     this._write(`#line ${expectedValue.loc.line}\n`);
     this._write(' '.repeat(expectedValue.loc.column - 1));
     this._write(expectedValue.expr + ', ');
-    writeString(this._write, actualValue.expr);
+    writeCppString(this._write, actualValue.expr);
     this._write(', ');
-    writeString(this._write, expectedValue.expr);
+    writeCppString(this._write, expectedValue.expr);
     this._write(`)`);
   }
 
@@ -441,18 +442,6 @@ function readString(iter: CharIterator) {
   }
   iter.forward();
   return str;
-}
-
-function writeString(write: Write, str: string) {
-  write('"');
-  for (let i = 0; i < str.length; ++i) {
-    const c = str.charAt(i);
-    if (c === '"') write('\\"');
-    else if (c === '\n') write('\\n');
-    else if (c === '\\') write('\\\\');
-    else write(c);
-  }
-  write('"');
 }
 
 function unexpectedOf(iter: CharIterator) {

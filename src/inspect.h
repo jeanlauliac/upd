@@ -12,6 +12,8 @@
 
 namespace upd {
 
+template <typename TValue> struct type_info;
+
 struct global_inspect_options {
   unsigned int indent;
   unsigned int width;
@@ -20,6 +22,16 @@ struct global_inspect_options {
 struct inspect_options {
   global_inspect_options &global;
   unsigned int depth;
+};
+
+template <> struct type_info<int> {
+  static const char *name() { return "int"; }
+};
+template <> struct type_info<size_t> {
+  static const char *name() { return "size_t"; }
+};
+template <> struct type_info<std::string> {
+  static const char *name() { return "std::string"; }
 };
 
 std::string inspect(int value, const inspect_options &);
@@ -96,27 +108,50 @@ private:
 };
 
 template <typename TFirst, typename TSecond>
+struct type_info<std::pair<TFirst, TSecond>> {
+  static std::string name() {
+    return std::string("std::pair<") + type_info<TFirst>::name() + ", " +
+           type_info<TSecond>::name() + '>';
+  }
+};
+
+template <typename TFirst, typename TSecond>
 std::string inspect(const std::pair<TFirst, TSecond> &pair,
                     const inspect_options &options) {
   std::ostringstream os;
-  os << "std::pair(" << inspect_implicit_pair(pair, options) << ")";
+  os << type_info<std::pair<TFirst, TSecond>>::name()
+     << inspect_implicit_pair(pair, options);
   return os.str();
 }
 
 template <typename TKey, typename TValue>
+struct type_info<std::map<TKey, TValue>> {
+  static std::string name() {
+    return std::string("std::map<") + type_info<TKey>::name() + ", " +
+           type_info<TValue>::name() + '>';
+  }
+};
+
+template <typename TKey, typename TValue>
 std::string inspect(const std::map<TKey, TValue> &map,
                     const inspect_options &options) {
-  collection_inspector insp("std::map", options);
+  collection_inspector insp(type_info<std::map<TKey, TValue>>::name, options);
   for (auto iter = map.begin(); iter != map.end(); ++iter) {
     insp.push_back_pair(*iter);
   }
   return insp.result();
 }
 
+template <typename TValue> struct type_info<std::vector<TValue>> {
+  static std::string name() {
+    return std::string("std::vector<") + type_info<TValue>::name() + '>';
+  }
+};
+
 template <typename TValue>
 std::string inspect(const std::vector<TValue> &collection,
                     const inspect_options &options) {
-  collection_inspector insp("std::vector", options);
+  collection_inspector insp(type_info<std::vector<TValue>>::name(), options);
   for (auto iter = collection.begin(); iter != collection.end(); ++iter) {
     insp.push_back(*iter);
   }

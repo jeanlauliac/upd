@@ -17,6 +17,10 @@ enum class command_line_template_variable {
   dependency_file
 };
 
+template <> struct type_info<upd::command_line_template_variable> {
+  static const char *name() { return "upd::command_line_template_variable"; }
+};
+
 inline std::string inspect(command_line_template_variable value,
                            const inspect_options &options) {
   return inspect(static_cast<size_t>(value), options);
@@ -35,6 +39,10 @@ struct command_line_template_part {
 
   std::vector<std::string> literal_args;
   std::vector<command_line_template_variable> variable_args;
+};
+
+template <> struct type_info<command_line_template_part> {
+  static const char *name() { return "upd::command_line_template_part"; }
 };
 
 inline bool operator==(const command_line_template_part &left,
@@ -74,6 +82,10 @@ struct command_line_template {
   environment_t environment;
 };
 
+template <> struct type_info<command_line_template> {
+  static const char *name() { return "upd::command_line_template"; }
+};
+
 inline bool operator==(const command_line_template &left,
                        const command_line_template &right) {
   return left.binary_path == right.binary_path && left.parts == right.parts &&
@@ -96,6 +108,10 @@ struct command_line {
   std::string binary_path;
   std::vector<std::string> args;
   environment_t environment;
+};
+
+template <> struct type_info<command_line> {
+  static const char *name() { return "upd::command_line"; }
 };
 
 /**

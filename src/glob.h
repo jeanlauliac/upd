@@ -75,4 +75,9 @@ bool match(const pattern &target, const std::string &candidate,
            std::vector<size_t> &indices);
 
 } // namespace glob
+
+template <> struct type_info<glob::segment> {
+  static const char *name() { return "upd::glob::segment"; }
+};
+
 } // namespace upd

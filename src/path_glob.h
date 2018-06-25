@@ -428,4 +428,15 @@ private:
 };
 
 } // namespace path_glob
+
+template <> struct type_info<path_glob::pattern> {
+  static const char *name() { return "upd::path_glob::pattern"; }
+};
+template <> struct type_info<path_glob::segment> {
+  static const char *name() { return "upd::path_glob::segment"; }
+};
+template <> struct type_info<path_glob::capture_group> {
+  static const char *name() { return "upd::path_glob::capture_group"; }
+};
+
 } // namespace upd
