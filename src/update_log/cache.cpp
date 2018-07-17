@@ -40,9 +40,8 @@ cache cache::from_log_file(const std::string &log_file_path) {
     if (error.code() != std::errc::no_such_file_or_directory) throw;
     return cache(log_file_path);
   }
-  fd_char_reader reader(fd);
   try {
-    return cache(log_file_path, read(reader));
+    return cache(log_file_path, read_fd(fd));
   } catch (const version_mismatch_error &) {
     return cache(log_file_path);
   }

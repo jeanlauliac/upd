@@ -21,9 +21,7 @@ struct unexpected_end_of_file_error {};
 
 enum class record_type : char { entity_name, file_update };
 
-template <typename Reader> cache_file_data read(Reader &);
-extern template cache_file_data read(string_char_reader &);
-extern template cache_file_data read(fd_char_reader &);
+cache_file_data read_fd(int fd);
 
 } // namespace update_log
 } // namespace upd
