@@ -4,30 +4,27 @@
 namespace upd {
 namespace update_log {
 
-template <typename Read> void read_char(Read &&read, char &c) {
-  if (read(&c, 1) < 1) throw unexpected_end_of_file_error();
-}
-
 template <typename Read, typename Scalar>
 bool try_read_scalar(Read &&read, Scalar &value) {
   char *ptr = reinterpret_cast<char *>(&value);
-  if (read(ptr, 1) == 0) return false;
-  ++ptr;
-  for (size_t i = 1; i < sizeof(Scalar); ++i, ++ptr) read_char(read, *ptr);
+  auto bytes_read = read(ptr, sizeof(Scalar));
+  if (bytes_read == 0) return false;
+  if (bytes_read < sizeof(Scalar)) throw unexpected_end_of_file_error();
   return true;
 }
 
 template <typename Read, typename Scalar>
 void read_scalar(Read &&read, Scalar &value) {
   char *ptr = reinterpret_cast<char *>(&value);
-  for (size_t i = 0; i < sizeof(Scalar); ++i, ++ptr) read_char(read, *ptr);
+  if (read(ptr, sizeof(Scalar)) < sizeof(Scalar))
+    throw unexpected_end_of_file_error();
 }
 
 template <typename Read> void read_string(Read &&read, std::string &value) {
   uint16_t size;
   read_scalar(read, size);
   value.resize(size);
-  for (size_t i = 0; i < size; ++i) read_char(read, value[i]);
+  if (read(&value[0], size) < size) throw unexpected_end_of_file_error();
 }
 
 template <typename Read>
