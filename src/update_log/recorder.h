@@ -9,7 +9,7 @@
 namespace upd {
 namespace update_log {
 
-constexpr char VERSION = 2;
+constexpr char VERSION = 3;
 
 typedef std::unordered_map<std::string, uint16_t> ent_ids_by_path;
 typedef std::vector<std::string> string_vector;
@@ -28,8 +28,8 @@ struct recorder {
   void close();
 
 private:
-  uint16_t get_path_id_(const std::string &file_path);
-  void record_ent_name_(uint16_t parent_ent_id, const std::string &name);
+  size_t get_path_id_(const std::string &file_path);
+  void record_ent_name_(size_t parent_ent_id, const std::string &name);
 
   io::file_descriptor fd_;
   ent_ids_by_path ent_ids_by_path_;

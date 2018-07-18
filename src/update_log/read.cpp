@@ -20,23 +20,38 @@ void read_scalar(Read &&read, Scalar &value) {
     throw unexpected_end_of_file_error();
 }
 
+template <typename Read>
+void read_var_size_t(Read &&read, size_t& value) {
+  value = 0;
+  unsigned char next;
+  size_t shift = 0;
+  size_t count = 5;
+  do {
+    read_scalar(read, next);
+    value |= (next & 127) << shift;
+    shift += 7;
+    --count;
+  } while ((next & 128) > 0 && count > 0);
+  if (count == 0) throw std::runtime_error("invalid var size_t");
+}
+
 template <typename Read> void read_string(Read &&read, std::string &value) {
-  uint16_t size;
-  read_scalar(read, size);
+  size_t size;
+  read_var_size_t(read, size);
   value.resize(size);
   if (read(&value[0], size) < size) throw unexpected_end_of_file_error();
 }
 
 template <typename Read>
-void read_ent_path(const string_vector ent_paths, Read &read,
+void read_ent_path(const string_vector& ent_paths, Read &read,
                    std::string &value) {
-  uint16_t ent_id;
-  read_scalar(read, ent_id);
+  size_t ent_id;
+  read_var_size_t(read, ent_id);
   value = ent_paths.at(ent_id);
 }
 
 template <typename Read>
-bool read_update_record(const string_vector ent_paths, Read &&read,
+bool read_update_record(const string_vector& ent_paths, Read &&read,
                         std::string &file_name, file_record &record) {
   read_scalar(read, record.imprint);
   read_scalar(read, record.hash);
@@ -50,9 +65,9 @@ bool read_update_record(const string_vector ent_paths, Read &&read,
 }
 
 template <typename Read>
-std::pair<uint16_t, std::string> read_entity_name_record(Read &&read) {
-  std::pair<uint16_t, std::string> record;
-  read_scalar(read, record.first);
+std::pair<size_t, std::string> read_entity_name_record(Read &&read) {
+  std::pair<size_t, std::string> record;
+  read_var_size_t(read, record.first);
   read_string(read, record.second);
   return record;
 }
@@ -76,15 +91,19 @@ template <typename Read> cache_file_data read(Read &&read) {
       rs.records[file_path] = record;
       continue;
     }
+    if (type == record_type::root_entity_name) {
+      std::string name;
+      read_string(read, name);
+      rs.ent_paths.push_back(name);
+      continue;
+    }
     if (type == record_type::entity_name) {
       auto record = read_entity_name_record(read);
-      auto parent_path = record.first != static_cast<uint16_t>(-1)
-                             ? rs.ent_paths.at(record.first) + "/"
-                             : "";
+      auto parent_path = rs.ent_paths.at(record.first) + "/";
       rs.ent_paths.push_back(parent_path + record.second);
       continue;
     }
-    throw std::runtime_error("wrong record type");
+    throw std::runtime_error("wrong record type: " + std::to_string(static_cast<unsigned char>(type)));
   }
   return rs;
 }

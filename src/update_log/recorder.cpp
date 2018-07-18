@@ -30,8 +30,17 @@ void write_scalar(std::vector<char> &buffer, const Scalar &value) {
   std::memcpy(&buffer[size], &value, sizeof(value));
 }
 
+static void write_var_size_t(std::vector<char> &buffer, size_t value) {
+  do {
+    unsigned char next = value & 127;
+    value >>= 7;
+    if (value > 0) next |= 128;
+    write_scalar(buffer, next);
+  } while (value > 0);
+}
+
 static void write_string(std::vector<char> &buffer, const std::string &value) {
-  write_scalar(buffer, static_cast<uint16_t>(value.size()));
+  write_var_size_t(buffer, value.size());
   auto size = buffer.size();
   buffer.resize(size + value.size());
   std::memcpy(&buffer[size], &value[0], value.size());
@@ -60,18 +69,20 @@ void recorder::record(const std::string &local_file_path,
   write_scalar(buf, record_type::file_update);
   write_scalar(buf, record.imprint);
   write_scalar(buf, record.hash);
-  write_scalar(buf, get_path_id_(local_file_path));
+  write_var_size_t(buf, get_path_id_(local_file_path));
   write_scalar(buf,
                static_cast<uint16_t>(record.dependency_local_paths.size()));
   for (const auto &dep_path : record.dependency_local_paths) {
-    write_scalar(buf, get_path_id_(dep_path));
+    write_var_size_t(buf, get_path_id_(dep_path));
   }
   io::write(fd_, buf.data(), buf.size());
 }
 
-uint16_t recorder::get_path_id_(const std::string &file_path) {
+static const size_t no_id = ~0;
+
+size_t recorder::get_path_id_(const std::string &file_path) {
   auto ix = file_path.find('/');
-  uint16_t parent_ent_id = -1;
+  size_t parent_ent_id = no_id;
   size_t parent_ix = std::string::npos;
   do {
     auto path_part = file_path.substr(0, ix);
@@ -79,7 +90,7 @@ uint16_t recorder::get_path_id_(const std::string &file_path) {
     if (idit != ent_ids_by_path_.end()) {
       parent_ent_id = idit->second;
     } else {
-      auto ent_id = static_cast<uint16_t>(ent_ids_by_path_.size());
+      auto ent_id = ent_ids_by_path_.size();
       ent_ids_by_path_.emplace(path_part, ent_id);
       auto ent_name = file_path.substr(parent_ix + 1, ix - parent_ix - 1);
       record_ent_name_(parent_ent_id, ent_name);
@@ -91,12 +102,17 @@ uint16_t recorder::get_path_id_(const std::string &file_path) {
   return parent_ent_id;
 }
 
-void recorder::record_ent_name_(uint16_t parent_ent_id,
+void recorder::record_ent_name_(size_t parent_ent_id,
                                 const std::string &name) {
   std::vector<char> buf;
-  write_scalar(buf, record_type::entity_name);
-  write_scalar(buf, parent_ent_id);
-  write_string(buf, name);
+  if (parent_ent_id == no_id) {
+    write_scalar(buf, record_type::root_entity_name);
+    write_string(buf, name);
+  } else {
+    write_scalar(buf, record_type::entity_name);
+    write_var_size_t(buf, parent_ent_id);
+    write_string(buf, name);
+  }
   io::write(fd_, buf.data(), buf.size());
 }
 

@@ -19,7 +19,11 @@ struct version_mismatch_error {};
  */
 struct unexpected_end_of_file_error {};
 
-enum class record_type : char { entity_name = 1, file_update = 2 };
+enum class record_type : unsigned char {
+  root_entity_name = 16,
+  entity_name = 17,
+  file_update = 32,
+};
 
 cache_file_data read_fd(int fd);
 
