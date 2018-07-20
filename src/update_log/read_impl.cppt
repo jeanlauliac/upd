@@ -1,0 +1,43 @@
+#include "read_impl.h"
+
+using namespace upd::update_log;
+
+static std::vector<char> tbuf;
+static size_t value;
+
+size_t read(char* buf, size_t count) {
+  count = std::min(count, tbuf.size());
+  std::memcpy(buf, tbuf.data(), count);
+  tbuf.erase(tbuf.begin(), tbuf.begin() + count);
+  return count;
+}
+
+@it "reads zero" {
+  tbuf = {0};
+  read_var_size_t(read, value);
+  @expect(value).to_equal(0ul);
+}
+
+@it "reads char number" {
+  tbuf = {56};
+  read_var_size_t(read, value);
+  @expect(value).to_equal(56ul);
+}
+
+@it "reads 127" {
+  tbuf = {127};
+  read_var_size_t(read, value);
+  @expect(value).to_equal(127ul);
+}
+
+@it "reads 128" {
+  tbuf = {-128, 1};
+  read_var_size_t(read, value);
+  @expect(value).to_equal(128ul);
+}
+
+@it "reads uint16" {
+  tbuf = {-72, 1};
+  read_var_size_t(read, value);
+  @expect(value).to_equal(184ul);
+}
