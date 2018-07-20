@@ -1,6 +1,7 @@
 #include "recorder.h"
 #include "../io/io.h"
 #include "read.h"
+#include "write_impl.h"
 #include <cstring>
 #include <fcntl.h>
 #include <iomanip>
@@ -22,29 +23,6 @@ static constexpr int WRITE_FLAGS =
     O_SYNC;
 
 static constexpr int MODE = S_IRUSR | S_IWUSR;
-
-template <typename Scalar>
-void write_scalar(std::vector<char> &buffer, const Scalar &value) {
-  auto size = buffer.size();
-  buffer.resize(size + sizeof(value));
-  std::memcpy(&buffer[size], &value, sizeof(value));
-}
-
-static void write_var_size_t(std::vector<char> &buffer, size_t value) {
-  do {
-    unsigned char next = value & 127;
-    value >>= 7;
-    if (value > 0) next |= 128;
-    write_scalar(buffer, next);
-  } while (value > 0);
-}
-
-static void write_string(std::vector<char> &buffer, const std::string &value) {
-  write_var_size_t(buffer, value.size());
-  auto size = buffer.size();
-  buffer.resize(size + value.size());
-  std::memcpy(&buffer[size], &value[0], value.size());
-}
 
 recorder::recorder(const std::string &file_path)
     : fd_(io::open(file_path, O_CREAT | O_TRUNC | WRITE_FLAGS, MODE)) {

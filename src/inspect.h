@@ -33,6 +33,9 @@ template <> struct type_info<size_t> {
 template <> struct type_info<std::string> {
   static const char *name() { return "std::string"; }
 };
+template <> struct type_info<char> {
+  static const char *name() { return "char"; }
+};
 
 std::string inspect(int value, const inspect_options &);
 std::string inspect(size_t value, const inspect_options &);
