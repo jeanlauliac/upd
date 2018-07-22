@@ -11,12 +11,12 @@ using namespace upd::update_log;
   read_fd_forward<8> read(fd);
   std::string str;
   str.resize(5);
-  @expect(read(&str[0], 5)).to_equal(5ul);
+  @expect(read(&str[0], 5)).to_be(5ul);
   @expect(str).to_equal("Hello");
-  @expect(read(&str[0], 5)).to_equal(5ul);
+  @expect(read(&str[0], 5)).to_be(5ul);
   @expect(str).to_equal(", wor");
-  @expect(read(&str[0], 5)).to_equal(3ul);
+  @expect(read(&str[0], 5)).to_be(3ul);
   @expect(str).to_equal("ld!or");
-  @expect(read(&str[0], 5)).to_equal(0ul);
+  @expect(read(&str[0], 5)).to_be(0ul);
   io::close(fd);
 }

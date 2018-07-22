@@ -15,14 +15,6 @@ public:
 enum class equality_polarity {affirmed, negated};
 
 struct equality_expectation_failed_error {
-  // equality_expectation_failed_error(
-  //   const std::string& actual_,
-  //   const std::string& expectation_,
-  //   const std::string& actual_expr_,
-  //   const std::string& expectation_expr_,
-  //   equality_polarity polarity_,
-  // ): actual(actual_), expectation(expectation_), actual_expr(actual_expr_),
-  //    expectation_expr(expectation_expr_), polarity(polarity_) {};
   const std::string actual;
   const std::string expectation;
   const std::string actual_expr;
@@ -52,6 +44,13 @@ void expect_not_equal(const TActual& actual, const TExpectation& expectation,
   if (!(actual == expectation)) return;
   throw equality_expectation_failed_error{upd::inspect(actual),
     upd::inspect(expectation), actual_expr, expectation_expr, equality_polarity::negated};
+}
+
+template <typename TValue>
+void expect_same(const TValue& actual, const TValue& expectation,
+                  const std::string& actual_expr,
+                  const std::string& expectation_expr) {
+  expect_equal(actual, expectation, actual_expr, expectation_expr);
 }
 
 enum class test_case_result { ok, not_ok };

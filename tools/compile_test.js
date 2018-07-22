@@ -384,10 +384,12 @@ class Transformer {
       operator += iter.char;
       iter.forward();
     }
-    if (operator == 'to_equal')
+    if (operator === 'to_equal')
       this._write('testing::expect_equal(\n');
-    else if (operator == 'not_to_equal')
+    else if (operator === 'not_to_equal')
       this._write('testing::expect_not_equal(\n');
+    else if (operator === 'to_be')
+      this._write('testing::expect_same(\n');
     else
       throw new Error(`unknown @expect operator \`${operator}\``);
     const expectedValue = this._readParenExpression();

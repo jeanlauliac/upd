@@ -5,29 +5,29 @@ using namespace upd::update_log;
 @it "writes zero" {
   std::vector<char> buf;
   write_var_size_t(buf, 0);
-  @expect(buf).to_equal(std::vector<char>{0});
+  @expect(buf).to_be({0});
 }
 
 @it "writes char number" {
   std::vector<char> buf;
   write_var_size_t(buf, 56);
-  @expect(buf).to_equal(std::vector<char>{56});
+  @expect(buf).to_be({56});
 }
 
 @it "writes 127" {
   std::vector<char> buf;
   write_var_size_t(buf, 127);
-  @expect(buf).to_equal(std::vector<char>{127});
+  @expect(buf).to_be({127});
 }
 
 @it "writes 128" {
   std::vector<char> buf;
   write_var_size_t(buf, 128);
-  @expect(buf).to_equal(std::vector<char>{-128, 1});
+  @expect(buf).to_be({-128, 1});
 }
 
 @it "writes uint16" {
   std::vector<char> buf;
   write_var_size_t(buf, 184);
-  @expect(buf).to_equal(std::vector<char>{-72, 1});
+  @expect(buf).to_be({-72, 1});
 }
