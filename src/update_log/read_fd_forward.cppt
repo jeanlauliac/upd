@@ -1,0 +1,22 @@
+#include "../io/utils.h"
+#include "read_fd_forward.h"
+#include <fcntl.h>
+
+using namespace upd;
+using namespace upd::update_log;
+
+@it "reads block by blocks" {
+  io::write_entire_file("/hello.txt", "Hello, world!");
+  int fd = io::open("/hello.txt", O_RDONLY, 0);
+  read_fd_forward<8> read(fd);
+  std::string str;
+  str.resize(5);
+  @expect(read(&str[0], 5)).to_equal(5ul);
+  @expect(str).to_equal("Hello");
+  @expect(read(&str[0], 5)).to_equal(5ul);
+  @expect(str).to_equal(", wor");
+  @expect(read(&str[0], 5)).to_equal(3ul);
+  @expect(str).to_equal("ld!or");
+  @expect(read(&str[0], 5)).to_equal(0ul);
+  io::close(fd);
+}

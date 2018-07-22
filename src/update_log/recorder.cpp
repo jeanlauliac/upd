@@ -80,8 +80,7 @@ size_t recorder::get_path_id_(const std::string &file_path) {
   return parent_ent_id;
 }
 
-void recorder::record_ent_name_(size_t parent_ent_id,
-                                const std::string &name) {
+void recorder::record_ent_name_(size_t parent_ent_id, const std::string &name) {
   std::vector<char> buf;
   if (parent_ent_id == no_id) {
     write_scalar(buf, record_type::root_entity_name);

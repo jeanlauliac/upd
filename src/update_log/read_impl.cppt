@@ -5,7 +5,7 @@ using namespace upd::update_log;
 static std::vector<char> tbuf;
 static size_t value;
 
-size_t read(char* buf, size_t count) {
+size_t read(char *buf, size_t count) {
   count = std::min(count, tbuf.size());
   std::memcpy(buf, tbuf.data(), count);
   tbuf.erase(tbuf.begin(), tbuf.begin() + count);

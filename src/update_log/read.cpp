@@ -1,4 +1,5 @@
 #include "read.h"
+#include "read_fd_forward.h"
 #include "read_impl.h"
 #include <algorithm>
 
@@ -6,7 +7,7 @@ namespace upd {
 namespace update_log {
 
 template <typename Read>
-void read_ent_path(const string_vector& ent_paths, Read &read,
+void read_ent_path(const string_vector &ent_paths, Read &read,
                    std::string &value) {
   size_t ent_id;
   read_var_size_t(read, ent_id);
@@ -14,7 +15,7 @@ void read_ent_path(const string_vector& ent_paths, Read &read,
 }
 
 template <typename Read>
-bool read_update_record(const string_vector& ent_paths, Read &&read,
+bool read_update_record(const string_vector &ent_paths, Read &&read,
                         std::string &file_name, file_record &record) {
   read_scalar(read, record.imprint);
   read_scalar(read, record.hash);
@@ -66,43 +67,13 @@ template <typename Read> cache_file_data read(Read &&read) {
       rs.ent_paths.push_back(parent_path + record.second);
       continue;
     }
-    throw std::runtime_error("wrong record type: " + std::to_string(static_cast<unsigned char>(type)));
+    throw std::runtime_error("wrong record type: " +
+                             std::to_string(static_cast<unsigned char>(type)));
   }
   return rs;
 }
 
-struct read_fd_forward {
-  read_fd_forward(size_t fd) : fd_(fd), next_(buf_.data()), end_(buf_.data()) {}
-  size_t operator()(char *buf, size_t count) {
-    auto read_count = fill_(buf, count);
-    while (read_count < count && read_()) {
-      read_count += fill_(buf, count - read_count);
-    }
-    return read_count;
-  }
-
-private:
-  size_t fill_(char *buf, size_t count) {
-    count = std::min(count, static_cast<size_t>(end_ - next_));
-    std::memcpy(buf, next_, count);
-    next_ += count;
-    return count;
-  }
-
-  bool read_() {
-    auto read_count = io::read(fd_, buf_.data(), buf_.size());
-    next_ = buf_.data();
-    end_ = buf_.data() + read_count;
-    return read_count > 0;
-  }
-
-  size_t fd_;
-  std::array<char, 1 << 12> buf_;
-  char *next_;
-  char *end_;
-};
-
-cache_file_data read_fd(int fd) { return read(read_fd_forward(fd)); }
+cache_file_data read_fd(int fd) { return read(read_fd_forward<4096>(fd)); }
 
 } // namespace update_log
 } // namespace upd

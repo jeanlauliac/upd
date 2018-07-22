@@ -19,5 +19,5 @@ void write_string(std::vector<char> &buffer, const std::string &value) {
   std::memcpy(&buffer[size], &value[0], value.size());
 }
 
-}
-}
+} // namespace update_log
+} // namespace upd

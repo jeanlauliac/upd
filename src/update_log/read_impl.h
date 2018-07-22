@@ -21,8 +21,7 @@ void read_scalar(Read &&read, Scalar &value) {
     throw unexpected_end_of_file_error();
 }
 
-template <typename Read>
-void read_var_size_t(Read &&read, size_t& value) {
+template <typename Read> void read_var_size_t(Read &&read, size_t &value) {
   value = 0;
   unsigned char next;
   size_t shift = 0;
@@ -43,5 +42,5 @@ template <typename Read> void read_string(Read &&read, std::string &value) {
   if (read(&value[0], size) < size) throw unexpected_end_of_file_error();
 }
 
-}
-}
+} // namespace update_log
+} // namespace upd

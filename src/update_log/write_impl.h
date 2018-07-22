@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace upd {
 namespace update_log {
@@ -16,5 +16,5 @@ void write_scalar(std::vector<char> &buffer, const Scalar &value) {
 void write_var_size_t(std::vector<char> &buffer, size_t value);
 void write_string(std::vector<char> &buffer, const std::string &value);
 
-}
-}
+} // namespace update_log
+} // namespace upd

@@ -99,7 +99,7 @@ const compiled_tools = manifest.rule(
 );
 
 const cppt_sources = manifest.source("(src/**/*.cppt)");
-// const cppt_sources = manifest.source("(src/update_log/cache.cppt)");
+// const cppt_sources = manifest.source("(src/update_log/read_fd_forward.cppt)");
 const testingHeaderPath = path.resolve(__dirname, 'tools/lib/testing.h');
 
 const test_cpp_files = manifest.rule(
