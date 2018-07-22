@@ -1,4 +1,4 @@
-#include "path_glob.h"
+#include "parse.h"
 #include <stack>
 #include <stdexcept>
 
@@ -6,7 +6,7 @@ namespace upd {
 namespace path_glob {
 
 struct pattern_string_parser {
-  pattern_string_parser(const std::string &input_) : input(input_) {}
+  pattern_string_parser(std::string input_) : input(std::move(input_)) {}
 
   pattern operator()() {
     input_ix = 0;
@@ -133,8 +133,8 @@ struct pattern_string_parser {
   std::stack<size_t> capture_groups_ids;
 };
 
-pattern parse(const std::string &pattern_string) {
-  return pattern_string_parser(pattern_string)();
+pattern parse(std::string pattern_string) {
+  return pattern_string_parser(std::move(pattern_string))();
 }
 
 } // namespace path_glob

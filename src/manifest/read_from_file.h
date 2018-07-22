@@ -2,7 +2,7 @@
 #include "../../gen/src/manifest/manifest.h"
 #include "../command_line_template.h"
 #include "../json/parser.h"
-#include "../path_glob.h"
+#include "../path_glob/pattern.h"
 #include "../string_char_reader.h"
 #include "../substitution.h"
 

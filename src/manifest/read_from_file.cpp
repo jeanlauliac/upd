@@ -7,6 +7,7 @@
 #include "../istream_char_reader.h"
 #include "../json/vector_handler.h"
 #include "../path.h"
+#include "../path_glob/parse.h"
 #include <fcntl.h>
 #include <fstream>
 

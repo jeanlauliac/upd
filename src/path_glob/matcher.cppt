@@ -1,5 +1,6 @@
-#include "glob_test.h"
-#include "path_glob.h"
+#include "../glob_test.h"
+#include "matcher.h"
+#include "parse.h"
 #include <array>
 #include <cstring>
 #include <stack>

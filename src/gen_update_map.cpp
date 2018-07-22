@@ -1,6 +1,7 @@
 #include "gen_update_map.h"
 
 #include "io/utils.h"
+#include "path_glob/matcher.h"
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
