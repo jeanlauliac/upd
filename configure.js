@@ -10,6 +10,8 @@ const options = {
   compilerBinary: 'clang++',
 };
 
+const COMPILERS = ['clang++', 'g++'];
+
 const argv = process.argv;
 for (let i = 2; i < argv.length; ++i) {
   const arg = argv[i];
@@ -17,6 +19,11 @@ for (let i = 2; i < argv.length; ++i) {
     case '--compiler':
       if (++i === argv.length) throw new Error('`--compiler` needs value');
       options.compilerBinary = argv[i];
+      if (COMPILERS.indexOf(options.compilerBinary) < 0) {
+        throw new Error('invalid compiler `' + options.compilerBinary +
+          '`; pick one of: ' + COMPILERS.map(c => '`' + c + '`').join(', ') +
+          '.');
+      }
       break;
     default:
       throw new Error('unrecognized argument: `' + arg + '`');
@@ -45,13 +52,31 @@ if (options.compilerBinary === 'clang++') {
 
 const compilerPath = resolveBinary(options.compilerBinary);
 
+let precompiled_header = [];
+if (options.compilerBinary === 'clang++') {
+  precompiled_header.push(manifest.rule(
+    manifest.cli_template(
+      compilerPath,
+      updfile.makeCli([
+        '-Xclang', '-emit-pch', '-std=c++14', '-stdlib=libc++',
+        '-o', '$output_file', '$input_files',
+      ]),
+    ),
+    [manifest.source('(src/precompiled.hpp)')],
+    `${BUILD_DIR}/($1).pch`
+  ));
+}
+
 const compile_optimized_cpp_cli = manifest.cli_template(
   compilerPath,
   updfile.makeCli(
     ["-c", "-o", "$output_file"].concat(
       COMMON_CPLUSPLUS_COMPILE_FLAGS,
       OPTIMIZATION_FLAGS,
-      ["-MF", "$dependency_file", "$input_files"],
+      [
+        "-MF", "$dependency_file",
+        "$input_files",
+      ],
     )
   )
 );
@@ -62,7 +87,13 @@ const compile_debug_cpp_cli = manifest.cli_template(compilerPath, [
     literals: COMMON_CPLUSPLUS_COMPILE_FLAGS.concat(['-g', "-MF"]),
     variables: ["dependency_file"]
   },
-  {literals: [], variables: ["input_files"]},
+  {
+    literals: precompiled_header.length > 0 ? [
+      '-Xclang', '-include-pch',
+      '-Xclang', `${BUILD_DIR}/src/precompiled.hpp.pch`,
+    ] : [],
+    variables: ["input_files"],
+  },
 ]);
 
 const compile_optimized_c_cli = manifest.cli_template(compilerPath, [
@@ -154,7 +185,7 @@ function compile_cpp(files, type: 'optimized' | 'debug') {
     type === 'optimized' ? compile_optimized_cpp_cli : compile_debug_cpp_cli,
     files,
     `${BUILD_DIR}/${type}/$1.o`,
-    [cli_parser_cpp_file, struct_header_files],
+    [cli_parser_cpp_file, struct_header_files].concat(precompiled_header),
   );
 }
 
@@ -229,14 +260,14 @@ const compiled_debug_main_files = manifest.rule(
   compile_debug_cpp_cli,
   [package_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
-  [cli_parser_cpp_file]
+  [cli_parser_cpp_file].concat(precompiled_header)
 );
 
 const compiled_test_files = manifest.rule(
   compile_debug_cpp_cli,
   [manifest.source("(tools/lib/testing).cpp"), test_cpp_files, test_index_cpp_file],
   `${BUILD_DIR}/debug/$1.o`,
-  [cli_parser_cpp_file, struct_header_files]
+  [cli_parser_cpp_file, struct_header_files].concat(precompiled_header)
 );
 
 const commonLinkFlags = ["-Wall", "-std=c++14"];
