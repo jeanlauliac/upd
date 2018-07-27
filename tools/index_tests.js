@@ -26,16 +26,18 @@ function writeContent(stream, sourcePaths, targetDirPath, testingHeaderPath) {
     };
   });
   stream.write(`#include "${headerPath}"\n`);
+  stream.write(`#include "${path.dirname(headerPath)}/../../src/path.h"\n`);
   stream.write(`\n`);
   entryPointNames.forEach(entry => {
     stream.write(`void ${entry.name}(const std::string&, int&);\n`);
   });
   stream.write(`\n`);
-  stream.write(`int main() {\n`);
+  stream.write(`int main(int, char *argv[]) {\n`);
   stream.write(`  int index = 0;\n`);
+  stream.write(`  std::string bin_path = upd::dirname(argv[0]);\n`);
   stream.write(`  testing::write_header();\n`);
   entryPointNames.forEach(entry => {
-    stream.write(`  ${entry.name}("${entry.filePath}", index);\n`);
+    stream.write(`  ${entry.name}(upd::normalize_path(bin_path + "/${entry.filePath}"), index);\n`);
   });
   stream.write(`  testing::write_plan(index);\n`);
   stream.write('}\n');

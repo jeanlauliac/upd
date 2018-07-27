@@ -12,11 +12,12 @@
 namespace upd {
 
 std::string dirname(const std::string &path) {
-  if (path.size() >= MAXPATHLEN) {
+  if (path.size() >= MAXPATHLEN - 1) {
     throw std::runtime_error("string too long");
   }
   char temp[MAXPATHLEN];
-  std::strcpy(temp, path.c_str());
+  std::memcpy(temp, path.data(), path.size());
+  temp[path.size()] = 0;
   return ::dirname(temp);
 }
 
