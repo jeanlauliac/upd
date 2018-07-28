@@ -1,4 +1,5 @@
 #include "../io/io.h"
+#include <cstring>
 
 namespace upd {
 namespace update_log {
