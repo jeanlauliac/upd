@@ -79,6 +79,8 @@ update_map gen_update_map(const std::string &root_path,
         datum.second = local_output.segment_start_ids;
       }
     }
+    std::vector<std::string> dependencies = flatten_dependencies(
+        rule.dependencies, i, matches, rule_captured_paths);
     std::vector<std::string> order_only_dependencies = flatten_dependencies(
         rule.order_only_dependencies, i, matches, rule_captured_paths);
     auto &captured_paths = rule_captured_paths[i];
@@ -94,6 +96,7 @@ update_map gen_update_map(const std::string &root_path,
       result.output_files_by_path[datum.first] = {
           rule.command_line_ix,
           datum.second.first,
+          dependencies,
           {order_only_dependencies.begin(), order_only_dependencies.end()}};
       rule_ids_by_output_path[datum.first] = i;
       captured_paths[k] = substitution::capture(

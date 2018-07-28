@@ -43,14 +43,16 @@ XXH64_hash_t hash_files(file_hash_cache &hash_cache,
   return imprint_s.digest();
 }
 
-XXH64_hash_t get_target_imprint(file_hash_cache &hash_cache,
-                                const std::string &root_path,
-                                const std::vector<std::string> &local_src_paths,
-                                std::vector<std::string> dependency_local_paths,
-                                const command_line_template &cli_template) {
+XXH64_hash_t
+get_target_imprint(file_hash_cache &hash_cache, const std::string &root_path,
+                   const std::vector<std::string> &local_src_paths,
+                   const std::vector<std::string> &dep_paths,
+                   const std::vector<std::string> &dependency_local_paths,
+                   const command_line_template &cli_template) {
   xxhash64_stream imprint_s(0);
   imprint_s << hash(cli_template);
   imprint_s << hash_files(hash_cache, root_path, local_src_paths);
+  imprint_s << hash_files(hash_cache, root_path, dep_paths);
   imprint_s << hash_files(hash_cache, root_path, dependency_local_paths);
   return imprint_s.digest();
 }
@@ -60,6 +62,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
                         const std::string &root_path,
                         const std::string &local_target_path,
                         const std::vector<std::string> &local_src_paths,
+                        const std::vector<std::string> &dep_paths,
                         const command_line_template &cli_template) {
   auto entry = log_cache.find(local_target_path);
   if (entry == log_cache.end()) {
@@ -79,7 +82,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
   }
   try {
     auto new_imprint =
-        get_target_imprint(hash_cache, root_path, local_src_paths,
+        get_target_imprint(hash_cache, root_path, local_src_paths, dep_paths,
                            record.dependency_local_paths, cli_template);
     return new_imprint == record.imprint;
   } catch (std::system_error error) {
@@ -151,6 +154,7 @@ void finalize_scheduled_update(
     update_context &cx, scheduled_file_update &sfu,
     const command_line_template &cli_template,
     const std::vector<std::string> &local_src_paths,
+    const std::vector<std::string> &dep_paths,
     const std::string &local_target_path, const update_map &updm,
     const std::unordered_set<std::string> &order_only_dependency_file_paths) {
 
@@ -181,7 +185,7 @@ void finalize_scheduled_update(
   }
   auto new_imprint =
       get_target_imprint(cx.hash_cache, cx.root_path, local_src_paths,
-                         dep_local_paths, cli_template);
+                         dep_paths, dep_local_paths, cli_template);
   auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);
   cx.log_cache.record(local_target_path,
                       {new_imprint, new_hash, dep_local_paths});
