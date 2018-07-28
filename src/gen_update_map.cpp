@@ -9,7 +9,9 @@
 
 namespace upd {
 
-std::vector<std::vector<captured_string>>
+typedef std::vector<std::vector<captured_string>> captures_t;
+
+captures_t
 crawl_source_patterns(const std::string &root_path,
                       const std::vector<path_glob::pattern> &patterns) {
   std::vector<std::vector<captured_string>> matches(patterns.size());
@@ -27,6 +29,25 @@ crawl_source_patterns(const std::string &root_path,
     std::sort(fileMatches.begin(), fileMatches.end());
   }
   return matches;
+}
+
+std::vector<std::string>
+flatten_dependencies(const std::vector<manifest::update_rule_input> &deps,
+                     size_t rule_ix, const captures_t &matches,
+                     const captures_t &rule_captured_paths) {
+  std::vector<std::string> result;
+  for (const auto &dep : deps) {
+    if (dep.type == manifest::input_type::rule) {
+      if (dep.input_ix >= rule_ix) throw cannot_refer_to_later_rule_error();
+    }
+    const auto &input_captures = dep.type == manifest::input_type::source
+                                     ? matches[dep.input_ix]
+                                     : rule_captured_paths[dep.input_ix];
+    for (const auto &input_capture : input_captures) {
+      result.push_back(input_capture.value);
+    }
+  }
+  return result;
 }
 
 update_map gen_update_map(const std::string &root_path,
@@ -58,21 +79,8 @@ update_map gen_update_map(const std::string &root_path,
         datum.second = local_output.segment_start_ids;
       }
     }
-    std::unordered_set<std::string> order_only_dependencies;
-    for (const auto &dependency : rule.order_only_dependencies) {
-      if (dependency.type == manifest::input_type::rule) {
-        if (dependency.input_ix >= i) {
-          throw cannot_refer_to_later_rule_error();
-        }
-      }
-      const auto &input_captures =
-          dependency.type == manifest::input_type::source
-              ? matches[dependency.input_ix]
-              : rule_captured_paths[dependency.input_ix];
-      for (const auto &input_capture : input_captures) {
-        order_only_dependencies.insert(input_capture.value);
-      }
-    }
+    std::vector<std::string> order_only_dependencies = flatten_dependencies(
+        rule.order_only_dependencies, i, matches, rule_captured_paths);
     auto &captured_paths = rule_captured_paths[i];
     captured_paths.resize(data_by_path.size());
     size_t k = 0;
@@ -84,7 +92,9 @@ update_map gen_update_map(const std::string &root_path,
         };
       }
       result.output_files_by_path[datum.first] = {
-          rule.command_line_ix, datum.second.first, order_only_dependencies};
+          rule.command_line_ix,
+          datum.second.first,
+          {order_only_dependencies.begin(), order_only_dependencies.end()}};
       rule_ids_by_output_path[datum.first] = i;
       captured_paths[k] = substitution::capture(
           rule.output.capture_groups, datum.first, datum.second.second);
