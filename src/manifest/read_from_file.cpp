@@ -98,8 +98,13 @@ template <typename ObjectReader> struct read_rule_field {
           reader, value.inputs);
       return;
     }
-    if (field_name == "dependencies" ||
-        field_name == "order_only_dependencies") {
+    if (field_name == "dependencies") {
+      json::read_vector_field_value<
+          object_handler<update_rule_input, read_rule_input_field>>(
+          reader, value.dependencies);
+      return;
+    }
+    if (field_name == "order_only_dependencies") {
       json::read_vector_field_value<
           object_handler<update_rule_input, read_rule_input_field>>(
           reader, value.order_only_dependencies);

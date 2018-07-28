@@ -25,6 +25,7 @@
       "fields": [
         {"name": "command_line_ix", "type": "size_t"},
         {"name": "inputs", "type": "std::vector<update_rule_input>"},
+        {"name": "dependencies", "type": "std::vector<update_rule_input>"},
         {"name": "order_only_dependencies", "type": "std::vector<update_rule_input>"},
         {"name": "output", "type": "substitution::pattern"},
       ],

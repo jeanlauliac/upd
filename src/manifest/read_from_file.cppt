@@ -33,7 +33,8 @@ using namespace upd;
         "command_line_ix": 13,
         "output": "dist/($1).o",
         "inputs": [{"source_ix": 1}, {"rule_ix": 2}],
-        "order_only_dependencies": [{"rule_ix": 3}]
+        "dependencies": [{"rule_ix": 3}, {"rule_ix": 4}],
+        "order_only_dependencies": [{"rule_ix": 5}]
       }
     ]
   }
@@ -68,6 +69,10 @@ using namespace upd;
               },
               {
                   {manifest::input_type::rule, 3},
+                  {manifest::input_type::rule, 4},
+              },
+              {
+                  {manifest::input_type::rule, 5},
               },
               substitution::parse("dist/($1).o"),
           },
