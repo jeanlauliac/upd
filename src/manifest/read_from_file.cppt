@@ -1,3 +1,4 @@
+#include "../io/utils.h"
 #include "../path_glob/parse.h"
 #include "../string_char_reader.h"
 #include "read_from_file.h"
@@ -5,15 +6,14 @@
 using namespace upd;
 
 @it "parses empty manifest" {
-  string_char_reader reader("{}");
-  upd::manifest::string_lexer lx(reader);
-  auto result = manifest::parse(lx);
+  io::write_entire_file("/updfile.json", "{}");
+  auto result = manifest::read_from_file("/");
   manifest::manifest expected;
   @expect(result).to_equal(expected);
 }
 
 @it "parses complex manifest" {
-  string_char_reader reader(R"JSON({
+  io::write_entire_file("/updfile.json", R"JSON({
     "command_line_templates": [
       {
         "binary_path": "clang++",
@@ -38,8 +38,7 @@ using namespace upd;
     ]
   }
 )JSON");
-  upd::manifest::string_lexer lx(reader);
-  auto result = manifest::parse(lx);
+  auto result = manifest::read_from_file("/");
   manifest::manifest expected = {
       {
           {

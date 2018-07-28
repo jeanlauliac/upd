@@ -9,19 +9,14 @@
 namespace upd {
 namespace manifest {
 
-typedef json::lexer<string_char_reader> string_lexer;
-
-template <typename Lexer> manifest parse(Lexer &);
-extern template manifest parse(string_lexer &);
-
 /**
  * Thrown if we are trying to read the manifest of a project root but it
  * cannot be found.
  */
 struct missing_manifest_error {
-  missing_manifest_error(const std::string &root_path_)
-      : root_path(root_path_) {}
-  const std::string root_path;
+  missing_manifest_error(std::string root_path_)
+      : root_path(std::move(root_path_)) {}
+  std::string root_path;
 };
 
 template <typename Reason> struct invalid_manifest_error {

@@ -209,17 +209,15 @@ template <typename Lexer> manifest parse(Lexer &lexer) {
   return json::parse_expression<Lexer, decltype(handler)>(lexer, handler);
 }
 
-template manifest parse(string_lexer &);
-
 manifest read_from_file(const std::string &root_path) {
-  // std::ifstream file;
-  // file.exceptions(std::ifstream::badbit);
   std::string file_path = root_path + UPDFILE_SUFFIX;
-  // file.open(file_path);
-  // if (!file.is_open()) {
-  //   throw missing_manifest_error(root_path);
-  // }
-  io::file_descriptor fd(io::open(file_path, O_RDONLY, 0));
+  io::file_descriptor fd;
+  try {
+    fd = io::open(file_path, O_RDONLY, 0);
+  } catch (const std::system_error &error) {
+    if (error.code() != std::errc::no_such_file_or_directory) throw;
+    throw missing_manifest_error(root_path);
+  }
   fd_char_reader reader(fd);
   json::lexer<fd_char_reader> lexer(reader);
   try {
