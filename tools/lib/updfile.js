@@ -71,14 +71,21 @@ class ManifestBuilder {
     cli_template: CliTemplateRef,
     inputs: Array<InputRef>,
     output_pattern: string,
-    dependencies?: Array<InputRef>
+    order_only_dependencies?: Array<InputRef>,
+    dependencies?: Array<InputRef>,
   ): RuleRef {
-    this._result.rules.push({
-      dependencies: dependencies || [],
+    const ruleObj: any = {
       command_line_ix: cli_template.cli_ix,
       inputs: inputs,
       output: output_pattern,
-    });
+    };
+    if (order_only_dependencies != null) {
+      ruleObj.order_only_dependencies = order_only_dependencies;
+    }
+    if (dependencies != null) {
+      ruleObj.dependencies = dependencies;
+    }
+    this._result.rules.push(ruleObj);
     return {rule_ix: this._result.rules.length - 1};
   }
 
