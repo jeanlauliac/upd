@@ -19,7 +19,7 @@ using namespace upd;
         "binary_path": "clang++",
         "arguments": [
           {"literals": ["-c", "-o"], "variables": ["output_file"]},
-          {"literals": ["-std=c++14"], "variables": ["dependency_file"]},
+          {"literals": ["-std=c++14"], "variables": ["depfile"]},
           {"literals": ["-I", "/usr/local/include"], "variables": ["input_files"]}
         ]
       }
@@ -48,8 +48,7 @@ using namespace upd;
                    {"-c", "-o"},
                    {command_line_template_variable::output_files}),
                command_line_template_part(
-                   {"-std=c++14"},
-                   {command_line_template_variable::dependency_file}),
+                   {"-std=c++14"}, {command_line_template_variable::depfile}),
                command_line_template_part(
                    {"-I", "/usr/local/include"},
                    {command_line_template_variable::input_files})},

@@ -53,7 +53,7 @@ function runTestSuite() {
         "arguments": [
           {
             "literals": ["../mock_update.js"],
-            "variables": ["output_file", "dependency_file", "input_files"]
+            "variables": ["output_file", "depfile", "input_files"]
           }
         ]
       }

@@ -51,7 +51,7 @@ const compile_optimized_cpp_cli = manifest.cli_template(
     ["-c", "-o", "$output_file"].concat(
       COMMON_CPLUSPLUS_COMPILE_FLAGS,
       OPTIMIZATION_FLAGS,
-      ["-MF", "$dependency_file", "$input_files"],
+      ["-MF", "$depfile", "$input_files"],
     )
   )
 );
@@ -60,7 +60,7 @@ const compile_debug_cpp_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_CPLUSPLUS_COMPILE_FLAGS.concat(['-g', "-MF"]),
-    variables: ["dependency_file"]
+    variables: ["depfile"]
   },
   {literals: [], variables: ["input_files"]},
 ]);
@@ -69,7 +69,7 @@ const compile_optimized_c_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c"], OPTIMIZATION_FLAGS, ["-MF"]),
-    variables: ["dependency_file"]
+    variables: ["depfile"]
   },
   {literals: [], variables: ["input_files"]},
 ]);
@@ -78,7 +78,7 @@ const compile_debug_c_cli = manifest.cli_template(compilerPath, [
   {literals: ["-c", "-o"], variables: ["output_file"]},
   {
     literals: COMMON_NATIVE_COMPILE_FLAGS.concat(["-x", "c", "-g", "-MF"]),
-    variables: ["dependency_file"]
+    variables: ["depfile"]
   },
   {literals: [], variables: ["input_files"]},
 ]);
@@ -106,7 +106,7 @@ const test_cpp_files = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/compile_test.js`],
-      variables: ["input_files", "output_file", "dependency_file"],
+      variables: ["input_files", "output_file", "depfile"],
     },
     {
       literals: [testingHeaderPath],
@@ -125,7 +125,7 @@ const cli_parser_cpp_file = manifest.rule(
     },
     {
       literals: [`${BUILD_DIR}/src/cli/parse_options.h`],
-      variables: ["dependency_file", "input_files"],
+      variables: ["depfile", "input_files"],
     },
   ]),
   [manifest.source("(src/cli/parse_options).json")],
@@ -137,7 +137,7 @@ const struct_header_files = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/gen_cpp_struct.js`],
-      variables: ["output_file", "dependency_file", "input_files"],
+      variables: ["output_file", "depfile", "input_files"],
     },
   ]),
   [manifest.source("(src/**/*).struct.json")],
@@ -182,7 +182,7 @@ const test_manifest_files = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/gen_test_manifest.js`],
-      variables: ["output_file", "dependency_file", "input_files"],
+      variables: ["output_file", "depfile", "input_files"],
     },
   ]),
   [cppt_sources],
@@ -194,7 +194,7 @@ const test_index_cpp_file = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/index_tests.js`],
-      variables: ["output_file", "dependency_file"],
+      variables: ["output_file", "depfile"],
     },
     {
       literals: [testingHeaderPath],
@@ -210,7 +210,7 @@ const package_cpp_file = manifest.rule(
   manifest.cli_template(nodePath, [
     {
       literals: [`${BUILD_DIR}/tools/gen_package_info.js`],
-      variables: ["output_file", "dependency_file", "input_files"],
+      variables: ["output_file", "depfile", "input_files"],
     }
   ]),
   [manifest.source("package.json")],

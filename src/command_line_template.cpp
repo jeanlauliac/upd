@@ -24,8 +24,8 @@ void reify_command_line_arg(std::vector<std::string> &args,
   case command_line_template_variable::output_files:
     insert_arg_paths(args, parameters.output_files, root_path, working_path);
     break;
-  case command_line_template_variable::dependency_file:
-    args.push_back(parameters.dependency_file);
+  case command_line_template_variable::depfile:
+    args.push_back(parameters.depfile);
     break;
   }
 }

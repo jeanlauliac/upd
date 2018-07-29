@@ -14,7 +14,7 @@ namespace upd {
 enum class command_line_template_variable {
   input_files,
   output_files,
-  dependency_file
+  depfile,
 };
 
 template <> struct type_info<upd::command_line_template_variable> {
@@ -171,7 +171,7 @@ OStream &operator<<(OStream &os, command_line value) {
  * template.
  */
 struct command_line_parameters {
-  std::string dependency_file;
+  std::string depfile;
   std::vector<std::string> input_files;
   std::vector<std::string> output_files;
 };
