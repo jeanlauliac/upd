@@ -32,32 +32,39 @@ XXH64_hash_t hash(const command_line_template &cli_template) {
   return cli_hash.digest();
 }
 
-template <typename Iter>
-XXH64_hash_t hash_files(file_hash_cache &hash_cache,
-                        const std::string &root_path, Iter first, Iter last) {
+template <typename HashFile, typename Iter>
+XXH64_hash_t hash_files(HashFile hash_file, Iter first, Iter last) {
   xxhash64_stream imprint_s(0);
   for (; first != last; ++first) {
-    imprint_s << hash(*first);
-    imprint_s << hash_cache.hash(root_path + '/' + *first);
+    imprint_s << hash(*first) << hash_file(*first);
   }
   return imprint_s.digest();
 }
 
-XXH64_hash_t
-get_target_imprint(file_hash_cache &hash_cache, const std::string &root_path,
-                   const std::vector<std::string> &local_src_paths,
-                   const std::vector<std::string> &dep_paths,
-                   const std::vector<std::string> &dependency_local_paths,
-                   const command_line_template &cli_template) {
+template <typename HashFile, typename Cont>
+XXH64_hash_t hash_files(HashFile hash_file, const Cont &container) {
+  return hash_files(hash_file, container.cbegin(), container.cend());
+}
+
+typedef std::vector<std::string> string_vec;
+struct imprint_dep_paths {
+  const string_vec &inputs;
+  const string_vec &deps;
+  const string_vec &dyn_deps;
+};
+
+XXH64_hash_t get_target_imprint(file_hash_cache &hash_cache,
+                                const std::string &root_path,
+                                const imprint_dep_paths &dep_paths,
+                                const command_line_template &cli_template) {
+  auto hash_file = [&root_path, &hash_cache](const std::string &file_path) {
+    return hash_cache.hash(root_path + '/' + file_path);
+  };
   xxhash64_stream imprint_s(0);
   imprint_s << hash(cli_template);
-  imprint_s << hash_files(hash_cache, root_path, local_src_paths.cbegin(),
-                          local_src_paths.cend());
-  imprint_s << hash_files(hash_cache, root_path, dep_paths.cbegin(),
-                          dep_paths.cend());
-  imprint_s << hash_files(hash_cache, root_path,
-                          dependency_local_paths.cbegin(),
-                          dependency_local_paths.cend());
+  imprint_s << hash_files(hash_file, dep_paths.inputs);
+  imprint_s << hash_files(hash_file, dep_paths.deps);
+  imprint_s << hash_files(hash_file, dep_paths.dyn_deps);
   return imprint_s.digest();
 }
 
@@ -85,9 +92,10 @@ bool is_file_up_to_date(update_log::cache &log_cache,
     return false;
   }
   try {
+    imprint_dep_paths deps_paths{local_src_paths, dep_paths,
+                                 record.dependency_local_paths};
     auto new_imprint =
-        get_target_imprint(hash_cache, root_path, local_src_paths, dep_paths,
-                           record.dependency_local_paths, cli_template);
+        get_target_imprint(hash_cache, root_path, deps_paths, cli_template);
     return new_imprint == record.imprint;
   } catch (std::system_error error) {
     if (error.code() != std::errc::no_such_file_or_directory) {
@@ -187,9 +195,9 @@ void finalize_scheduled_update(
       dep_local_paths.push_back(dep_path);
     }
   }
+  imprint_dep_paths deps_paths{local_src_paths, dep_paths, dep_local_paths};
   auto new_imprint =
-      get_target_imprint(cx.hash_cache, cx.root_path, local_src_paths,
-                         dep_paths, dep_local_paths, cli_template);
+      get_target_imprint(cx.hash_cache, cx.root_path, deps_paths, cli_template);
   auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);
   cx.log_cache.record(local_target_path,
                       {new_imprint, new_hash, dep_local_paths});
