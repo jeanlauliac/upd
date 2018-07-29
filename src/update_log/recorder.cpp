@@ -48,8 +48,7 @@ void recorder::record(const std::string &local_file_path,
   write_scalar(buf, record.imprint);
   write_scalar(buf, record.hash);
   write_var_size_t(buf, get_path_id_(local_file_path));
-  write_scalar(buf,
-               static_cast<uint16_t>(record.dependency_local_paths.size()));
+  write_var_size_t(buf, record.dependency_local_paths.size());
   for (const auto &dep_path : record.dependency_local_paths) {
     write_var_size_t(buf, get_path_id_(dep_path));
   }

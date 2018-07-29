@@ -20,8 +20,8 @@ bool read_update_record(const string_vector &ent_paths, Read &&read,
   read_scalar(read, record.imprint);
   read_scalar(read, record.hash);
   read_ent_path(ent_paths, read, file_name);
-  uint16_t dep_count;
-  read_scalar(read, dep_count);
+  size_t dep_count;
+  read_var_size_t(read, dep_count);
   record.dependency_local_paths.resize(dep_count);
   for (size_t i = 0; i < dep_count; ++i)
     read_ent_path(ent_paths, read, record.dependency_local_paths[i]);
