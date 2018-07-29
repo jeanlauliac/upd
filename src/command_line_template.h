@@ -15,6 +15,7 @@ enum class command_line_template_variable {
   input_files,
   output_files,
   depfile,
+  dependency
 };
 
 template <> struct type_info<upd::command_line_template_variable> {
@@ -174,6 +175,7 @@ struct command_line_parameters {
   std::string depfile;
   std::vector<std::string> input_files;
   std::vector<std::string> output_files;
+  std::vector<std::vector<std::string>> dependency_groups;
 };
 
 /**

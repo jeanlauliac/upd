@@ -49,7 +49,7 @@ XXH64_hash_t hash_files(HashFile hash_file, const Cont &container) {
 typedef std::vector<std::string> string_vec;
 struct imprint_dep_paths {
   const string_vec &inputs;
-  const string_vec &deps;
+  const std::vector<string_vec> &dep_groups;
   const string_vec &dyn_deps;
 };
 
@@ -63,7 +63,9 @@ XXH64_hash_t get_target_imprint(file_hash_cache &hash_cache,
   xxhash64_stream imprint_s(0);
   imprint_s << hash(cli_template);
   imprint_s << hash_files(hash_file, dep_paths.inputs);
-  imprint_s << hash_files(hash_file, dep_paths.deps);
+  for (auto const &group : dep_paths.dep_groups) {
+    imprint_s << hash_files(hash_file, group);
+  }
   imprint_s << hash_files(hash_file, dep_paths.dyn_deps);
   return imprint_s.digest();
 }
@@ -73,7 +75,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
                         const std::string &root_path,
                         const std::string &local_target_path,
                         const std::vector<std::string> &local_src_paths,
-                        const std::vector<std::string> &dep_paths,
+                        const std::vector<std::vector<std::string>> &dep_groups,
                         const command_line_template &cli_template) {
   auto entry = log_cache.find(local_target_path);
   if (entry == log_cache.end()) {
@@ -92,7 +94,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
     return false;
   }
   try {
-    imprint_dep_paths deps_paths{local_src_paths, dep_paths,
+    imprint_dep_paths deps_paths{local_src_paths, dep_groups,
                                  record.dependency_local_paths};
     auto new_imprint =
         get_target_imprint(hash_cache, root_path, deps_paths, cli_template);
@@ -137,14 +139,16 @@ scheduled_file_update
 schedule_file_update(update_context &cx,
                      const command_line_template &cli_template,
                      const std::vector<std::string> &local_src_paths,
-                     const std::string &local_target_path) {
+                     const std::string &local_target_path,
+                     const std::vector<std::vector<std::string>> &dep_groups) {
 
   std::string depfile_path = io::mkdtemp_s(TEMPLATE) + "/dep";
   if (io::mkfifo(depfile_path.c_str(), 0700) != 0) io::throw_errno();
 
-  auto command_line = reify_command_line(
-      cli_template, {depfile_path, local_src_paths, {local_target_path}},
-      cx.root_path, io::getcwd());
+  command_line_parameters params = {
+      depfile_path, local_src_paths, {local_target_path}, dep_groups};
+  auto command_line =
+      reify_command_line(cli_template, params, cx.root_path, io::getcwd());
   std::cout << "updating: " << local_target_path << std::endl;
   if (cx.print_commands) {
     std::cout << "$ " << command_line << std::endl;
@@ -166,7 +170,7 @@ void finalize_scheduled_update(
     update_context &cx, scheduled_file_update &sfu,
     const command_line_template &cli_template,
     const std::vector<std::string> &local_src_paths,
-    const std::vector<std::string> &dep_paths,
+    const std::vector<string_vec> &dep_groups,
     const std::string &local_target_path, const update_map &updm,
     const std::unordered_set<std::string> &order_only_dependency_file_paths) {
 
@@ -195,7 +199,7 @@ void finalize_scheduled_update(
       dep_local_paths.push_back(dep_path);
     }
   }
-  imprint_dep_paths deps_paths{local_src_paths, dep_paths, dep_local_paths};
+  imprint_dep_paths deps_paths{local_src_paths, dep_groups, dep_local_paths};
   auto new_imprint =
       get_target_imprint(cx.hash_cache, cx.root_path, deps_paths, cli_template);
   auto new_hash = cx.hash_cache.hash(root_folder_path + local_target_path);

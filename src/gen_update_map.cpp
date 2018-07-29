@@ -31,7 +31,28 @@ crawl_source_patterns(const std::string &root_path,
   return matches;
 }
 
-std::vector<std::string>
+static std::vector<std::vector<std::string>>
+group_dependencies(const std::vector<manifest::update_rule_input> &deps,
+                   size_t rule_ix, const captures_t &matches,
+                   const captures_t &rule_captured_paths) {
+  std::vector<std::vector<std::string>> result;
+  for (const auto &dep : deps) {
+    if (dep.type == manifest::input_type::rule) {
+      if (dep.input_ix >= rule_ix) throw cannot_refer_to_later_rule_error();
+    }
+    const auto &input_captures = dep.type == manifest::input_type::source
+                                     ? matches[dep.input_ix]
+                                     : rule_captured_paths[dep.input_ix];
+    std::vector<std::string> values;
+    for (const auto &input_capture : input_captures) {
+      values.push_back(input_capture.value);
+    }
+    result.push_back(std::move(values));
+  }
+  return result;
+}
+
+static std::vector<std::string>
 flatten_dependencies(const std::vector<manifest::update_rule_input> &deps,
                      size_t rule_ix, const captures_t &matches,
                      const captures_t &rule_captured_paths) {
@@ -79,8 +100,8 @@ update_map gen_update_map(const std::string &root_path,
         datum.second = local_output.segment_start_ids;
       }
     }
-    std::vector<std::string> dependencies = flatten_dependencies(
-        rule.dependencies, i, matches, rule_captured_paths);
+    std::vector<std::vector<std::string>> dependency_groups =
+        group_dependencies(rule.dependencies, i, matches, rule_captured_paths);
     std::vector<std::string> order_only_dependencies = flatten_dependencies(
         rule.order_only_dependencies, i, matches, rule_captured_paths);
     auto &captured_paths = rule_captured_paths[i];
@@ -96,7 +117,7 @@ update_map gen_update_map(const std::string &root_path,
       result.output_files_by_path[datum.first] = {
           rule.command_line_ix,
           datum.second.first,
-          dependencies,
+          dependency_groups,
           {order_only_dependencies.begin(), order_only_dependencies.end()}};
       rule_ids_by_output_path[datum.first] = i;
       captured_paths[k] = substitution::capture(

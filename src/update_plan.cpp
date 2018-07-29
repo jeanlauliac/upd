@@ -29,11 +29,12 @@ void build_update_plan(
                                    local_target_path, local_input_path))
       input_count++;
   }
-  for (auto const &local_dependency_path :
-       target_descriptor.second.dependency_file_paths) {
-    if (build_update_plan_for_path(plan, output_files_by_path,
-                                   local_target_path, local_dependency_path))
-      input_count++;
+  for (auto const &group : target_descriptor.second.dependency_groups) {
+    for (auto const &path : group) {
+      if (build_update_plan_for_path(plan, output_files_by_path,
+                                     local_target_path, path))
+        input_count++;
+    }
   }
   for (auto const &local_dependency_path :
        target_descriptor.second.order_only_dependency_file_paths) {
@@ -61,7 +62,7 @@ struct worker_state {
   std::string local_target_path;
   const command_line_template *cli_template;
   const std::vector<std::string> *local_src_paths;
-  const std::vector<std::string> *dep_paths;
+  const std::vector<std::vector<std::string>> *dep_groups;
   const std::unordered_set<std::string> *order_only_dep_file_paths;
   update_worker worker;
 };
@@ -111,8 +112,7 @@ void execute_update_plan(
       auto const &local_src_paths = target_file.local_input_file_paths;
       if (is_file_up_to_date(cx.log_cache, cx.hash_cache, cx.root_path,
                              local_target_path, local_src_paths,
-                             target_file.dependency_file_paths,
-                             command_line_tpl)) {
+                             target_file.dependency_groups, command_line_tpl)) {
         plan.queued_output_file_paths.pop();
         plan.erase(local_target_path);
         continue;
@@ -132,10 +132,11 @@ void execute_update_plan(
 
       auto &st = *worker_states[i];
       st.sfu = schedule_file_update(cx, command_line_tpl, local_src_paths,
-                                    local_target_path);
+                                    local_target_path,
+                                    target_file.dependency_groups);
       st.cli_template = &command_line_tpl;
       st.local_src_paths = &local_src_paths;
-      st.dep_paths = &target_file.dependency_file_paths;
+      st.dep_groups = &target_file.dependency_groups;
       st.local_target_path = std::move(local_target_path);
       st.order_only_dep_file_paths =
           &target_file.order_only_dependency_file_paths;
@@ -198,7 +199,7 @@ void execute_update_plan(
         }
 
         finalize_scheduled_update(
-            cx, st.sfu, *st.cli_template, *st.local_src_paths, *st.dep_paths,
+            cx, st.sfu, *st.cli_template, *st.local_src_paths, *st.dep_groups,
             st.local_target_path, updm, *st.order_only_dep_file_paths);
         plan.erase(st.local_target_path);
       }

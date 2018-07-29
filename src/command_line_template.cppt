@@ -6,9 +6,11 @@
       {
           upd::command_line_template_part(
               {"foo", "bar"},
-              {upd::command_line_template_variable::input_files}),
+              {upd::command_line_template_variable::input_files,
+               upd::command_line_template_variable::dependency}),
           upd::command_line_template_part(
-              {"beep"}, {upd::command_line_template_variable::output_files}),
+              {"beep"}, {upd::command_line_template_variable::dependency,
+                         upd::command_line_template_variable::output_files}),
       },
       {},
   };
@@ -16,10 +18,11 @@
       "",
       {"input1", "input2"},
       {"output"},
+      {{"oh", "la"}, {"some_dep"}},
   };
   auto result = upd::reify_command_line(tpl, parts, "/", "/");
   @expect(result.binary_path).to_equal(tpl.binary_path);
-  @assert(result.args ==
-          std::vector<std::string>(
-              {"foo", "bar", "input1", "input2", "beep", "output"}));
+  @expect(result.args)
+      .to_be({"foo", "bar", "input1", "input2", "oh", "la", "beep", "some_dep",
+              "output"});
 }

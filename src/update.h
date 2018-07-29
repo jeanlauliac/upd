@@ -57,7 +57,7 @@ struct update_context {
 struct output_file {
   size_t command_line_ix;
   std::vector<std::string> local_input_file_paths;
-  std::vector<std::string> dependency_file_paths;
+  std::vector<std::vector<std::string>> dependency_groups;
   std::unordered_set<std::string> order_only_dependency_file_paths;
 };
 
@@ -87,7 +87,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
                         const std::string &root_path,
                         const std::string &local_target_path,
                         const std::vector<std::string> &local_src_paths,
-                        const std::vector<std::string> &dep_paths,
+                        const std::vector<std::vector<std::string>> &dep_groups,
                         const command_line_template &cli_template);
 
 struct scheduled_file_update {
@@ -110,13 +110,14 @@ scheduled_file_update
 schedule_file_update(update_context &cx,
                      const command_line_template &cli_template,
                      const std::vector<std::string> &local_src_paths,
-                     const std::string &local_target_path);
+                     const std::string &local_target_path,
+                     const std::vector<std::vector<std::string>> &dep_groups);
 
 void finalize_scheduled_update(
     update_context &cx, scheduled_file_update &sfu,
     const command_line_template &cli_template,
     const std::vector<std::string> &local_src_paths,
-    const std::vector<std::string> &dep_paths,
+    const std::vector<std::vector<std::string>> &dep_groups,
     const std::string &local_target_path, const update_map &updm,
     const std::unordered_set<std::string> &local_dependency_file_paths);
 

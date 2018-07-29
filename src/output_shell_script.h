@@ -28,10 +28,12 @@ void output_shell_script(
       shell_escape(os << "mkdir -p ", local_dir) << std::endl;
       mked_dir_paths.insert(local_dir);
     }
-    auto command_line = reify_command_line(
-        command_line_tpl,
-        {"/dev/null", target_file.local_input_file_paths, {local_target_path}},
-        root_path, io::getcwd());
+    auto command_line = reify_command_line(command_line_tpl,
+                                           {"/dev/null",
+                                            target_file.local_input_file_paths,
+                                            {local_target_path},
+                                            target_file.dependency_groups},
+                                           root_path, io::getcwd());
     os << command_line << std::endl;
     plan.erase(local_target_path);
   }

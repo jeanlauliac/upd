@@ -132,6 +132,9 @@ struct command_line_template_variable_handler
     if (value == "depfile") {
       return command_line_template_variable::depfile;
     }
+    if (value == "dependency") {
+      return command_line_template_variable::dependency;
+    }
     throw std::runtime_error("unknown command line template variable arg");
   }
 };
