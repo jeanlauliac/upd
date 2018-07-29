@@ -32,13 +32,13 @@ XXH64_hash_t hash(const command_line_template &cli_template) {
   return cli_hash.digest();
 }
 
+template <typename Iter>
 XXH64_hash_t hash_files(file_hash_cache &hash_cache,
-                        const std::string &root_path,
-                        const std::vector<std::string> &local_paths) {
+                        const std::string &root_path, Iter first, Iter last) {
   xxhash64_stream imprint_s(0);
-  for (auto const &local_path : local_paths) {
-    imprint_s << hash(local_path);
-    imprint_s << hash_cache.hash(root_path + '/' + local_path);
+  for (; first != last; ++first) {
+    imprint_s << hash(*first);
+    imprint_s << hash_cache.hash(root_path + '/' + *first);
   }
   return imprint_s.digest();
 }
@@ -51,9 +51,13 @@ get_target_imprint(file_hash_cache &hash_cache, const std::string &root_path,
                    const command_line_template &cli_template) {
   xxhash64_stream imprint_s(0);
   imprint_s << hash(cli_template);
-  imprint_s << hash_files(hash_cache, root_path, local_src_paths);
-  imprint_s << hash_files(hash_cache, root_path, dep_paths);
-  imprint_s << hash_files(hash_cache, root_path, dependency_local_paths);
+  imprint_s << hash_files(hash_cache, root_path, local_src_paths.cbegin(),
+                          local_src_paths.cend());
+  imprint_s << hash_files(hash_cache, root_path, dep_paths.cbegin(),
+                          dep_paths.cend());
+  imprint_s << hash_files(hash_cache, root_path,
+                          dependency_local_paths.cbegin(),
+                          dependency_local_paths.cend());
   return imprint_s.digest();
 }
 
