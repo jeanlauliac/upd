@@ -85,7 +85,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
     if (new_hash != record.hash) {
       throw file_changed_manually_error{local_target_path};
     }
-  } catch (std::system_error error) {
+  } catch (const std::system_error &error) {
     if (error.code() != std::errc::no_such_file_or_directory) {
       throw;
     }
@@ -97,7 +97,7 @@ bool is_file_up_to_date(update_log::cache &log_cache,
     auto new_imprint =
         get_target_imprint(hash_cache, root_path, deps_paths, cli_template);
     return new_imprint == record.imprint;
-  } catch (std::system_error error) {
+  } catch (const std::system_error &error) {
     if (error.code() != std::errc::no_such_file_or_directory) {
       throw;
     }
