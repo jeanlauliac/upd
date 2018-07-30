@@ -85,15 +85,23 @@ const compile_debug_c_cli = manifest.cli_template(compilerPath, [
 
 const nodePath = resolveBinary('node');
 
+const compile_tool_cli = manifest.cli_template(
+  nodePath,
+  updfile.makeCli([
+    'node_modules/.bin/babel',
+    "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
+    "-o", "$output_file", "$input_files"
+  ]),
+);
+
+const gen_package_info = manifest.rule(
+  compile_tool_cli,
+  [manifest.source('(tools/gen_package_info.js)')],
+  `${BUILD_DIR}/($1)`
+);
+
 const compiled_tools = manifest.rule(
-  manifest.cli_template(
-    nodePath,
-    updfile.makeCli([
-      'node_modules/.bin/babel',
-      "--source-maps", "inline", "--plugins", "transform-flow-strip-types",
-      "-o", "$output_file", "$input_files"
-    ]),
-  ),
+  compile_tool_cli,
   [manifest.source('(tools/**/*.js)')],
   `${BUILD_DIR}/($1)`
 );
@@ -209,13 +217,14 @@ const test_index_cpp_file = manifest.rule(
 const package_cpp_file = manifest.rule(
   manifest.cli_template(nodePath, [
     {
-      literals: [`${BUILD_DIR}/tools/gen_package_info.js`],
-      variables: ["output_file", "depfile", "input_files"],
+      literals: [],
+      variables: ["dependency", "output_file", "depfile", "input_files"],
     }
   ]),
   [manifest.source("package.json")],
   `${BUILD_DIR}/(package).cpp`,
-  [compiled_tools]
+  [compiled_tools],
+  [gen_package_info]
 );
 
 const compiled_optimized_main_files = manifest.rule(
